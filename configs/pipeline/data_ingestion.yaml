@@ -1,0 +1,172 @@
+# /*************************************************************************
+# * Copyright 2025 Karthick Jaganathan
+# *
+# * Licensed under the Apache License, Version 2.0 (the "License");
+# * you may not use this file except in compliance with the License.
+# * You may obtain a copy of the License at
+# *
+# * https://www.apache.org/licenses/LICENSE-2.0
+# *
+# * Unless required by applicable law or agreed to in writing, software
+# * distributed under the License is distributed on an "AS IS" BASIS,
+# * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# * See the License for the specific language governing permissions and
+# * limitations under the License.
+# **************************************************************************/
+
+version: 1.0
+kind: pipeline
+enabled: true
+description: |
+  The pipeline consists of the following steps:
+  1. reads "data_ingestion_config" from user input and forwards it to 
+     the "connector" and "serializer".
+  2. Connector reads data from the data source (e.g: API, CSV etc.,) 
+     and forwards it to the "dispatcher".
+  3. Dispatcher receives the data from Network, CSV feed which then 
+     forwarded it to the "serializer".
+  4. Serializer transforms the data into the desired format and
+     forwards it to the "exporter".
+  5. Exporter exports the data to the desired location (e.g: CSV,
+     Database etc.,). In this case, it exports the data to CSV file.
+
+# step: 1 - reads "data_ingestion_config" from user input
+# and forwards it to the "connector" and "serializer".
+connector_config: &connector_config
+  type: pipeline
+  name: connector_config
+  client:
+    type: callable
+    module: adapt.utils.config_reader
+    class: YamlReader
+    method: load_from_config_location
+  arguments:
+    type: dict
+    items:
+      config_name:
+        type: external_input
+        key: data_ingestion_config
+      module:
+        type: constant
+        value: connector
+      namespace:
+        type: external_input
+        key: namespace
+        required: true
+  forward_to:
+    connector:
+      as_arg: config
+    dispatcher:
+      as_arg: config
+
+# step: 2 - Builds connection to data source (e.g: API, CSV etc.,)
+# and forwards it to the "dispatcher".
+connector: &connector
+  type: pipeline
+  name: connector
+  client:
+    type: callable
+    module: adapt.connector.service
+    class: Service
+    method: initialize
+  arguments:
+    type: dict
+    items:
+      external_input:
+        type: external_input
+        key: auth_store
+  forward_to:
+    dispatcher:
+      as_arg: client
+
+# step: 3 - Receives the data from Network API, CSV feed which then
+# forwarded it to the "serializer".
+dispatcher: &dispatcher
+  type: pipeline
+  name: dispatcher
+  client:
+    type: callable
+    module: adapt.connector.dispatcher
+    class: Dispatcher
+    method: receive
+  arguments:
+    type: dict
+    items:
+      external_input:
+        type: external_input
+        key: data_store
+  forward_to:
+    serializer:
+      as_arg: records
+
+# step: 4 - Transforms the data into the desired format and
+# forwards it to the "exporter".
+serializer_config: &serializer_config
+  type: pipeline
+  name: serializer_config
+  client:
+    type: callable
+    module: adapt.utils.config_reader
+    class: YamlReader
+    method: load_from_config_location
+  arguments:
+    type: dict
+    items:
+      config_name:
+        type: external_input
+        key: data_ingestion_config
+      module:
+        type: constant
+        value: serializer
+      namespace:
+        type: external_input
+        key: namespace
+        required: true
+  forward_to:
+    serializer:
+      as_arg: config
+    exporter:
+      as_arg: config
+
+serializer: &serializer
+  type: pipeline
+  name: serializer
+  client:
+    type: callable
+    module: adapt.serializer.serializer
+    class: Serializer
+    method: lazy_run
+  arguments:
+    type: dict
+    items:
+      dict_normalize:
+        type: external_input
+        key: dict_normalize
+  forward_to:
+    exporter:
+      as_arg: records
+
+# step: 5 - Exports the data to the desired location (e.g: CSV,
+# Database etc.,). In this case, it exports the data to CSV file.
+exporter: &exporter
+  type: pipeline
+  name: exporter
+  client:
+    type: callable
+    module: adapt.utils.exporter
+    class: CSVExporter
+    method: lazy_run
+
+
+# ************************
+#   Pipeline definition
+# ************************
+pipeline:
+  type: list
+  items:
+    - <<: *connector_config
+    - <<: *connector
+    - <<: *dispatcher
+    - <<: *serializer_config
+    - <<: *serializer
+    - <<: *exporter

@@ -1,0 +1,108 @@
+# /*************************************************************************
+# * Copyright 2025 Karthick Jaganathan
+# *
+# * Licensed under the Apache License, Version 2.0 (the "License");
+# * you may not use this file except in compliance with the License.
+# * You may obtain a copy of the License at
+# *
+# * https://www.apache.org/licenses/LICENSE-2.0
+# *
+# * Unless required by applicable law or agreed to in writing, software
+# * distributed under the License is distributed on an "AS IS" BASIS,
+# * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# * See the License for the specific language governing permissions and
+# * limitations under the License.
+# **************************************************************************/
+
+version: 1.0
+kind: connector
+enabled: true
+description: |
+  This is a connector configuration for Facebook Ads API.
+  It is used to fetch data from Facebook Ads API.
+  The connector creates client object which is used to make API calls.
+
+# authorization configuration to authorize
+# the connector to access the API
+authorization:
+  namespace: facebook
+  config_name: authorization.yaml
+
+# Builds Facebook Ads API client object
+client:
+  type: instance
+  module: facebook_business.adobjects.adaccount
+  class: AdAccount
+  arguments:
+    type: dict
+    items:
+      fbid:
+        type: external_input
+        key: account_id
+      api:
+        type: external_input
+        key: authorization
+
+# *******************************
+# *     Request parameters
+# *******************************
+fields: &fields
+  type: list
+  items:
+    - account_id
+    - id
+    - name
+    - status
+    - objective
+    - buying_type
+    - bid_strategy
+    - start_time
+    - stop_time
+    - spend_cap
+    - lifetime_budget
+    - daily_budget
+    - budget_remaining
+    - created_time
+    - updated_time
+
+# request filters
+filters: &filters
+  type: filter
+  schema:
+    key: field
+    operator: operator
+    value: value
+  items:
+    campaign.id:
+      operator: IN
+      value:
+        type: external_input
+        key: campaign_ids
+        ignore_if: null
+
+# request params
+params: &params
+  type: dict
+  items:
+    filtering:
+      <<: *filters
+    limit:
+      type: constant
+      value: 10
+
+# *******************************
+# *  END: Request parameters
+# *******************************
+
+# *******************************
+# * request arguments which will
+# * be passed to the client
+# *******************************
+method: get_campaigns
+arguments:
+  type: dict
+  items:
+    fields:
+      <<: *fields
+    params:
+      <<: *params

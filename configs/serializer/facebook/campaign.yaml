@@ -1,0 +1,251 @@
+# /*************************************************************************
+# * Copyright 2025 Karthick Jaganathan
+# *
+# * Licensed under the Apache License, Version 2.0 (the "License");
+# * you may not use this file except in compliance with the License.
+# * You may obtain a copy of the License at
+# *
+# * https://www.apache.org/licenses/LICENSE-2.0
+# *
+# * Unless required by applicable law or agreed to in writing, software
+# * distributed under the License is distributed on an "AS IS" BASIS,
+# * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# * See the License for the specific language governing permissions and
+# * limitations under the License.
+# **************************************************************************/
+
+version: 1.0
+kind: serializer
+enabled: true
+description: |
+  * This is a serializer configuration used to transform the data fetched 
+    from Facebook Ads API.
+  * This module implements the transformation logic of "campaign" data.
+
+# *******************************
+# *     response parameters
+# *******************************
+inline:
+  - name: campaignid
+    from: id
+    transform:
+      type: integer
+
+  - name: campaign_name
+    from: name
+    transform:
+      type: string
+
+  - name: status_code
+    from: status
+    transform:
+      type: enum
+      mappings: {ACTIVE: a, PAUSED: p, DELETED: r, ON_HOLD: p}
+
+  - name: buying_type
+    from: buying_type
+    transform:
+      type: enum
+      mappings: {AUCTION: Auction, RESERVED: Reserved}
+
+  - name: pricing_model
+    from: bid_strategy
+    transform:
+      type: enum
+      mappings:
+        LOWEST_COST_WITHOUT_CAP: Highest Volume
+        LOWEST_COST_WITH_BID_CAP: Bid Cap
+        COST_CAP: Cost Per Result Goal
+        LOWEST_COST_WITH_MIN_ROAS: ROAS Goal
+    ignore:
+      when:
+        equal: null
+      then: null
+
+  - name: start_date
+    from: start_time
+    transform:
+      type: date_parser
+      format:
+        output: "%Y-%m-%d"
+
+  - name: end_date
+    from: stop_time
+    transform:
+      type: date_parser
+      format:
+        output: "%Y-%m-%d"
+    ignore:
+      when:
+        equal: null
+      then: null
+
+  - name: updated_date
+    from: updated_time
+    transform:
+      type: date_parser
+      format:
+        output: "%Y-%m-%d"
+    ignore:
+      when:
+        equal: null
+      then: null
+
+  - name: created_date
+    from: created_time
+    transform:
+      type: date_parser
+      format:
+        output: "%Y-%m-%d"
+    ignore:
+      when:
+        equal: null
+      then: null
+
+  - name: spend_limit
+    transform:
+      type: case
+      cases:
+        - when:
+            field: lifetime_budget
+            not_in: [ "", 0, " ", "0" ]
+          then:
+            type: currency
+            field: spend_cap
+            multiplier: 0.01
+        - when:
+            field: daily_budget
+            not_in: [ "", 0, " ", "0" ]
+          then:
+            type: currency
+            field: spend_cap
+            multiplier: 0.01
+      default: null
+    ignore:
+      when:
+        field: spend_cap
+        equal: null
+      then: null
+
+  - name: budget
+    transform:
+      type: case
+      cases:
+        - when:
+            field: lifetime_budget
+            not_in: [ "", 0, " ", "0" ]
+          then:
+            type: currency
+            multiplier: 0.01
+        - when:
+            field: daily_budget
+            not_in: [ "", 0, " ", "0" ]
+          then:
+            type: currency
+            multiplier: 0.01
+      default: null
+
+  - name: budget_typeid
+    transform:
+      type: case
+      cases:
+        - when:
+            field: lifetime_budget
+            not_in: [ "", 0, " ", "0" ]
+          then: 4
+        - when:
+            field: daily_budget
+            not_in: [ "", 0, " ", "0" ]
+          then: 1
+      default: null
+
+  - name: remaining_budget
+    transform:
+      type: case
+      cases:
+        - when:
+            field: lifetime_budget
+            not_in: [ "", 0, " ", "0" ]
+          then:
+            type: currency
+            field: budget_remaining
+            multiplier: 0.01
+        - when:
+            field: daily_budget
+            not_in: [ "", 0, " ", "0" ]
+          then:
+            type: currency
+            field: budget_remaining
+            multiplier: 0.01
+      default: null
+
+  - name: campaign_objective
+    from: objective
+    transform:
+      type: enum
+      mappings:
+        APP_INSTALLS: 'App Installs'
+        BRAND_AWARENESS: 'Brand Awareness'
+        CONVERSIONS: 'Conversions'
+        EVENT_RESPONSES: 'Event Responses'
+        LEAD_GENERATION: 'Lead Generation'
+        LINK_CLICKS: 'Traffic'
+        LOCAL_AWARENESS: 'Local Awareness'
+        MESSAGES: 'Messages'
+        OFFER_CLAIMS: 'Offer Claims'
+        OUTCOME_APP_PROMOTION: 'App promotion'
+        OUTCOME_AWARENESS: 'Awareness'
+        OUTCOME_ENGAGEMENT: 'Engagement'
+        OUTCOME_LEADS: 'Leads'
+        OUTCOME_SALES: 'Sales'
+        OUTCOME_TRAFFIC: 'Traffic'
+        PAGE_LIKES: 'Page Likes'
+      on_error: null
+
+# *******************************
+# *     derived parameters
+# *******************************
+derived:
+  - name: budget_level
+    transform:
+      type: case
+      cases:
+        - when:
+            field: budget
+            greater_than: 0
+          then: Campaign
+      default: Adgroup
+
+# *******************************
+# *     constant parameters
+# *******************************
+constants:
+  - name: channel_type
+    value: social
+
+
+# *******************************
+# *    EXPORT CONFIGURATION
+# *******************************
+
+export:
+  filename: campaign
+  unique_on:
+    - campaignid
+  fields:
+    - campaignid
+    - campaign_name
+    - status_code
+    - start_date
+    - end_date
+    - updated_date
+    - created_date
+    - budget
+    - budget_level
+    - budget_typeid
+    - remaining_budget
+    - buying_type
+    - pricing_model
+    - campaign_channel_type
+    - spend_limit
+    - campaign_objective

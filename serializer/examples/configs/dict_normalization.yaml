@@ -1,0 +1,204 @@
+# /*************************************************************************
+# * Copyright 2025 Karthick Jaganathan
+# *
+# * Licensed under the Apache License, Version 2.0 (the "License");
+# * you may not use this file except in compliance with the License.
+# * You may obtain a copy of the License at
+# *
+# * https://www.apache.org/licenses/LICENSE-2.0
+# *
+# * Unless required by applicable law or agreed to in writing, software
+# * distributed under the License is distributed on an "AS IS" BASIS,
+# * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# * See the License for the specific language governing permissions and
+# * limitations under the License.
+# **************************************************************************/
+
+version: 1.0
+model: campaign_adgroup_ad
+description: Extracting campaign, AdGroup and Ad data from JSON response
+enabled: true
+type: json
+
+inline:
+  - name: campaignid
+    from: id
+    required: true
+    transform:
+      type: integer
+
+  - name: campaign_name
+    from: name
+    required: true
+    transform:
+      type: string
+
+  - name: status_code
+    from: status
+    required: true
+    transform:
+      type: enum
+      mappings: {RUNNING: a, PAUSED: p, DELETED: r, ON_HOLD: p}
+
+  - name: start_date
+    from: start_date
+    transform:
+      type: date
+      format:
+        input: "%d/%m/%y"
+        output: "%Y-%m-%d"
+
+  - name: end_date
+    from: end_date
+    transform:
+      type: date
+      format:
+        input: "%d/%m/%y"
+        output: "%Y-%m-%d"
+
+  # AdGroup properties (associated with campaigns)
+  - name: adgroups
+    from: ad_sets
+    type: extended_array
+    inline:
+      - name: adset_id
+        from: id
+        transform:
+          type: integer
+
+      - name: adset_name
+        from: name
+        transform:
+          type: string
+
+      - name: adset_status_code
+        from: status
+        transform:
+          type: enum
+          mappings: {RUNNING: a, PAUSED: p, DELETED: r, ON_HOLD: p}
+
+      - name: adset_start_date
+        from: start_date
+        transform:
+          type: date
+          format:
+            input: "%d/%m/%y"
+            output: "%Y-%m-%d"
+
+      - name: adset_end_date
+        from: end_date
+        transform:
+          type: date
+          format:
+            input: "%d/%m/%y"
+            output: "%Y-%m-%d"
+
+      - name: adset_budget
+        from: daily_budget
+        transform:
+          type: float
+          precision: 2
+        ignore:
+          when:
+            in: ["", 0, " ", "--", "0"]
+          then: null
+
+      - name: optimization_goal
+        object: promoted_object
+        from: optimization_goal
+        transform:
+          type: string
+        ignore:
+          when:
+            in: ["", 0, " ", "--", "0"]
+          then: null
+
+      - name: optimization_event
+        object: promoted_object
+        from: custom_event_type
+        transform:
+          type: string
+        ignore:
+          when:
+            in: ["", 0, " ", "--", "0"]
+          then: null
+
+      # Ad properties (associated with ad_sets)
+      - name: creatives
+        from: ads
+        type: extended_array
+        inline:
+          - name: creative_id
+            from: id
+            transform:
+              type: integer
+
+          - name: creative_name
+            from: name
+            transform:
+              type: string
+
+          - name: creative_status_code
+            from: status
+            transform:
+              type: enum
+              mappings: {RUNNING: a, PAUSED: p, DELETED: r, ON_HOLD: p}
+
+        # END: Ad properties
+  # END: AdGroup properties
+
+  - name: budget
+    from: daily_budget
+    transform:
+      type: float
+      precision: 2
+    ignore:
+          when:
+            in: ["", 0, " ", "--", "0"]
+          then: null
+
+  # END: Campaign properties
+
+derived:
+  - name: budget_level
+    transform:
+      type: case
+      cases:
+        - when:
+            field: budget
+            greater_than: 0
+          then: Campaign
+      default: AdGroup
+
+constants:
+  - name: budget_typeid
+    value: 1
+
+
+export:
+  filename: campaign
+  unique_on:
+    - campaignid
+    - adset_id
+    - creative_id
+  fields:
+    - campaignid
+    - campaign_name
+    - status_code
+    - start_date
+    - end_date
+    - budget
+    - budget_level
+    - budget_typeid
+    - adset_id
+    - adset_name
+    - adset_status_code
+    - adset_start_date
+    - adset_end_date
+    - adset_budget
+    - optimization_goal
+    - optimization_event
+    - creative_id
+    - creative_name
+    - creative_status_code
+
