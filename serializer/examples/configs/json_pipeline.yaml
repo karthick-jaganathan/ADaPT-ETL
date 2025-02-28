@@ -1,0 +1,349 @@
+# /*************************************************************************
+# * Copyright 2025 Karthick Jaganathan
+# *
+# * Licensed under the Apache License, Version 2.0 (the "License");
+# * you may not use this file except in compliance with the License.
+# * You may obtain a copy of the License at
+# *
+# * https://www.apache.org/licenses/LICENSE-2.0
+# *
+# * Unless required by applicable law or agreed to in writing, software
+# * distributed under the License is distributed on an "AS IS" BASIS,
+# * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# * See the License for the specific language governing permissions and
+# * limitations under the License.
+# **************************************************************************/
+
+version: 1.0
+kind: serializer
+description: Extracting AdGroup data from JSON response
+enabled: true
+
+
+inline:
+  - name: campaignid
+    from: campaign_id
+    transform:
+      type: integer
+
+  - name: adref
+    from: id
+    transform:
+      type: integer
+
+  - name: adgroup_name
+    from: name
+    transform:
+      type: string
+
+  - name: status_code
+    from: status
+    transform:
+      type: enum
+      mappings:
+        ACTIVE: a
+        PAUSED: p
+        IN_PROCESS: p
+        ARCHIVED: p
+        WITH_ISSUES: p
+        DELETED: r
+
+  - name: budget
+    transform:
+      type: case
+      cases:
+        - when:
+            field: lifetime_budget
+            not_in: ["", 0, " ", "0"]
+          then:
+            type: currency
+            multiplier: 100
+        - when:
+            field: daily_budget
+            not_in: ["", 0, " ", "0"]
+          then:
+            type: currency
+            multiplier: 100
+      default: null
+
+  - name: budget_type
+    transform:
+      type: case
+      cases:
+        - when:
+            field: lifetime_budget
+            not_in: ["", 0, " ", "0"]
+          then: lifetime
+        - when:
+            field: daily_budget
+            not_in: ["", 0, " ", "0"]
+          then: daily
+
+  - name: pricing_type
+    from: bid_strategy
+    transform:
+      type: enum
+      mappings:
+        LOWEST_COST_WITHOUT_CAP: Highest Volume
+        LOWEST_COST_WITH_BID_CAP: Bid Cap
+        LOWEST_COST_WITH_MIN_ROAS: ROAS Goal
+        COST_CAP: Cost Per Result Goal
+
+  - name: remaining_budget
+    from: budget_remaining
+    transform:
+      type: currency
+      multiplier: 100
+    ignore:
+      when:
+        in: ["", 0, " ", "--", "0"]
+      then: 0
+
+  - name: spend_limit
+    transform:
+      type: case
+      cases:
+        - when:
+            field: daily_spend_cap
+            not_in: ["", 0, " ", "0"]
+          then:
+            type: currency
+            multiplier: 100
+        - when:
+            field: lifetime_spend_cap
+            not_in: ["", 0, " ", "0"]
+          then:
+            type: currency
+            multiplier: 100
+      default: null
+
+  - name: created_date
+    from: created_time
+    transform:
+      type: date_parser
+      format:
+        output: "%Y-%m-%d"
+    ignore:
+      when:
+        in: ["", 0, " ", "--", "0"]
+      then: null
+
+  - name: start_date
+    from: start_time
+    transform:
+      type: date_parser
+      format:
+        output: "%Y-%m-%d"
+    ignore:
+      when:
+        in: ["", 0, " ", "--", "0"]
+      then: null
+
+  - name: updated_date
+    from: updated_time
+    transform:
+      type: date_parser
+      format:
+        output: "%Y-%m-%d"
+    ignore:
+      when:
+        in: ["", 0, " ", "--", "0"]
+      then: null
+
+  - name: end_date
+    from: end_time
+    transform:
+      type: date_parser
+      format:
+        output: "%Y-%m-%d"
+    ignore:
+      when:
+        in: ["", 0, " ", "--", "0", null]
+      then: null
+
+  - name: optimization_goal
+    from: optimization_goal
+    transform:
+      type: enum
+      mappings:
+        AD_RECALL_LIFT: Ad Recall Lift
+        APP_INSTALLS: App Installs
+        CONVERSATIONS: Conversations
+        ENGAGED_USERS: Engaged Users
+        IMPRESSIONS: Impressions
+        LANDING_PAGE_VIEWS: Landing Page Views
+        LEAD_GENERATION: Lead Generation
+        LINK_CLICKS: Link Clicks
+        OFFSITE_CONVERSIONS: Conversions
+        PAGE_LIKES: Page Likes
+        QUALITY_CALL: Calls
+        QUALITY_LEAD: Lead
+        REACH: Daily Unique Reach
+        THRUPLAY: Thruplay
+        VALUE: Value
+    ignore:
+      when:
+        in: ["", " ", "--"]
+      then: null
+
+  - name: custom_conversion_id
+    object: promoted_object
+    from: custom_conversion_id
+    transform:
+      type: string
+    ignore:
+      when:
+        in: ["", 0, " ", "--", "0"]
+      then: null
+
+  - name: custom_event_type
+    object: promoted_object
+    from: custom_event_type
+    transform:
+      type: string
+    ignore:
+      when:
+        in: ["", 0, " ", "--", "0"]
+      then: null
+
+  - name: custom_event_str
+    object: promoted_object
+    from: custom_event_str
+    transform:
+      type: string
+    ignore:
+      when:
+        in: ["", 0, " ", "--", "0"]
+      then: null
+
+  - name: bid_amount
+    from: bid_amount
+    transform:
+      type: currency
+      multiplier: 100
+    ignore:
+      when:
+        in: ["", 0, " ", "--", "0"]
+      then: null
+
+  - name: target_roas_percent
+    object: bid_constraints
+    from: roas_average_floor
+    transform:
+      type: currency
+      multiplier: 0.01
+    ignore:
+      when:
+        in: ["", 0, " ", "--", "0"]
+      then: null
+
+
+derived:
+  - name: target_cpa
+    from: bid_amount
+    transform:
+      type: float
+      precision: 2
+    # ignore setting target_cpa to null when pricing_type is not Cost Per Result Goal
+    ignore:
+      when:
+        field: pricing_type
+        not_equal: Cost Per Result Goal
+      then: null
+
+  - name: bid_cap
+    from: bid_amount
+    transform:
+      type: float
+      precision: 2
+    # ignore setting bid_cap to null when pricing_type is not Bid Cap
+    ignore:
+      when:
+        field: pricing_type
+        not_equal: Bid Cap
+      then: null
+
+  - name: optimizing_event
+    transform:
+      type: case
+      cases:
+        - when:
+            field: custom_conversion_id
+            not_equal: null
+          then:
+            type: string
+        - when:
+            field: custom_event_type
+            equal: OTHER
+          then:
+            type: case
+            cases:
+              - when:
+                  field: custom_event_str
+                  not_equal: null
+                then:
+                  type: string
+        - when:
+            field: custom_event_type
+            in:
+              - ADD_PAYMENT_INFO
+              - ADD_TO_CART
+              - ADD_TO_WISHLIST
+              - COMPLETE_REGISTRATION
+              - CONTACT
+              - CUSTOMIZE_PRODUCT
+              - DONATE
+              - FIND_LOCATION
+              - INITIATED_CHECKOUT
+              - LEAD
+              - PURCHASE
+              - SCHEDULE
+              - SEARCH
+              - START_TRIAL
+              - SUBMIT_APPLICATION
+              - SUBSCRIBE
+              - VIEW_CONTENT
+          then:
+            type: enum
+            mappings:
+              ADD_PAYMENT_INFO: offsite_conversion.fb_pixel_add_payment_info
+              ADD_TO_CART: offsite_conversion.fb_pixel_add_to_cart
+              ADD_TO_WISHLIST: offsite_conversion.fb_pixel_add_to_wishlist
+              COMPLETE_REGISTRATION: offsite_conversion.fb_pixel_complete_registration
+              CONTACT: contact_total
+              CUSTOMIZE_PRODUCT: customize_product_total
+              DONATE: donate_total
+              FIND_LOCATION: find_location_total
+              INITIATED_CHECKOUT: offsite_conversion.fb_pixel_initiate_checkout
+              LEAD: offsite_conversion.fb_pixel_lead
+              PURCHASE: offsite_conversion.fb_pixel_purchase
+              SCHEDULE: schedule_total
+              SEARCH: offsite_conversion.fb_pixel_search
+              START_TRIAL: start_trial_total
+              SUBMIT_APPLICATION: submit_application_total
+              SUBSCRIBE: subscribe_total
+              VIEW_CONTENT: offsite_conversion.fb_pixel_view_content
+
+
+export:
+  filename: adgroup.csv
+  unique_on:
+    - campaignid
+    - adref
+  fields:
+      - campaignid
+      - adref
+      - adgroup_name
+      - status_code
+      - start_date
+      - end_date
+      - budget
+      - budget_type
+      - spend_limit
+      - remaining_budget
+      - pricing_type
+      - optimisation_goal
+      - optimizing_event
+      - target_cpa
+      - bid_cap
+      - target_roas_percent
