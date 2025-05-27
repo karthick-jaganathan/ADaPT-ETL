@@ -16,6 +16,20 @@ markdown: kramdown
 highlighter: rouge
 remote_theme: just-the-docs/just-the-docs
 
+# Kramdown settings
+kramdown:
+  input: GFM
+  auto_ids: true
+  hard_wrap: false
+  syntax_highlighter: rouge
+  syntax_highlighter_opts:
+    css_class: 'highlight'
+    span:
+      line_numbers: false
+    block:
+      line_numbers: false
+      start_line: 1
+
 # Plugins
 plugins:
   - jekyll-feed
@@ -67,16 +81,7 @@ exclude:
   - vendor/gems/
   - vendor/ruby/
 
-# Kramdown settings
-kramdown:
-  input: GFM
-  syntax_highlighter: rouge
-  syntax_highlighter_opts:
-    css_class: 'highlight'
-    span:
-      line_numbers: false
-    block:
-      line_numbers: true
+
 
 # SEO settings
 author: "Karthick Jaganathan"
@@ -104,6 +109,14 @@ search:
 
 # Enable copy code button
 enable_copy_code_button: true
+
+# Aux links for header
+aux_links:
+  "GitHub Repository":
+    - "https://github.com/karthick-jaganathan/ADaPT-ETL"
+
+# Makes Aux links open in a new tab
+aux_links_new_tab: true
 
 # Footer content
 footer_content: "Copyright &copy; 2024 ADaPT Project. Distributed under the <a href=\"https://github.com/karthick-jaganathan/ADaPT-ETL/blob/master/LICENSE\">Apache License 2.0</a>."
