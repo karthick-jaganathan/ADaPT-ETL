@@ -1,5 +1,5 @@
 ---
-layout: page
+layout: default
 title: Contributing
 nav_order: 6
 description: "How to contribute to ADaPT"

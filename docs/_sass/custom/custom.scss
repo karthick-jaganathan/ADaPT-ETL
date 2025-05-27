@@ -1,0 +1,412 @@
+// Custom styles for ADaPT documentation
+
+// Enhanced typography
+.site-title {
+  font-weight: 700 !important;
+  font-size: 1.5rem !important;
+  color: #1976d2 !important;
+}
+
+// Hero section styling
+.hero-section {
+  background: linear-gradient(135deg, #e3f2fd 0%, #f1f8e9 100%);
+  padding: 3rem 2rem;
+  margin: -1rem -2rem 2rem -2rem;
+  border-radius: 8px;
+  text-align: center;
+  
+  h1 {
+    color: #1976d2;
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+  }
+  
+  .subtitle {
+    font-size: 1.2rem;
+    color: #34495e;
+    margin-bottom: 2rem;
+  }
+  
+  .badges {
+    margin-bottom: 2rem;
+    
+    img {
+      margin: 0 0.25rem;
+    }
+  }
+}
+
+// Enhanced cards and grid layouts
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.feature-card {
+  background: #f8f9fa;
+  border: 1px solid #d5dbdb;
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-color: #1976d2;
+  }
+  
+  h3 {
+    color: #1976d2;
+    margin-top: 0;
+    margin-bottom: 1rem;
+    
+    a {
+      text-decoration: none;
+      color: inherit;
+      
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+  
+  p {
+    color: #5d6d7e;
+    margin-bottom: 0;
+  }
+}
+
+// Enhanced code blocks
+.highlight {
+  border-radius: 6px;
+  border: 1px solid #d5dbdb;
+  
+  pre {
+    border-radius: 6px;
+    padding: 1rem;
+  }
+}
+
+// Inline code styling
+code {
+  background-color: #ecf0f1 !important;
+  color: #1976d2 !important;
+  padding: 0.2rem 0.4rem !important;
+  border-radius: 3px !important;
+  font-size: 0.9em !important;
+}
+
+// Enhanced tables
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1.5rem 0;
+  
+  th {
+    background-color: #1976d2;
+    color: white;
+    font-weight: 600;
+    padding: 0.75rem;
+    text-align: left;
+  }
+  
+  td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #d5dbdb;
+  }
+  
+  tr:nth-child(even) {
+    background-color: #f8f9fa;
+  }
+  
+  tr:hover {
+    background-color: #e3f2fd;
+  }
+}
+
+// Enhanced navigation
+.site-nav {
+  .nav-list-item {
+    .nav-list-link {
+      &:hover {
+        background-color: #e3f2fd;
+        color: #1976d2;
+      }
+      
+      &.active {
+        background-color: #1976d2;
+        color: white;
+      }
+    }
+  }
+}
+
+// Callout boxes
+.callout {
+  padding: 1rem;
+  margin: 1.5rem 0;
+  border-left: 4px solid;
+  border-radius: 0 4px 4px 0;
+  
+  &.note {
+    background-color: #e3f2fd;
+    border-color: #1976d2;
+    
+    .callout-title {
+      color: #1976d2;
+      font-weight: 600;
+    }
+  }
+  
+  &.warning {
+    background-color: #fff3e0;
+    border-color: #ff9800;
+    
+    .callout-title {
+      color: #ff9800;
+      font-weight: 600;
+    }
+  }
+  
+  &.important {
+    background-color: #ffebee;
+    border-color: #f44336;
+    
+    .callout-title {
+      color: #f44336;
+      font-weight: 600;
+    }
+  }
+  
+  &.tip {
+    background-color: #f1f8e9;
+    border-color: #8bc34a;
+    
+    .callout-title {
+      color: #689f38;
+      font-weight: 600;
+    }
+  }
+}
+
+// Enhanced buttons
+.btn {
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+  text-decoration: none;
+  display: inline-block;
+  transition: all 0.3s ease;
+  
+  &.btn-primary {
+    background-color: #1976d2;
+    color: white;
+    border: 1px solid #1976d2;
+    
+    &:hover {
+      background-color: #1565c0;
+      border-color: #1565c0;
+      transform: translateY(-1px);
+    }
+  }
+  
+  &.btn-outline {
+    background-color: transparent;
+    color: #1976d2;
+    border: 1px solid #1976d2;
+    
+    &:hover {
+      background-color: #1976d2;
+      color: white;
+    }
+  }
+}
+
+// Package badges
+.package-badge {
+  display: inline-block;
+  background-color: #1976d2;
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  margin: 0.25rem;
+}
+
+// Architecture diagram styling
+.architecture-diagram {
+  background-color: #f8f9fa;
+  border: 1px solid #d5dbdb;
+  border-radius: 8px;
+  padding: 2rem;
+  margin: 2rem 0;
+  text-align: center;
+  
+  pre {
+    background: transparent;
+    border: none;
+    color: #34495e;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+}
+
+// Responsive design improvements
+@media (max-width: 768px) {
+  .hero-section {
+    padding: 2rem 1rem;
+    margin: -1rem -1rem 2rem -1rem;
+    
+    h1 {
+      font-size: 2rem;
+    }
+    
+    .subtitle {
+      font-size: 1rem;
+    }
+  }
+  
+  .feature-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .feature-card {
+    padding: 1rem;
+  }
+}
+
+// Search enhancements
+.search-input {
+  border-radius: 6px !important;
+  border: 1px solid #d5dbdb !important;
+  
+  &:focus {
+    border-color: #1976d2 !important;
+    box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2) !important;
+  }
+}
+
+// Footer styling
+.site-footer {
+  background-color: #2c3e50;
+  color: #ecf0f1;
+  padding: 2rem 0;
+  margin-top: 3rem;
+  
+  a {
+    color: #64b5f6;
+    
+    &:hover {
+      color: #bbdefb;
+    }
+  }
+}
+
+// Breadcrumb styling
+.breadcrumb-nav {
+  background-color: #f8f9fa;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  
+  ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    
+    li {
+      &:not(:last-child)::after {
+        content: " / ";
+        color: #85929e;
+        margin: 0 0.5rem;
+      }
+      
+      a {
+        color: #1976d2;
+        text-decoration: none;
+        
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+    }
+  }
+}
+
+// Package-specific styling
+.package-header {
+  background: linear-gradient(135deg, #e3f2fd 0%, #f1f8e9 100%);
+  padding: 2rem;
+  margin: -1rem -2rem 2rem -2rem;
+  border-radius: 8px;
+  text-align: center;
+  
+  .package-badge {
+    display: inline-block;
+    background-color: #1976d2;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+  }
+  
+  h1 {
+    color: #1976d2;
+    margin: 0.5rem 0;
+    font-size: 2.2rem;
+  }
+  
+  .package-description {
+    font-size: 1.1rem;
+    color: #34495e;
+    margin: 0;
+  }
+}
+
+.package-footer {
+  background-color: #f8f9fa;
+  border: 1px solid #d5dbdb;
+  border-radius: 8px;
+  padding: 2rem;
+  margin: 3rem 0 2rem 0;
+  text-align: center;
+  
+  p {
+    color: #34495e;
+    font-size: 1.1rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .package-links {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+}
+
+// Enhanced navigation for packages
+.nav-list {
+  .nav-list-item {
+    &.package-nav {
+      .nav-list-link {
+        background-color: #e3f2fd;
+        color: #1976d2;
+        font-weight: 500;
+        
+        &:hover {
+          background-color: #bbdefb;
+        }
+      }
+    }
+  }
+} 

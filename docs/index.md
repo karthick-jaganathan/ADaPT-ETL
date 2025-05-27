@@ -1,18 +1,26 @@
 ---
-layout: home
+layout: default
 title: Home
 nav_order: 1
 description: "ADaPT - Adaptive Data Pipeline Toolkit Documentation"
 permalink: /
 ---
 
-# ADaPT - Adaptive Data Pipeline Toolkit
-
-**A Python-based, YAML-configured data pipeline framework for extracting, transforming, and exporting data from various sources to multiple destinations.**
-
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Python](https://img.shields.io/badge/python-3.7+-blue.svg)](https://www.python.org/downloads/)
-[![GitHub](https://img.shields.io/badge/GitHub-ADaPT--ETL-blue.svg)](https://github.com/karthick-jaganathan/ADaPT-ETL)
+<div class="hero-section">
+  <h1>🚀 ADaPT - Adaptive Data Pipeline Toolkit</h1>
+  <p class="subtitle">A Python-based, YAML-configured data pipeline framework for extracting, transforming, and exporting data from various sources to multiple destinations.</p>
+  
+  <div class="badges">
+    <img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="License">
+    <img src="https://img.shields.io/badge/python-3.7+-blue.svg" alt="Python">
+    <img src="https://img.shields.io/badge/GitHub-ADaPT--ETL-blue.svg" alt="GitHub">
+  </div>
+  
+  <div>
+    <a href="{{ site.baseurl }}/installation" class="btn btn-primary">Get Started</a>
+    <a href="https://github.com/karthick-jaganathan/ADaPT-ETL" class="btn btn-outline">View on GitHub</a>
+  </div>
+</div>
 
 ## 🚀 Overview
 
@@ -32,7 +40,8 @@ ADaPT (Adaptive Data Pipeline Toolkit) is a modular, configuration-driven ETL fr
 
 ADaPT consists of four core packages that form a complete data pipeline ecosystem:
 
-```
+<div class="architecture-diagram">
+<pre>
 ┌─────────────────┐    ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
 │   adapt-utils   │    │ adapt-connector │    │adapt-serializer  │    │ adapt-pipeline  │
 │                 │    │                 │    │                  │    │                 │
@@ -49,33 +58,37 @@ ADaPT consists of four core packages that form a complete data pipeline ecosyste
                     │                                                     │
                     │         Extract → Transform → Load → Export         │
                     └─────────────────────────────────────────────────────┘
-```
+</pre>
+</div>
 
 ## 📚 Documentation Sections
 
-<div class="grid-container">
-  <div class="grid-item">
+<div class="feature-grid">
+  <div class="feature-card">
     <h3><a href="{{ site.baseurl }}/installation">🛠️ Installation</a></h3>
     <p>Comprehensive installation guide with multiple methods, troubleshooting, and development setup.</p>
   </div>
   
-  <div class="grid-item">
+  <div class="feature-card">
     <h3><a href="{{ site.baseurl }}/packages/">📦 Packages</a></h3>
     <p>Detailed documentation for all four core packages with API references and examples.</p>
   </div>
   
-  <div class="grid-item">
+  <div class="feature-card">
     <h3><a href="{{ site.baseurl }}/examples">💡 Examples</a></h3>
     <p>Practical examples and tutorials for common use cases and integrations.</p>
   </div>
   
-  <div class="grid-item">
+  <div class="feature-card">
     <h3><a href="{{ site.baseurl }}/api-reference">📖 API Reference</a></h3>
     <p>Complete API documentation with class references and method signatures.</p>
   </div>
 </div>
 
 ## 🚀 Quick Start
+
+{: .note }
+> **Ready to get started?** Follow these simple steps to set up ADaPT and run your first data pipeline.
 
 ### Installation
 
@@ -117,39 +130,4 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](https:
 - **Documentation**: Browse the sections above for detailed guides
 - **Examples**: Check out practical examples in the Examples section
 
----
-
-<style>
-.grid-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
-  margin: 20px 0;
-}
-
-.grid-item {
-  border: 1px solid #e1e4e8;
-  border-radius: 6px;
-  padding: 20px;
-  background-color: #f6f8fa;
-}
-
-.grid-item h3 {
-  margin-top: 0;
-  margin-bottom: 10px;
-}
-
-.grid-item h3 a {
-  text-decoration: none;
-  color: #0366d6;
-}
-
-.grid-item h3 a:hover {
-  text-decoration: underline;
-}
-
-.grid-item p {
-  margin-bottom: 0;
-  color: #586069;
-}
-</style> 
+--- 

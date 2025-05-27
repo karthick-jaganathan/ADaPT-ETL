@@ -1,5 +1,5 @@
 ---
-layout: page
+layout: default
 title: Installation
 nav_order: 2
 description: "Comprehensive installation guide for ADaPT (Adaptive Data Pipeline Toolkit)"
@@ -9,6 +9,9 @@ permalink: /installation/
 # ADaPT Installation Guide
 
 **📖 Comprehensive installation guide for ADaPT (Adaptive Data Pipeline Toolkit)**
+
+{: .important }
+> **Before you begin:** Ensure you have Python 3.7+ installed and a basic understanding of command-line operations.
 
 This guide provides detailed installation instructions, multiple installation methods, environment setup, troubleshooting, and development setup. For a quick start, see the [main README](README.md#installation).
 
