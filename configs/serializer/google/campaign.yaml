@@ -1,0 +1,290 @@
+# /*************************************************************************
+# * Copyright 2025 Karthick Jaganathan
+# *
+# * Licensed under the Apache License, Version 2.0 (the "License");
+# * you may not use this file except in compliance with the License.
+# * You may obtain a copy of the License at
+# *
+# * https://www.apache.org/licenses/LICENSE-2.0
+# *
+# * Unless required by applicable law or agreed to in writing, software
+# * distributed under the License is distributed on an "AS IS" BASIS,
+# * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# * See the License for the specific language governing permissions and
+# * limitations under the License.
+# **************************************************************************/
+
+version: 1.0
+kind: serializer
+enabled: true
+description: |
+  * This is a serializer configuration used to transform the data fetched 
+    from Google Ads API.
+  * This module implements the transformation logic of "campaign" data.
+
+# *******************************
+# *     response parameters
+# *******************************
+inline:
+  - name: campaign_id
+    object: campaign
+    from: id
+    transform:
+      type: string
+
+  - name: campaign_name
+    object: campaign
+    from: name
+    transform:
+      type: string
+
+  - name: status
+    object: campaign
+    from: status
+    transform:
+      type: enum
+      mappings: 
+        ENABLED: active
+        PAUSED: paused
+        REMOVED: removed
+
+  - name: advertising_channel_type
+    object: campaign
+    from: advertising_channel_type
+    transform:
+      type: enum
+      mappings:
+        SEARCH: search
+        DISPLAY: display
+        SHOPPING: shopping
+        HOTEL: hotel
+        VIDEO: video
+        MULTI_CHANNEL: multi_channel
+        LOCAL: local
+        SMART: smart
+        PERFORMANCE_MAX: performance_max
+        LOCAL_SERVICES: local_services
+        DISCOVERY: discovery
+        TRAVEL: travel
+        DEMAND_GEN: demand_gen
+
+  - name: bidding_strategy_type
+    object: campaign
+    from: bidding_strategy_type
+    transform:
+      type: string
+
+  - name: start_date
+    object: campaign
+    from: start_date
+    transform:
+      type: date_parser
+      format:
+        input: "%Y-%m-%d"
+        output: "%Y-%m-%d"
+
+  - name: end_date
+    object: campaign
+    from: end_date
+    transform:
+      type: date_parser
+      format:
+        input: "%Y-%m-%d"
+        output: "%Y-%m-%d"
+    ignore:
+      when:
+        equal: null
+      then: null
+
+  - name: budget_id
+    object: campaign_budget
+    from: id
+    transform:
+      type: string
+
+  - name: budget_amount
+    object: campaign_budget
+    from: amount_micros
+    transform:
+      type: currency
+      multiplier: 0.000001
+    ignore:
+      when:
+        equal: null
+      then: null
+
+  - name: target_cpa
+    object: campaign
+    from: target_cpa.target_cpa_micros
+    transform:
+      type: currency
+      multiplier: 0.000001
+    ignore:
+      when:
+        equal: null
+      then: null
+
+  - name: target_roas
+    object: campaign
+    from: target_roas.target_roas
+    transform:
+      type: float
+      precision: 2
+    ignore:
+      when:
+        equal: null
+      then: null
+
+  - name: impressions
+    object: metrics
+    from: impressions
+    transform:
+      type: integer
+    ignore:
+      when:
+        equal: null
+      then: 0
+
+  - name: clicks
+    object: metrics
+    from: clicks
+    transform:
+      type: integer
+    ignore:
+      when:
+        equal: null
+      then: 0
+
+  - name: cost
+    object: metrics
+    from: cost_micros
+    transform:
+      type: currency
+      multiplier: 0.000001
+    ignore:
+      when:
+        equal: null
+      then: 0
+
+  - name: conversions
+    object: metrics
+    from: conversions
+    transform:
+      type: float
+      precision: 2
+    ignore:
+      when:
+        equal: null
+      then: 0
+
+  - name: conversion_value
+    object: metrics
+    from: conversions_value
+    transform:
+      type: float
+      precision: 2
+    ignore:
+      when:
+        equal: null
+      then: 0
+
+# *******************************
+# *     derived fields
+# *******************************
+derived:
+  - name: ctr
+    transform:
+      type: case
+      cases:
+        - when:
+            field: impressions
+            greater_than: 0
+          then:
+            type: ratio
+            numerator: clicks
+            denominator: impressions
+            precision: 6
+            default: 0.0
+      default: 0.0
+
+  - name: cpc
+    transform:
+      type: case
+      cases:
+        - when:
+            field: clicks
+            greater_than: 0
+          then:
+            type: ratio
+            numerator: cost
+            denominator: clicks
+            precision: 2
+            default: 0.0
+      default: 0.0
+
+  - name: cost_per_conversion
+    transform:
+      type: case
+      cases:
+        - when:
+            field: conversions
+            greater_than: 0
+          then:
+            type: ratio
+            numerator: cost
+            denominator: conversions
+            precision: 2
+            default: 0.0
+      default: 0.0
+
+  - name: roas
+    transform:
+      type: case
+      cases:
+        - when:
+            field: cost
+            greater_than: 0
+          then:
+            type: ratio
+            numerator: conversion_value
+            denominator: cost
+            precision: 2
+            default: 0.0
+      default: 0.0
+
+# *******************************
+# *     constant fields
+# *******************************
+constants:
+  - name: channel_type
+    value: search
+
+# *******************************
+# *    EXPORT CONFIGURATION
+# *******************************
+export:
+  filename: campaign
+  unique_on:
+    - campaign_id
+  fields:
+    - campaign_id
+    - campaign_name
+    - status
+    - advertising_channel_type
+    - bidding_strategy_type
+    - start_date
+    - end_date
+    - budget_id
+    - budget_amount
+    - target_cpa
+    - target_roas
+    - impressions
+    - clicks
+    - cost
+    - conversions
+    - conversion_value
+    - ctr
+    - cpc
+    - cost_per_conversion
+    - roas
+    - channel_type

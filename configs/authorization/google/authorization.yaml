@@ -1,0 +1,78 @@
+# /*************************************************************************
+# * Copyright 2025 Karthick Jaganathan
+# *
+# * Licensed under the Apache License, Version 2.0 (the "License");
+# * you may not use this file except in compliance with the License.
+# * You may obtain a copy of the License at
+# *
+# * https://www.apache.org/licenses/LICENSE-2.0
+# *
+# * Unless required by applicable law or agreed to in writing, software
+# * distributed under the License is distributed on an "AS IS" BASIS,
+# * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# * See the License for the specific language governing permissions and
+# * limitations under the License.
+# **************************************************************************/
+
+version: 1.0
+kind: authorization
+enabled: true
+description: |
+  This is an authorization configuration for Google Ads API.
+  It is used to authorize the connector to access the Google Ads API.
+  The authorization creates client object which is used to make API calls.
+
+# *******************************
+# *     API Version
+# *******************************
+api_version: &api_version
+  type: constant
+  value: v18
+
+# *******************************
+# *     Credentials
+# *******************************
+credentials: &credentials
+  type: dict
+  items:
+    developer_token:
+      type: external_input
+      key: developer_token
+      required: true
+    login_customer_id:
+      type: external_input
+      key: login_customer_id
+      required: false
+    client_id:
+      type: external_input
+      key: client_id
+      required: true
+    client_secret:
+      type: external_input
+      key: client_secret
+      required: true
+    refresh_token:
+      type: external_input
+      key: refresh_token
+      required: true
+    use_proto_plus:
+      type: constant
+      value: true 
+
+# *******************************
+# *     Initializer
+# *******************************
+initializer:
+  type: initializer
+  client:
+    type: callable
+    module: google.ads.googleads.client
+    class: GoogleAdsClient
+    method: load_from_dict
+  arguments:
+    type: dict
+    items:
+      version:
+        <<: *api_version
+      config_dict:
+        <<: *credentials

@@ -1,0 +1,3 @@
+facebook_business~=22.0.0
+google-ads==25.1.0
+protobuf>=3.19.0 

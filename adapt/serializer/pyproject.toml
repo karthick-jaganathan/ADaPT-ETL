@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "adapt-serializer"
+version = "0.0.1"
+description = "Adaptive Data Pipeline Toolkit - Data Serializers"
+readme = "README.md"
+license = "Apache-2.0"
+authors = [
+    {name = "Karthick Jaganathan"},
+]
+keywords = ["data", "pipeline", "etl", "serialization", "json", "yaml"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+requires-python = ">=3.7"
+dependencies = [
+    "adapt-utils~=0.0.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/karthick-jaganathan/ADaPT-ETL"
+Repository = "https://github.com/karthick-jaganathan/ADaPT-ETL"
+
+[tool.setuptools]
+packages = ["adapt.serializer"]
+
+[tool.setuptools.package-dir]
+"adapt.serializer" = "serializer" 

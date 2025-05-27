@@ -1,0 +1,150 @@
+# /*************************************************************************
+# * Copyright 2025 Karthick Jaganathan
+# *
+# * Licensed under the Apache License, Version 2.0 (the "License");
+# * you may not use this file except in compliance with the License.
+# * You may obtain a copy of the License at
+# *
+# * https://www.apache.org/licenses/LICENSE-2.0
+# *
+# * Unless required by applicable law or agreed to in writing, software
+# * distributed under the License is distributed on an "AS IS" BASIS,
+# * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# * See the License for the specific language governing permissions and
+# * limitations under the License.
+# **************************************************************************/
+
+version: 1.0
+kind: connector
+enabled: true
+description: |
+  This is a connector configuration for Google Ads API.
+  It is used to fetch campaign data from Google Ads API using GAQL queries.
+  The connector creates a GoogleAdsService client which is used to make API calls.
+
+# authorization configuration to authorize
+# the connector to access the API
+authorization:
+  namespace: google
+  config_name: authorization.yaml
+
+
+# Builds Google Ads API client object
+client:
+  type: from_authorizer
+  method: get_service
+  arguments:
+    type: dict
+    items:
+      name:
+        type: constant
+        value: GoogleAdsService
+
+# *******************************
+# *     Request parameters
+# *******************************
+
+# Base GAQL query for fetching campaigns
+query: &query
+  type: sql_query
+  query: |
+    SELECT
+      campaign.id,
+      campaign.name,
+      campaign.status,
+      campaign.advertising_channel_type,
+      campaign.advertising_channel_sub_type,
+      campaign.bidding_strategy_type,
+      campaign.campaign_budget,
+      campaign.start_date,
+      campaign.end_date,
+      campaign.target_cpa.target_cpa_micros,
+      campaign.target_roas.target_roas,
+      campaign_budget.id,
+      campaign_budget.amount_micros,
+      campaign_budget.total_amount_micros,
+      metrics.impressions,
+      metrics.clicks,
+      metrics.cost_micros,
+      metrics.conversions,
+      metrics.conversions_value
+    FROM campaign
+
+# Query filters that can be applied conditionally
+filters: &filters
+  type: sql_filter
+  items:
+    campaign.id:
+      operator: IN
+      value:
+        type: external_input
+        key: campaign_ids
+        required: false
+        format_as: INT_LIST
+        split_on: ","
+        ignore_if: null
+    campaign.advertising_channel_type:
+      operator: IN
+      value:
+        type: external_input
+        key: advertising_channel_type
+        required: false
+        format_as: SINGLE_QUOTED_LIST
+        split_on: ","
+        ignore_if: null
+    campaign.status:
+      operator: IN
+      value:
+        type: constant
+        value:
+          - ENABLED
+          - PAUSED
+        format_as: SINGLE_QUOTED_LIST
+
+# *******************************
+# *  END: Request parameters
+# *******************************
+
+# *******************************
+# * request arguments which will
+# * be passed to the client
+# *******************************
+method: search_stream
+arguments:
+  type: dict
+  items:
+    customer_id:
+      type: external_input
+      key: customer_id
+      required: true
+    query:
+      type: query_builder
+      query:
+        <<: *query
+      filters:
+        <<: *filters
+
+# *******************************
+# *  END: request arguments which
+# *  will be passed to the client
+# *******************************
+
+# *******************************
+# * :post processor:
+# * Processing Google Ads API
+# * SearchStream response
+# *******************************
+post_processor:
+  type: initializer
+  client:
+    type: callable
+    module: adapt.connector.post_processor
+    class: SearchStreamToDict
+    method: process
+  arguments:
+    type: dict
+    items:
+      stream:
+        type: external_input
+        key: POST_PROCESSOR_RESPONSE
+        required: true

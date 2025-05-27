@@ -79,6 +79,7 @@ filters: &filters
         type: external_input
         key: campaign_ids
         ignore_if: null
+        split_on: ","
 
 # request params
 params: &params
