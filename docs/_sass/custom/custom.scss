@@ -1,5 +1,26 @@
 // Custom styles for ADaPT documentation
 
+// Layout improvements
+.side-bar {
+  width: 248px !important;
+  min-width: 248px !important;
+}
+
+.main {
+  margin-left: 248px !important;
+}
+
+@media (min-width: 50rem) {
+  .side-bar {
+    width: 264px !important;
+    min-width: 264px !important;
+  }
+  
+  .main {
+    margin-left: 264px !important;
+  }
+}
+
 // Enhanced typography
 .site-title {
   font-weight: 700 !important;
@@ -11,7 +32,7 @@
 .hero-section {
   background: linear-gradient(135deg, #e3f2fd 0%, #f1f8e9 100%);
   padding: 3rem 2rem;
-  margin: -1rem -2rem 2rem -2rem;
+  margin: 0 0 2rem 0;
   border-radius: 8px;
   text-align: center;
   
@@ -26,6 +47,9 @@
     font-size: 1.2rem;
     color: #34495e;
     margin-bottom: 2rem;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
   }
   
   .badges {
@@ -81,12 +105,40 @@
 
 // Enhanced code blocks
 .highlight {
-  border-radius: 6px;
-  border: 1px solid #d5dbdb;
+  border-radius: 6px !important;
+  border: 1px solid #d5dbdb !important;
+  margin: 1rem 0 !important;
+  overflow: hidden !important;
   
   pre {
-    border-radius: 6px;
-    padding: 1rem;
+    border-radius: 6px !important;
+    padding: 1rem !important;
+    margin: 0 !important;
+    background-color: #f8f9fa !important;
+    overflow-x: auto !important;
+    
+    code {
+      background-color: transparent !important;
+      color: inherit !important;
+      padding: 0 !important;
+      border-radius: 0 !important;
+      font-size: 0.875rem !important;
+      line-height: 1.45 !important;
+    }
+  }
+}
+
+// Fix for code blocks that aren't properly wrapped
+div[class*="language-"] {
+  border-radius: 6px !important;
+  border: 1px solid #d5dbdb !important;
+  margin: 1rem 0 !important;
+  overflow: hidden !important;
+  
+  pre {
+    margin: 0 !important;
+    padding: 1rem !important;
+    background-color: #f8f9fa !important;
   }
 }
 
@@ -97,6 +149,14 @@ code {
   padding: 0.2rem 0.4rem !important;
   border-radius: 3px !important;
   font-size: 0.9em !important;
+  
+  // Don't style code inside pre blocks
+  pre & {
+    background-color: transparent !important;
+    color: inherit !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+  }
 }
 
 // Enhanced tables
@@ -131,6 +191,9 @@ table {
 .site-nav {
   .nav-list-item {
     .nav-list-link {
+      padding: 0.5rem 1rem !important;
+      font-size: 0.9rem !important;
+      
       &:hover {
         background-color: #e3f2fd;
         color: #1976d2;
@@ -141,6 +204,20 @@ table {
         color: white;
       }
     }
+  }
+}
+
+// Compact navigation
+.navigation {
+  font-size: 0.9rem !important;
+}
+
+.nav-list .nav-list-item {
+  margin: 0 !important;
+  
+  .nav-list-link {
+    min-height: auto !important;
+    line-height: 1.4 !important;
   }
 }
 
@@ -256,8 +333,34 @@ table {
   }
 }
 
+// Content width management
+.main-content-wrap {
+  max-width: none !important;
+  padding-left: 2rem !important;
+  padding-right: 2rem !important;
+}
+
+.main-content {
+  max-width: 1200px !important;
+  margin: 0 auto !important;
+}
+
 // Responsive design improvements
 @media (max-width: 768px) {
+  .side-bar {
+    width: 100% !important;
+    min-width: 100% !important;
+  }
+  
+  .main {
+    margin-left: 0 !important;
+  }
+  
+  .main-content-wrap {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+  
   .hero-section {
     padding: 2rem 1rem;
     margin: -1rem -1rem 2rem -1rem;
