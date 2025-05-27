@@ -121,6 +121,19 @@ venv.bak/
 # mkdocs documentation
 /site
 
+# Jekyll build output
+docs/_site/
+docs/.sass-cache/
+docs/.jekyll-cache/
+docs/.jekyll-metadata
+
+# Temporary files
+*.tmp
+*.temp
+*~
+.DS_Store
+Thumbs.db
+
 # mypy
 .mypy_cache/
 .dmypy.json
