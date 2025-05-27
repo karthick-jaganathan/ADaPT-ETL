@@ -1,0 +1,85 @@
+# Site settings
+title: "ADaPT - Adaptive Data Pipeline Toolkit"
+description: "A Python-based, YAML-configured data pipeline framework for extracting, transforming, and exporting data from various sources to multiple destinations."
+baseurl: "/ADaPT-ETL"
+url: "https://karthick-jaganathan.github.io"
+
+# Repository information
+repository: "karthick-jaganathan/ADaPT-ETL"
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
+theme: minima
+
+# Plugins
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+  - jekyll-seo-tag
+
+# Navigation
+header_pages:
+  - index.md
+  - installation.md
+  - packages/index.md
+  - examples.md
+  - api-reference.md
+  - contributing.md
+
+# Collections
+collections:
+  packages:
+    output: true
+    permalink: /:collection/:name/
+
+# Defaults
+defaults:
+  - scope:
+      path: ""
+      type: "posts"
+    values:
+      layout: "post"
+  - scope:
+      path: ""
+      type: "pages"
+    values:
+      layout: "page"
+  - scope:
+      path: ""
+      type: "packages"
+    values:
+      layout: "package"
+
+# Exclude from processing
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
+
+# Kramdown settings
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+  syntax_highlighter_opts:
+    css_class: 'highlight'
+    span:
+      line_numbers: false
+    block:
+      line_numbers: true
+
+# SEO settings
+author: "Karthick Jaganathan"
+twitter:
+  username: kjaganathan
+  card: summary
+
+# Social links
+github_username: karthick-jaganathan
+
+# Google Analytics (optional)
+# google_analytics: UA-XXXXXXXX-X 
