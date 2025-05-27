@@ -1,5 +1,5 @@
 ---
-layout: page
+layout: default
 title: Packages
 nav_order: 3
 description: "Documentation for all ADaPT packages"

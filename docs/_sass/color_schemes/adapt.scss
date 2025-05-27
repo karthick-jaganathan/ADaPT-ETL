@@ -1,0 +1,75 @@
+// ADaPT Custom Color Scheme
+// Professional blue and green theme for data pipeline documentation
+
+// Primary colors
+$blue-000: #f8f9fa !default;
+$blue-100: #e3f2fd !default;
+$blue-200: #bbdefb !default;
+$blue-300: #64b5f6 !default;
+$blue-400: #2196f3 !default;
+$blue-500: #1976d2 !default;
+$blue-600: #1565c0 !default;
+$blue-700: #0d47a1 !default;
+
+$green-000: #f1f8e9 !default;
+$green-100: #dcedc8 !default;
+$green-200: #c5e1a5 !default;
+$green-300: #aed581 !default;
+$green-400: #8bc34a !default;
+$green-500: #689f38 !default;
+$green-600: #558b2f !default;
+$green-700: #33691e !default;
+
+// Neutral colors
+$grey-dk-000: #2c3e50 !default;
+$grey-dk-100: #34495e !default;
+$grey-dk-200: #5d6d7e !default;
+$grey-dk-300: #85929e !default;
+
+$grey-lt-000: #f8f9fa !default;
+$grey-lt-100: #ecf0f1 !default;
+$grey-lt-200: #d5dbdb !default;
+$grey-lt-300: #bdc3c7 !default;
+
+// Accent colors
+$purple-000: #f3e5f5 !default;
+$purple-100: #e1bee7 !default;
+$purple-200: #ce93d8 !default;
+$purple-300: #9c27b0 !default;
+
+$yellow-000: #fffde7 !default;
+$yellow-100: #fff9c4 !default;
+$yellow-200: #fff59d !default;
+$yellow-300: #ffeb3b !default;
+
+$red-000: #ffebee !default;
+$red-100: #ffcdd2 !default;
+$red-200: #ef9a9a !default;
+$red-300: #f44336 !default;
+
+// Theme assignments
+$link-color: $blue-500 !default;
+$btn-primary-color: $blue-600 !default;
+$base-button-color: $grey-lt-100 !default;
+
+// Background colors
+$sidebar-color: $grey-lt-000 !default;
+$search-background-color: $grey-lt-000 !default;
+$table-background-color: $grey-lt-000 !default;
+$code-background-color: $grey-lt-100 !default;
+
+// Border colors
+$border-color: $grey-lt-200 !default;
+$table-border-color: $grey-lt-200 !default;
+
+// Text colors
+$body-text-color: $grey-dk-100 !default;
+$body-heading-color: $grey-dk-000 !default;
+$search-result-preview-color: $grey-dk-200 !default;
+
+// Navigation
+$nav-child-link-color: $grey-dk-100 !default;
+$nav-list-item-hover-color: $grey-lt-100 !default;
+
+// Code highlighting
+$code-linenumber-color: $grey-dk-300 !default; 

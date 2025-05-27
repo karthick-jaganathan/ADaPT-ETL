@@ -1,0 +1,30 @@
+---
+layout: default
+---
+
+<div class="package-header">
+  <div class="package-badge">{{ page.title }}</div>
+  <h1>{{ page.title }}</h1>
+  <p class="package-description">{{ page.description }}</p>
+</div>
+
+{{ content }}
+
+{% if page.parent %}
+<nav class="breadcrumb-nav">
+  <ol>
+    <li><a href="{{ site.baseurl }}/">Home</a></li>
+    <li><a href="{{ site.baseurl }}/packages/">{{ page.parent }}</a></li>
+    <li>{{ page.title }}</li>
+  </ol>
+</nav>
+{% endif %}
+
+<div class="package-footer">
+  <p><strong>Part of the ADaPT Ecosystem</strong> - Building adaptive data pipelines with ease.</p>
+  
+  <div class="package-links">
+    <a href="{{ site.baseurl }}/packages/" class="btn btn-outline">← Back to Packages</a>
+    <a href="https://github.com/karthick-jaganathan/ADaPT-ETL" class="btn btn-primary">View Source</a>
+  </div>
+</div> 

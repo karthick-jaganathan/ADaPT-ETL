@@ -3,11 +3,16 @@ source "https://rubygems.org"
 # GitHub Pages gem
 gem "github-pages", group: :jekyll_plugins
 
+# Just the Docs theme
+gem "just-the-docs"
+
 # Jekyll plugins
 group :jekyll_plugins do
   gem "jekyll-feed"
   gem "jekyll-sitemap"
   gem "jekyll-seo-tag"
+  gem "jekyll-github-metadata"
+  gem "jekyll-include-cache"
 end
 
 # Windows and JRuby does not include zoneinfo files, so bundle the tzinfo-data gem
