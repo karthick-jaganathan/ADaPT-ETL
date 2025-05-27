@@ -332,6 +332,139 @@ Focus areas:
 - Error handling and logging
 - Performance monitoring
 
+## 📖 Documentation Development
+
+### Setting Up Jekyll for Documentation
+
+If you want to contribute to the documentation or test documentation changes locally, you'll need to set up Jekyll.
+
+#### Prerequisites
+
+- Ruby 2.7 or higher
+- Bundler gem
+- Git
+
+#### Setup Instructions
+
+**On macOS (using Homebrew):**
+```bash
+# Install Ruby
+brew install ruby
+
+# Add Ruby to your PATH (add to ~/.zshrc or ~/.bash_profile)
+echo 'export PATH="/opt/homebrew/opt/ruby/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+
+# Install Bundler
+gem install bundler
+```
+
+**On Ubuntu/Debian:**
+```bash
+sudo apt update
+sudo apt install ruby-full build-essential zlib1g-dev
+
+# Add gem installation directory to PATH
+echo '# Install Ruby Gems to ~/gems' >> ~/.bashrc
+echo 'export GEM_HOME="$HOME/gems"' >> ~/.bashrc
+echo 'export PATH="$HOME/gems/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+
+gem install bundler
+```
+
+**On Windows:**
+- Download and install Ruby from [RubyInstaller](https://rubyinstaller.org/)
+- Install Bundler: `gem install bundler`
+
+#### Running Documentation Locally
+
+```bash
+# Navigate to docs directory
+cd docs
+
+# Install dependencies
+bundle install
+
+# Start the Jekyll server
+bundle exec jekyll serve
+
+# Or with live reload (automatically refreshes browser)
+bundle exec jekyll serve --livereload
+
+# Or bind to all interfaces (accessible from other devices)
+bundle exec jekyll serve --host 0.0.0.0
+```
+
+The site will be available at: **http://localhost:4000/ADaPT-ETL/**
+
+#### Common Jekyll Commands
+
+```bash
+# Clean build artifacts
+bundle exec jekyll clean
+
+# Build site without serving
+bundle exec jekyll build
+
+# Serve with verbose output for debugging
+bundle exec jekyll serve --verbose
+```
+
+#### Documentation Testing
+
+Before submitting documentation changes:
+
+1. **Visual Testing**
+   - Check layout on different screen sizes
+   - Test navigation and links
+   - Verify code block rendering
+   - Test search functionality
+
+2. **Content Testing**
+   - Verify all markdown renders correctly
+   - Check that code examples work
+   - Test internal and external links
+   - Validate YAML front matter
+
+3. **Build Testing**
+   ```bash
+   # Build and check for errors
+   bundle exec jekyll build --verbose
+   ```
+
+#### Troubleshooting Jekyll
+
+**Bundle install fails:**
+```bash
+# Update RubyGems
+gem update --system
+
+# Clear gem cache
+gem cleanup
+
+# Try installing again
+bundle install
+```
+
+**Jekyll serve fails:**
+```bash
+# Check Ruby version
+ruby --version
+
+# Update bundler
+gem update bundler
+
+# Reinstall dependencies
+rm Gemfile.lock
+bundle install
+```
+
+**Site doesn't load correctly:**
+- Check that you're accessing `http://localhost:4000/ADaPT-ETL/`
+- Verify `baseurl` in `_config.yml` is set correctly
+- Clear browser cache
+
 ## 🧪 Testing Your Contributions
 
 ### Manual Testing

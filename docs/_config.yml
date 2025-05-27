@@ -5,8 +5,8 @@ baseurl: "/ADaPT-ETL"
 url: "https://karthick-jaganathan.github.io"
 
 # Logo and favicon
-logo: "/assets/images/adapt-logo.png"
-favicon_ico: "/assets/images/favicon.ico"
+logo: "/assets/images/adapt-logo.svg"
+# favicon_ico: "/assets/images/favicon.ico"
 
 # Repository information
 repository: "karthick-jaganathan/ADaPT-ETL"
@@ -44,6 +44,7 @@ header_pages:
   - installation.md
   - packages/index.md
   - examples.md
+  - diagrams.md
   - api-reference.md
   - contributing.md
 

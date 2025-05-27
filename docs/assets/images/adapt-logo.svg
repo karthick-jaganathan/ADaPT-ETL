@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 60" width="300" height="60">
+  <defs>
+    <linearGradient id="primaryGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1976d2;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#1565c0;stop-opacity:1"/>
+    </linearGradient>
+    <linearGradient id="accentGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4caf50;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#388e3c;stop-opacity:1"/>
+    </linearGradient>
+  </defs>
+<!--Background circle-->
+  <circle cx="30" cy="30" r="25" fill="url(#primaryGradient)" opacity="0.1"/>
+<!--Main logo icon - stylized pipeline-->
+  <g transform="translate(10, 15)">
+<!--Pipeline segments-->
+    <rect x="0" y="10" width="8" height="20" rx="2" fill="url(#primaryGradient)"/>
+    <rect x="12" y="5" width="8" height="30" rx="2" fill="url(#accentGradient)"/>
+    <rect x="24" y="8" width="8" height="24" rx="2" fill="url(#primaryGradient)"/>
+    <rect x="36" y="12" width="8" height="16" rx="2" fill="url(#accentGradient)"/>
+<!--Connection lines-->
+    <line x1="8" y1="20" x2="12" y2="20" stroke="url(#primaryGradient)" stroke-width="2"/>
+    <line x1="20" y1="20" x2="24" y2="20" stroke="url(#primaryGradient)" stroke-width="2"/>
+    <line x1="32" y1="20" x2="36" y2="20" stroke="url(#primaryGradient)" stroke-width="2"/>
+  </g>
+<!--Text-->
+  <g transform="translate(60, 10)">
+<!--ADaPT text with highlighted letters-->
+    <text x="0" y="20" font-family="'Segoe UI', Arial, sans-serif" font-size="24" font-weight="700">
+      <tspan fill="url(#primaryGradient)">A</tspan><tspan fill="#5d6d7e">daptive</tspan>
+    </text>
+    <text x="0" y="40" font-family="'Segoe UI', Arial, sans-serif" font-size="20" font-weight="600">
+      <tspan fill="url(#primaryGradient)">Da</tspan><tspan fill="#5d6d7e">ta</tspan>
+      <tspan fill="url(#primaryGradient)"> P</tspan><tspan fill="#5d6d7e">ipeline</tspan>
+      <tspan fill="url(#primaryGradient)"> T</tspan><tspan fill="#5d6d7e">oolkit</tspan>
+    </text>
+  </g>
+</svg>

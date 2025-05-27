@@ -18,7 +18,9 @@ This section provides practical examples and tutorials for using ADaPT in variou
 # Set environment variables
 export ADAPT_CONFIGS="$(pwd)/configs"
 export ADAPT_OUTPUT_DIR="/data/adapt_etl"
+```
 
+```bash
 # Run a basic pipeline
 adapt_pipeline --namespace your_service \
   --pipeline-config data_ingestion.yaml \
@@ -26,6 +28,17 @@ adapt_pipeline --namespace your_service \
   --auth-data api_key="your-api-key" \
   --external-input resource_id="123456"
 ```
+
+<div class="code-output">
+<pre><code>✅ Pipeline execution started...
+📊 Loading configuration from: /configs/pipeline/data_ingestion.yaml
+🔗 Connecting to your_service API...
+📥 Extracting data for resource_id: 123456
+🔄 Transforming 1,250 records...
+📤 Exporting to: /data/adapt_etl/your_service_data_20240101.csv
+✨ Pipeline completed successfully in 45.2 seconds
+</code></pre>
+</div>
 
 ### Google Ads Integration
 

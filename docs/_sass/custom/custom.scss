@@ -71,14 +71,12 @@
 
 .feature-card {
   background: #f8f9fa;
-  border: 1px solid #d5dbdb;
-  border-radius: 8px;
+  border: 1px solid #e1e4e8;
+  border-radius: 6px;
   padding: 1.5rem;
-  transition: all 0.3s ease;
+  transition: border-color 0.2s ease;
   
   &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     border-color: #1976d2;
   }
   
@@ -103,11 +101,70 @@
   }
 }
 
-// Enhanced code blocks
-.highlight {
+// Clean code blocks without numbering - override all theme defaults
+.highlight,
+div[class*="language-"],
+div.highlighter-rouge,
+figure.highlight {
+  border: none !important;
+  margin: 1.5rem 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  
+  pre,
+  pre.highlight {
+    border-radius: 6px !important;
+    padding: 1rem !important;
+    margin: 0 !important;
+    background-color: #f6f8fa !important;
+    border: 1px solid #e1e4e8 !important;
+    overflow-x: auto !important;
+    font-family: 'SFMono-Regular', 'Consolas', 'Liberation Mono', 'Menlo', monospace !important;
+    box-shadow: none !important;
+    
+    code {
+      background-color: transparent !important;
+      color: #24292e !important;
+      padding: 0 !important;
+      border-radius: 0 !important;
+      font-size: 0.875rem !important;
+      line-height: 1.45 !important;
+      border: none !important;
+      box-shadow: none !important;
+    }
+  }
+}
+
+// Special styling for bash/shell commands
+.highlight.language-bash,
+.highlight.language-shell {
+  pre {
+    position: relative;
+    
+    &::before {
+      content: "$ ";
+      position: absolute;
+      left: 1rem;
+      top: 1rem;
+      font-size: 0.875rem;
+      color: #28a745;
+      font-weight: 600;
+      z-index: 1;
+    }
+    
+    code {
+      padding-left: 1.5rem !important;
+    }
+  }
+}
+
+// Output cell styling (simplified)
+.code-output {
   border-radius: 6px !important;
-  border: 1px solid #d5dbdb !important;
-  margin: 1rem 0 !important;
+  border: 1px solid #e1e4e8 !important;
+  margin: 0.5rem 0 1.5rem 0 !important;
   overflow: hidden !important;
   
   pre {
@@ -115,32 +172,16 @@
     padding: 1rem !important;
     margin: 0 !important;
     background-color: #f8f9fa !important;
-    overflow-x: auto !important;
+    border-left: 3px solid #28a745 !important;
     
     code {
-      background-color: transparent !important;
-      color: inherit !important;
-      padding: 0 !important;
-      border-radius: 0 !important;
+      color: #24292e !important;
       font-size: 0.875rem !important;
-      line-height: 1.45 !important;
     }
   }
 }
 
-// Fix for code blocks that aren't properly wrapped
-div[class*="language-"] {
-  border-radius: 6px !important;
-  border: 1px solid #d5dbdb !important;
-  margin: 1rem 0 !important;
-  overflow: hidden !important;
-  
-  pre {
-    margin: 0 !important;
-    padding: 1rem !important;
-    background-color: #f8f9fa !important;
-  }
-}
+
 
 // Inline code styling
 code {
@@ -225,8 +266,8 @@ table {
 .callout {
   padding: 1rem;
   margin: 1.5rem 0;
-  border-left: 4px solid;
-  border-radius: 0 4px 4px 0;
+  border-left: 3px solid;
+  border-radius: 0 3px 3px 0;
   
   &.note {
     background-color: #e3f2fd;
@@ -314,35 +355,25 @@ table {
   margin: 0.25rem;
 }
 
-// Architecture diagram styling
-.architecture-diagram {
-  background-color: #f8f9fa;
-  border: 1px solid #d5dbdb;
-  border-radius: 8px;
-  padding: 2rem;
-  margin: 2rem 0;
-  text-align: center;
-  
-  pre {
-    background: transparent;
-    border: none;
-    color: #34495e;
-    font-family: 'Courier New', monospace;
-    font-size: 0.9rem;
-    line-height: 1.4;
-  }
-}
 
-// Content width management
+
+// Content width management - use full available space
 .main-content-wrap {
   max-width: none !important;
   padding-left: 2rem !important;
   padding-right: 2rem !important;
+  width: 100% !important;
 }
 
 .main-content {
-  max-width: 1200px !important;
-  margin: 0 auto !important;
+  max-width: none !important;
+  width: 100% !important;
+  margin: 0 !important;
+}
+
+.main {
+  max-width: none !important;
+  width: calc(100% - 264px) !important;
 }
 
 // Responsive design improvements
@@ -354,11 +385,13 @@ table {
   
   .main {
     margin-left: 0 !important;
+    width: 100% !important;
   }
   
   .main-content-wrap {
     padding-left: 1rem !important;
     padding-right: 1rem !important;
+    width: 100% !important;
   }
   
   .hero-section {
@@ -415,7 +448,7 @@ table {
 .breadcrumb-nav {
   background-color: #f8f9fa;
   padding: 0.5rem 1rem;
-  border-radius: 6px;
+  border-radius: 4px;
   margin-bottom: 1rem;
   
   ol {
@@ -477,8 +510,8 @@ table {
 
 .package-footer {
   background-color: #f8f9fa;
-  border: 1px solid #d5dbdb;
-  border-radius: 8px;
+  border: 1px solid #e1e4e8;
+  border-radius: 6px;
   padding: 2rem;
   margin: 3rem 0 2rem 0;
   text-align: center;
