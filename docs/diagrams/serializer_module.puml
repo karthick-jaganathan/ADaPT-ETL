@@ -1,0 +1,26 @@
+@startuml
+skinparam linetype ortho
+skinparam backgroundColor #FDFDFD
+
+package "Serializer Module" {
+    [Serializer] as serializer #E3F2FD
+    [Type Converters] as converters #E8F5E8
+}
+
+cloud "Yaml\nConfigurations" as config #F5F5F5
+database "Raw Data\nInput" as input #E1F5FE
+process "Transformed\nRecords" as output #FFF3E0
+
+input --> serializer
+config --> serializer
+converters --> serializer
+serializer --> output
+
+note right of serializer #F0F8FF
+🔄 Applies transformation phases:
+  - Inline field mapping
+  - Derived field calculations
+  - Constant value additions
+end note
+
+@enduml

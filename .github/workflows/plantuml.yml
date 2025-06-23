@@ -1,0 +1,24 @@
+name: Generate PlantUML Diagrams
+on:
+  push:
+    paths:
+      - 'docs/diagrams/*.puml'
+
+jobs:
+  generate-diagrams:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install PlantUML
+        run: sudo apt-get update && sudo apt-get install -y plantuml
+      - name: Generate SVGs
+        run: |
+          mkdir -p docs/assets/images/diagrams
+          for f in docs/diagrams/*.puml; do
+            plantuml -tsvg "$f" -o docs/assets/images/diagrams/
+          done
+      - name: Commit Diagrams
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "Auto-generate PlantUML diagrams"
+          file_pattern: docs/assets/images/diagrams/*.svg 

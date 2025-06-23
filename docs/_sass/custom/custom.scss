@@ -421,11 +421,83 @@ table {
 .search-input {
   border-radius: 6px !important;
   border: 1px solid #d5dbdb !important;
+  margin-left: 1rem !important;
+  padding-left: 2.5rem !important;
+  width: calc(100% - 2rem) !important;
+  max-width: 600px !important;
   
   &:focus {
     border-color: #1976d2 !important;
     box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2) !important;
   }
+}
+
+// Additional search container spacing
+.search {
+  margin-left: 1rem !important;
+  position: relative !important;
+  width: 100% !important;
+  max-width: 620px !important;
+}
+
+// Header search wrapper spacing
+.site-header {
+  margin-left: 1.5rem !important;
+}
+
+// Alternative search selectors for better coverage
+input[type="search"], 
+.js-search-input {
+  margin-left: 1.5rem !important;
+  padding-left: 2.5rem !important;
+  width: calc(100% - 3rem) !important;
+  max-width: 580px !important;
+}
+
+// Search icon positioning
+.search-icon,
+.search svg,
+.search .search-icon {
+  position: absolute !important;
+  left: 1.75rem !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  z-index: 1 !important;
+  pointer-events: none !important;
+}
+
+// Search input wrapper positioning
+.search-input-wrap,
+.search-input-container {
+  position: relative !important;
+  width: 100% !important;
+  max-width: 620px !important;
+}
+
+// Ensure search icon doesn't interfere with input
+.search input {
+  padding-left: 2.5rem !important;
+  width: calc(100% - 2.5rem) !important;
+  max-width: 600px !important;
+}
+
+// Header specific search sizing
+.site-header .search,
+.site-header .search-input {
+  max-width: 500px !important;
+}
+
+// Search results spacing and width matching
+.search-results {
+  margin-left: 1rem !important;
+  max-width: 600px !important;
+  width: calc(100% - 2.5rem) !important;
+}
+
+// Search results list styling for better alignment
+.search-results-list {
+  max-width: 600px !important;
+  width: 100% !important;
 }
 
 // Footer styling
@@ -545,4 +617,66 @@ table {
       }
     }
   }
+}
+
+// Table of contents styling for parent pages
+.child-nav {
+  background: #f8f9fa !important;
+  border: 1px solid #e1e4e8 !important;
+  border-radius: 8px !important;
+  padding: 2rem !important;
+  margin: 3rem 0 2rem 0 !important;
+  
+  h2 {
+    color: #1976d2 !important;
+    font-size: 1.5rem !important;
+    margin-bottom: 1.5rem !important;
+    text-align: center !important;
+    
+    &::before {
+      content: "📚 " !important;
+    }
+  }
+  
+  .nav-list {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)) !important;
+    gap: 1rem !important;
+    margin: 0 !important;
+    
+    .nav-list-item {
+      background: white !important;
+      border: 1px solid #e1e4e8 !important;
+      border-radius: 6px !important;
+      padding: 1rem !important;
+      transition: all 0.3s ease !important;
+      
+      &:hover {
+        border-color: #1976d2 !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
+      }
+      
+      .nav-list-link {
+        color: #1976d2 !important;
+        font-weight: 600 !important;
+        text-decoration: none !important;
+        display: block !important;
+        
+        &:hover {
+          text-decoration: underline !important;
+        }
+      }
+    }
+  }
+}
+
+// Alternative selector for child navigation
+.children-nav,
+.nav-list.children {
+  background: #f8f9fa !important;
+  border: 1px solid #e1e4e8 !important;
+  border-radius: 8px !important;
+  padding: 2rem !important;
+  margin: 3rem 0 2rem 0 !important;
 } 

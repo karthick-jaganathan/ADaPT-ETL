@@ -1,7 +1,7 @@
 ---
-layout: package
+layout: default
 title: Pipeline Package
-nav_order: 4
+nav_order: 1
 parent: Packages
 description: "Pipeline orchestration and execution engine for the ADaPT ecosystem"
 permalink: /packages/pipeline/
@@ -17,6 +17,14 @@ permalink: /packages/pipeline/
 ## 🚀 Overview
 
 The `adapt-pipeline` package provides the orchestration layer for the ADaPT (Adaptive Data Pipeline Toolkit) ecosystem. It coordinates the execution of data pipelines by integrating connectors, serializers, and utilities into cohesive workflows. This package includes the main CLI interface and pipeline management capabilities.
+
+![Pipeline Module Architecture Diagram]({{ site.baseurl }}/assets/images/diagrams/pipeline_module.svg)
+
+### Pipeline Execution Sequence
+
+The following sequence diagram shows the step-by-step execution flow of the pipeline module, illustrating how components interact during data processing:
+
+![Pipeline Execution Sequence Diagram]({{ site.baseurl }}/assets/images/diagrams/pipeline_sequence.svg)
 
 ## 📦 Features
 

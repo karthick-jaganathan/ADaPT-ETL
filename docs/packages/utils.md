@@ -1,7 +1,7 @@
 ---
-layout: package
+layout: default
 title: Utils Package
-nav_order: 1
+nav_order: 4
 parent: Packages
 description: "Configuration management, data storage, and utility functions for the ADaPT ecosystem"
 permalink: /packages/utils/

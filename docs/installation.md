@@ -13,7 +13,7 @@ permalink: /installation/
 {: .important }
 > **Before you begin:** Ensure you have Python 3.7+ installed and a basic understanding of command-line operations.
 
-This guide provides detailed installation instructions, multiple installation methods, environment setup, troubleshooting, and development setup. For a quick start, see the [main README](README.md#installation).
+This guide provides detailed installation instructions, multiple installation methods, environment setup, troubleshooting, and development setup.
 
 ## 📋 Table of Contents
 
@@ -653,4 +653,4 @@ python examples/json_pipeline.py
 | **Individual**   | `cd adapt/package && pip install .` | Minimal installation | No         | Partial    |
 | **Docker**       | `docker-compose up`                 | Containerized        | No         | Yes        |
 
-Choose the installation mode that best fits your use case and environment requirements. 
+Choose the installation mode that best fits your use case and environment requirements.

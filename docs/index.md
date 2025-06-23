@@ -40,26 +40,17 @@ ADaPT (Adaptive Data Pipeline Toolkit) is a modular, configuration-driven ETL fr
 
 ADaPT consists of four core packages that form a complete data pipeline ecosystem:
 
-<div class="architecture-diagram">
-<pre>
-┌─────────────────┐    ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   adapt-utils   │    │ adapt-connector │    │adapt-serializer  │    │ adapt-pipeline  │
-│                 │    │                 │    │                  │    │                 │
-│ • Configuration │    │ • Authorization │    │ • Data Transform │    │ • Orchestration │
-│ • Data Store    │    │ • API Clients   │    │ • Field Mapping  │    │ • CLI Interface │
-│ • Type System   │    │ • Dispatchers   │    │ • Normalization  │    │ • Workflow Mgmt │
-│ • File I/O      │    │ • Post Process  │    │                  │    │                 │
-└─────────────────┘    └─────────────────┘    └──────────────────┘    └─────────────────┘
-        │                        │                        │                        │
-        └────────────────────────┼────────────────────────┼────────────────────────┘
-                                 │                        │
-                    ┌─────────────────────────────────────────────────────┐
-                    │                ADaPT Pipeline                       │
-                    │                                                     │
-                    │         Extract → Transform → Load → Export         │
-                    └─────────────────────────────────────────────────────┘
-</pre>
-</div>
+### System Overview
+
+The following diagram illustrates the complete ADaPT ecosystem, showing how data flows from various sources through the four core packages to multiple output destinations:
+
+![ADaPT System Overview]({{ site.baseurl }}/assets/images/diagrams/system_overview.svg)
+
+### Data Flow Process
+
+This diagram shows the sequential data processing flow through the ADaPT pipeline:
+
+![Data Flow Process]({{ site.baseurl }}/assets/images/diagrams/dataflow.svg)
 
 ## 📚 Documentation Sections
 
@@ -82,6 +73,32 @@ ADaPT consists of four core packages that form a complete data pipeline ecosyste
   <div class="feature-card">
     <h3><a href="{{ site.baseurl }}/api-reference">📖 API Reference</a></h3>
     <p>Complete API documentation with class references and method signatures.</p>
+  </div>
+</div>
+
+## 📦 Core Components
+
+Each ADaPT package is designed with specific responsibilities and can be used independently or as part of the complete toolkit:
+
+<div class="package-overview">
+  <div class="package-card">
+    <h3><a href="{{ site.baseurl }}/packages/pipeline/">🚀 Pipeline Package</a></h3>
+    <p>Pipeline orchestration and execution engine</p>
+  </div>
+
+  <div class="package-card">
+    <h3><a href="{{ site.baseurl }}/packages/connector/">🔌 Connector Package</a></h3>
+    <p>API connectors, authorization, and data extraction</p>
+  </div>
+
+  <div class="package-card">
+    <h3><a href="{{ site.baseurl }}/packages/serializer/">🔄 Serializer Package</a></h3>
+    <p>Data transformation, serialization, and normalization</p>
+  </div>
+
+  <div class="package-card">
+    <h3><a href="{{ site.baseurl }}/packages/utils/">🔧 Utils Package</a></h3>
+    <p>Configuration management, data storage, and utility functions</p>
   </div>
 </div>
 
@@ -129,5 +146,3 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](https:
 - **GitHub Issues**: [Report bugs and request features](https://github.com/karthick-jaganathan/ADaPT-ETL/issues)
 - **Documentation**: Browse the sections above for detailed guides
 - **Examples**: Check out practical examples in the Examples section
-
---- 

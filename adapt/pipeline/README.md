@@ -9,6 +9,28 @@
 
 The `adapt-pipeline` package provides the orchestration layer for the ADaPT (Adaptive Data Pipeline Toolkit) ecosystem. It coordinates the execution of data pipelines by integrating connectors, serializers, and utilities into cohesive workflows. This package includes the main CLI interface and pipeline management capabilities.
 
+### Pipeline Architecture
+
+![Pipeline Module Architecture](../../docs/assets/images/diagrams/pipeline_module.svg)
+
+The pipeline package orchestrates the entire data processing workflow:
+- **Pipeline Engine**: Core orchestration logic
+- **CLI Interface**: Command-line interface for pipeline execution
+- **Configuration Manager**: Handles pipeline configuration and validation
+- **Workflow Executor**: Manages sequential and parallel execution
+
+### Pipeline Execution Flow
+
+![Pipeline Sequence Diagram](../../docs/assets/images/diagrams/pipeline_sequence.svg)
+
+The pipeline execution follows these steps:
+1. **Configuration Loading**: Parse pipeline and component configurations
+2. **Initialization**: Set up connectors, serializers, and utilities
+3. **Data Extraction**: Use connectors to retrieve data from sources
+4. **Data Transformation**: Apply serializers to transform and normalize data
+5. **Data Export**: Export processed data to specified destinations
+6. **Cleanup**: Handle resources and generate execution reports
+
 ## 📦 Features
 
 - **🎯 Pipeline Orchestration**: Coordinate complex data workflows

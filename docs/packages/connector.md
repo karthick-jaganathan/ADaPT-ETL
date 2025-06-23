@@ -1,5 +1,5 @@
 ---
-layout: package
+layout: default
 title: Connector Package
 nav_order: 2
 parent: Packages
@@ -17,6 +17,18 @@ permalink: /packages/connector/
 ## 🚀 Overview
 
 The `adapt-connector` package provides data source integration capabilities for the ADaPT (Adaptive Data Pipeline Toolkit) ecosystem. It handles API authentication, client initialization, request dispatching, and response post-processing for various data sources including REST APIs, GraphQL endpoints, databases, and custom integrations.
+
+### Connector Module Architecture
+
+The following diagram illustrates the architecture of the Connector module, showing how it integrates authorization, service configuration, request dispatching, and response processing components.
+
+![Connector Module Architecture Diagram]({{ site.baseurl }}/assets/images/diagrams/connector_module.svg)
+
+### Connector Execution Sequence
+
+The following sequence diagram shows the detailed execution flow of the connector module, illustrating the two-phase authentication and data retrieval process:
+
+![Connector Execution Sequence Diagram]({{ site.baseurl }}/assets/images/diagrams/connector_sequence.svg)
 
 ## 📦 Features
 
