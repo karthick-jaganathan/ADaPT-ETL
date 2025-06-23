@@ -1,0 +1,60 @@
+@startuml
+autonumber "<b>[000]"
+
+participant "User/CLI" as user #E8F4FD
+participant "Pipeline" as pipeline #FFF2CC
+participant "Service" as service #E1F5FE
+participant "Dispatcher" as dispatcher #E8F5E8
+participant "External APIs / Services" as api #F0F4F8
+participant "Serializer" as serializer #E0F2F1
+participant "Exporter" as exporter #FFF3E0
+
+|||
+
+user -> pipeline: run_pipeline()
+activate user #B3D9FF
+activate pipeline #FFE082
+
+|||
+
+pipeline -> service: initialize()
+activate service #81D4FA
+service -> api: authenticate
+activate api #90A4AE
+api --> service: client
+deactivate api
+service --> pipeline: authenticated_client
+deactivate service
+
+|||
+
+pipeline -> dispatcher: receive()
+activate dispatcher #A5D6A7
+dispatcher -> api: receive()
+activate api #90A4AE
+api --> dispatcher: raw_data
+deactivate api
+dispatcher --> pipeline: raw_data_generator
+deactivate dispatcher
+
+|||
+
+pipeline -> serializer: serialize()
+activate serializer #4DB6AC
+serializer --> pipeline: serialized_data
+deactivate serializer
+
+|||
+
+pipeline -> exporter: export()
+activate exporter #FFCC80
+exporter --> pipeline: exported_file
+deactivate exporter
+
+|||
+
+pipeline --> user: complete
+deactivate pipeline
+deactivate user
+
+@enduml 

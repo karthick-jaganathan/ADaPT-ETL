@@ -9,6 +9,31 @@
 
 The `adapt-utils` package provides the foundational utilities and configuration management system for the ADaPT (Adaptive Data Pipeline Toolkit) ecosystem. It includes configuration readers, data storage mechanisms, type systems, and export utilities that power the entire framework.
 
+### Utils Architecture
+
+The utils package serves as the foundation layer for all other ADaPT components:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        ADaPT Utils                          │
+├─────────────────┬─────────────────┬─────────────────────────┤
+│ Config Reader   │ Data Store      │ Type System             │
+│ • YAML Parser   │ • Key-Value     │ • Type Conversion       │
+│ • Path Resolver │ • State Mgmt    │ • Validation            │
+│ • Validation    │ • Bulk Ops      │ • Format Handling       │
+├─────────────────┼─────────────────┼─────────────────────────┤
+│ Input Reader    │ Exporter        │ Environment             │
+│ • File I/O      │ • CSV Export    │ • Path Management       │
+│ • Format Parse  │ • Compression   │ • Variable Handling     │
+│ • Stream Proc   │ • Deduplication │ • Config Discovery      │
+└─────────────────┴─────────────────┴─────────────────────────┘
+```
+
+The utils package is used by all other ADaPT components:
+- **Connector**: Uses config readers and type system for API setup
+- **Serializer**: Leverages type conversion and data storage
+- **Pipeline**: Utilizes all utils components for orchestration
+
 ## 📦 Features
 
 - **🔧 Configuration Management**: YAML configuration reading and validation
@@ -199,8 +224,7 @@ file_path = CSVExporter.lazy_run(config, records)
 
 ### Input Readers
 
-#### CSVReader
-Read CSV files with dictionary output:
+Read data from various file formats:
 
 ```python
 from adapt.utils.input_reader import CSVReader

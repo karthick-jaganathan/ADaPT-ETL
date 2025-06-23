@@ -26,13 +26,8 @@
 <!--Text-->
   <g transform="translate(60, 10)">
 <!--ADaPT text with highlighted letters-->
-    <text x="0" y="20" font-family="'Segoe UI', Arial, sans-serif" font-size="24" font-weight="700">
-      <tspan fill="url(#primaryGradient)">A</tspan><tspan fill="#5d6d7e">daptive</tspan>
-    </text>
-    <text x="0" y="40" font-family="'Segoe UI', Arial, sans-serif" font-size="20" font-weight="600">
-      <tspan fill="url(#primaryGradient)">Da</tspan><tspan fill="#5d6d7e">ta</tspan>
-      <tspan fill="url(#primaryGradient)"> P</tspan><tspan fill="#5d6d7e">ipeline</tspan>
-      <tspan fill="url(#primaryGradient)"> T</tspan><tspan fill="#5d6d7e">oolkit</tspan>
+    <text x="0" y="30" font-family="'Segoe UI', Arial, sans-serif" font-size="24" font-weight="700">
+      <tspan fill="url(#primaryGradient)">ADaPT-ETL</tspan>
     </text>
   </g>
 </svg>

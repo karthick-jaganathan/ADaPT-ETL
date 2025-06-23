@@ -1,0 +1,211 @@
+// Custom styles for ADaPT documentation
+
+// Package overview section
+.package-overview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.package-card {
+  border: 1px solid #e1e4e8;
+  border-radius: 8px;
+  padding: 1.5rem;
+  background: #fff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  }
+  
+  h3 {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    
+    a {
+      text-decoration: none;
+      color: #0366d6;
+      
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+  
+  p {
+    color: #586069;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+  }
+}
+
+.package-diagram {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  border: 1px solid #e1e4e8;
+  border-radius: 4px;
+  background: #fafbfc;
+}
+
+// Feature grid styling
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.feature-card {
+  border: 1px solid #e1e4e8;
+  border-radius: 8px;
+  padding: 1.5rem;
+  background: #fff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  }
+  
+  h3 {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    
+    a {
+      text-decoration: none;
+      color: #0366d6;
+      
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+  
+  p {
+    color: #586069;
+    margin-bottom: 0;
+    font-size: 0.9rem;
+  }
+}
+
+// Hero section styling
+.hero-section {
+  text-align: center;
+  padding: 3rem 0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 8px;
+  margin-bottom: 3rem;
+  
+  h1 {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    font-weight: 700;
+  }
+  
+  .subtitle {
+    font-size: 1.2rem;
+    margin-bottom: 2rem;
+    opacity: 0.9;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  
+  .badges {
+    margin-bottom: 2rem;
+    
+    img {
+      margin: 0 0.25rem;
+    }
+  }
+  
+  .btn {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    margin: 0 0.5rem;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    
+    &.btn-primary {
+      background: #fff;
+      color: #667eea;
+      
+      &:hover {
+        background: #f8f9fa;
+        transform: translateY(-1px);
+      }
+    }
+    
+    &.btn-outline {
+      border: 2px solid #fff;
+      color: #fff;
+      
+      &:hover {
+        background: #fff;
+        color: #667eea;
+        transform: translateY(-1px);
+      }
+    }
+  }
+}
+
+// Architecture diagram styling
+.architecture-diagram {
+  background: #f6f8fa;
+  border: 1px solid #e1e4e8;
+  border-radius: 6px;
+  padding: 1rem;
+  margin: 1.5rem 0;
+  overflow-x: auto;
+  
+  pre {
+    margin: 0;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 0.85rem;
+    line-height: 1.4;
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .hero-section {
+    padding: 2rem 1rem;
+    
+    h1 {
+      font-size: 2rem;
+    }
+    
+    .subtitle {
+      font-size: 1rem;
+    }
+  }
+  
+  .package-overview,
+  .feature-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .package-card,
+  .feature-card {
+    padding: 1rem;
+  }
+}
+
+// Diagram styling
+img[alt*="Diagram"], img[alt*="Architecture"], img[alt*="Overview"] {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  border: 1px solid #e1e4e8;
+  border-radius: 6px;
+  background: #fafbfc;
+  margin: 1rem 0;
+}

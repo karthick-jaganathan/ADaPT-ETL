@@ -1,0 +1,150 @@
+@startuml
+autonumber "<b>[000]"
+
+skinparam backgroundColor #FDFDFD
+skinparam sequenceMessageAlign direction
+skinparam maxMessageSize 250
+
+skinparam sequence {
+    ArrowColor #4A90E2
+    ActorBorderColor #2C3E50
+    LifeLineBorderColor #BDC3C7
+    LifeLineBackgroundColor #F8F9FA
+    
+    ParticipantBorderColor #34495E
+    ParticipantBackgroundColor #FFFFFF
+    ParticipantFontStyle Bold
+    
+    ActorBackgroundColor #E8F4FD
+    ActorFontStyle Bold
+    
+    BoxBorderColor #4A90E2
+    BoxBackgroundColor #F0F8FF
+    BoxFontStyle Bold
+    BoxFontColor #2C3E50
+    
+    GroupBorderColor #4A90E2
+    GroupBackgroundColor #F0F8FF
+    GroupHeaderFontColor #2C3E50
+    GroupHeaderFontStyle Bold
+    
+    LoopBorderColor #4A90E2
+    LoopBackgroundColor #F0F8FF
+    LoopFontColor #2C3E50
+    LoopFontStyle Bold
+}
+
+' Modern color palette with better visual hierarchy
+participant "Pipeline" as pipeline #E3F2FD
+participant "ConfigReader" as config_reader #E8F5E8
+participant "Serializer" as serializer #FFF8E1
+participant "_SerializerTyping" as typing #FFF3E0
+participant "TypeConverters" as converters #E1F5FE
+participant "Exporter" as exporter #E0F2F1
+
+note over pipeline, exporter #BBDEFB : <b>🔄 Serializer Processing: Configuration-Driven Transformation</b>
+
+activate pipeline #2196F3
+
+' Step 1: Load serializer configuration
+pipeline -> config_reader ++#4CAF50: load_from_config_location(config_name, module="serializer", namespace)
+note right #E8F5E8 : 📋 Pipeline loads serializer config\n(e.g., campaign.yaml)
+config_reader --> pipeline --: serializer_config
+
+' Step 2: Serializer processes records
+pipeline -> serializer ++#FFB74D: lazy_run(config=serializer_config, records=api_data, dict_normalize)
+note right #FFF8E1 : 🔧 Serializer receives data from\nDispatcher via pipeline
+
+serializer -> typing ++#FFB74D: _SerializerTyping(config)
+note right #FFF3E0 : ⚙️ Creates transformation functions\nfrom configuration
+
+typing -> typing: make()
+note right #FFF8E1 : 🏗️ Builds inline, derived, and\nconstant field processors
+
+loop for each transformation rule
+    typing -> converters ++#64B5F6: init_type(transform_type, params)
+    note right #E1F5FE : 🔀 Creates type converter\n(string, enum, currency, etc.)
+    converters --> typing --: transformation_function
+end
+
+typing --> serializer --: configured_typing_system
+
+loop for each record in records
+    serializer -> serializer ++#FFB74D: serialize(record)
+    note right #FFF8E1 : ✨ Transforms individual record
+    
+    ' Phase 1: Inline fields
+    serializer -> serializer: _process_inline(record, store)
+    note right #FFF8E1 : **🎯 Phase 1: Inline Fields**\nDirect field transformations
+    
+    loop for each inline field
+        serializer -> typing ++#FFB74D: get_serializer("inline", field_name)
+        typing --> serializer --: transform_function
+        
+        serializer -> converters ++#64B5F6: transform_function(field_value)
+        note right #E1F5FE : 🔄 Apply type transformation\n(e.g., string, enum, currency)
+        converters --> serializer --: transformed_value
+        
+        serializer -> serializer: store[field_name] = transformed_value
+    end
+    
+    ' Phase 2: Derived fields
+    serializer -> serializer: _process_derived(store)
+    note right #FFF8E1 : **📊 Phase 2: Derived Fields**\nCalculated from transformed fields
+    
+    loop for each derived field
+        serializer -> typing ++#FFB74D: get_serializer("derived", field_name)
+        typing --> serializer --: derived_function
+        
+        serializer -> converters ++#64B5F6: derived_function(store)
+        note right #E1F5FE : 🧮 Calculate from existing fields\n(e.g., CTR = clicks/impressions)
+        converters --> serializer --: calculated_value
+        
+        serializer -> serializer: store[field_name] = calculated_value
+    end
+    
+    ' Phase 3: Constants
+    serializer -> serializer: _process_constants(store)
+    note right #FFF8E1 : **📌 Phase 3: Constant Fields**\nAdd fixed values
+    
+    loop for each constant field
+        serializer -> typing ++#FFB74D: get_serializer("constants", field_name)
+        typing --> serializer --: constant_function
+        
+        serializer -> converters ++#64B5F6: constant_function()
+        note right #E1F5FE : 🔒 Returns fixed value\n(e.g., "google_ads")
+        converters --> serializer --: constant_value
+        
+        serializer -> serializer: store[field_name] = constant_value
+    end
+    
+    serializer --> serializer --: transformed_record
+    
+    serializer -> pipeline: yield transformed_record
+    note left #E3F2FD : ⬅️ Yields transformed record\nback to pipeline
+end
+
+serializer --> pipeline --: generator[transformed_records]
+
+' Step 3: Pipeline forwards to exporter
+pipeline -> exporter ++#4DB6AC: lazy_run(records=transformed_records, config=export_config)
+note right #E0F2F1 : 📤 Exporter receives transformed\ndata via pipeline forward_to
+
+exporter --> pipeline --: export_result
+
+deactivate pipeline
+
+note over pipeline, exporter #E1F5FE
+<b>🔄 Three-Phase Transformation:</b>
+1. **🎯 Inline**: Direct field transformations from source data
+2. **📊 Derived**: Calculated fields from transformed inline fields  
+3. **📌 Constants**: Fixed values added to all records
+
+**✨ Key Features:**
+- Configuration-driven transformations
+- Support for nested objects and arrays
+- Conditional ignore rules and case logic
+- Generator-based lazy evaluation for memory efficiency
+end note
+
+@enduml 

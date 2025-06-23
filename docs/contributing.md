@@ -393,7 +393,7 @@ bundle exec jekyll serve
 bundle exec jekyll serve --livereload
 
 # Or bind to all interfaces (accessible from other devices)
-bundle exec jekyll serve --host 0.0.0.0
+bundle exec jekyll serve --host 0.0.0.0 --port 4000
 ```
 
 The site will be available at: **http://localhost:4000/ADaPT-ETL/**
@@ -517,12 +517,11 @@ We follow [Semantic Versioning](https://semver.org/):
 - **PATCH** version for backward-compatible bug fixes
 
 ### Release Checklist
-
-- [ ] All tests pass
-- [ ] Documentation updated
-- [ ] Version numbers updated
-- [ ] Changelog updated
-- [ ] Release notes prepared
+- ✅ All tests pass
+- ✅ Documentation updated
+- ✅ Version numbers updated
+- ✅ Changelog updated
+- ✅ Release notes prepared
 
 ## 🤝 Community Guidelines
 

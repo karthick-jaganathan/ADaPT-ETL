@@ -9,6 +9,30 @@
 
 The `adapt-serializer` package provides powerful data transformation and serialization capabilities for the ADaPT (Adaptive Data Pipeline Toolkit) ecosystem. It enables you to transform raw API responses into structured, normalized data through flexible YAML configurations with support for field mapping, conditional logic, data type conversion, and nested object handling.
 
+### Serializer Architecture
+
+![Serializer Module Architecture](../../docs/assets/images/diagrams/serializer_module.svg)
+
+The serializer package consists of several key components:
+- **Serializer Engine**: Core transformation logic
+- **Field Mappers**: Handle field-to-field transformations
+- **Type Converters**: Manage data type conversions and validations
+- **Conditional Processors**: Apply logic-based transformations
+- **Normalization Engine**: Flatten and structure complex data
+
+### Serializer Processing Flow
+
+![Serializer Sequence Diagram](../../docs/assets/images/diagrams/serializer_sequence.svg)
+
+The serialization process follows these steps:
+1. **Configuration Loading**: Parse transformation rules from YAML
+2. **Data Ingestion**: Receive raw data from connectors
+3. **Field Mapping**: Map source fields to target schema
+4. **Type Conversion**: Convert data types as specified
+5. **Conditional Processing**: Apply business logic and rules
+6. **Normalization**: Flatten nested structures and arrays
+7. **Output Generation**: Produce transformed, structured data
+
 ## 📦 Features
 
 - **🔄 Field Mapping**: Map source fields to target fields with custom naming
@@ -271,12 +295,12 @@ inline:
     from: id
     transform:
       type: integer
-
+      
   - name: campaign_name
     from: name
     transform:
       type: string
-
+      
   # Status transformation with labels
   - name: status
     from: status
@@ -314,7 +338,7 @@ inline:
     from: clicks
     transform:
       type: integer
-
+    
   - name: cost
     object: metrics
     from: cost_micros
@@ -374,20 +398,13 @@ inline:
   - name: objective
     from: objective
     transform:
-      type: case
-      cases:
-        - when:
-            field: objective
-            equals: "LINK_CLICKS"
-          then: "Traffic"
-        - when:
-            field: objective
-            equals: "CONVERSIONS"
-          then: "Conversions"
-        - when:
-            field: objective
-            equals: "REACH"
-          then: "Brand Awareness"
+      type: enum
+      mappings:
+        "LINK_CLICKS": "Traffic"
+        "CONVERSIONS": "Conversion"
+        "REACH": "Awareness"
+        "BRAND_AWARENESS": "Awareness"
+        "VIDEO_VIEWS": "Engagement"
       default: "Other"
 
   # Bid strategy transformation
@@ -1020,3 +1037,206 @@ Licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for detai
 ---
 
 **Part of the ADaPT Ecosystem** - Transforming data with flexibility and power. 🔄
+
+## 🎯 Transformation Recipes
+
+### Common Data Transformation Patterns
+
+#### 1. Currency Conversion
+```yaml
+# Convert micros to currency with proper formatting
+- name: budget_dollars
+  from: budget_amount_micros
+  transform:
+    type: currency
+    from_micros: true
+    currency_code: "USD"
+    precision: 2
+```
+
+#### 2. Percentage Calculations
+```yaml
+# Calculate percentage from ratio
+- name: ctr_percentage
+  transform:
+    type: percentage
+    numerator: "clicks"
+    denominator: "impressions"
+    precision: 2
+    multiply_by: 100
+```
+
+#### 3. Complex Conditional Logic
+```yaml
+# Multi-condition transformations
+- name: campaign_performance
+  transform:
+    type: case
+    cases:
+      - when:
+          and:
+            - field: impressions
+              greater_than: 10000
+            - field: ctr
+              greater_than: 0.02
+        then: "High Performer"
+      - when:
+          or:
+            - field: impressions
+              less_than: 1000
+            - field: cost
+              greater_than: 100
+        then: "Needs Attention"
+    default: "Average"
+```
+
+#### 4. Array and List Processing
+```yaml
+# Process arrays with complex transformations
+- name: keyword_list
+  from: keywords
+  transform:
+    type: array
+    item_transform:
+      type: dict
+      items:
+        keyword_text:
+          from: text
+          transform:
+            type: string
+            lowercase: true
+        match_type:
+          from: match_type
+          transform:
+            type: enum
+            mappings:
+              "EXACT": "exact"
+              "PHRASE": "phrase"
+              "BROAD": "broad"
+```
+
+#### 5. Data Validation and Cleansing
+```yaml
+# Validate and clean data
+- name: email
+  from: email_address
+  transform:
+    type: email
+    validate: true
+    lowercase: true
+    default: null
+
+- name: phone_number
+  from: phone
+  transform:
+    type: phone
+    format: "international"
+    validate: true
+```
+
+## 🚀 Performance Optimization
+
+### Memory Efficiency
+```python
+# Use streaming serialization for large datasets
+def serialize_large_dataset(serializer, data_source):
+    for batch in data_source.get_batches(batch_size=1000):
+        yield from serializer.serialize_records(batch)
+
+# Memory-efficient processing
+processed_data = serialize_large_dataset(serializer, large_dataset)
+```
+
+### Processing Speed
+```yaml
+# Optimize field access patterns
+inline:
+  # Group related field transformations
+  - name: campaign_id
+    from: id
+    transform: {type: integer}
+  - name: campaign_name  
+    from: name
+    transform: {type: string}
+  # Process nested objects efficiently
+  - name: budget_amount
+    object: budget
+    from: amount_micros
+    transform: {type: float, divide_by: 1000000}
+```
+
+### Caching Strategies
+```python
+from functools import lru_cache
+
+class OptimizedSerializer:
+    @lru_cache(maxsize=1000)
+    def get_enum_mapping(self, field_name):
+        # Cache enum mappings for repeated use
+        return self.config['mappings'][field_name]
+```
+
+## 🔍 Debugging and Testing
+
+### Debug Mode
+```python
+# Enable debug logging
+import logging
+logging.getLogger('adapt.serializer').setLevel(logging.DEBUG)
+
+# Test individual transformations
+from adapt.serializer.serializer import Serializer
+
+config = {"inline": [{"name": "test", "from": "value", "transform": {"type": "integer"}}]}
+serializer = Serializer.init(config)
+
+test_data = [{"value": "123"}]
+result = list(serializer.serialize_records(test_data))
+print(f"Result: {result}")  # [{"test": 123}]
+```
+
+### Validation Testing
+```python
+# Test transformation accuracy
+def test_serialization():
+    input_data = [
+        {"id": "123", "name": "Test Campaign", "status": "ENABLED"},
+        {"id": "456", "name": "Another Campaign", "status": "PAUSED"}
+    ]
+    
+    expected_output = [
+        {"campaign_id": 123, "campaign_name": "Test Campaign", "status_label": "Active"},
+        {"campaign_id": 456, "campaign_name": "Another Campaign", "status_label": "Paused"}
+    ]
+    
+    actual_output = list(serializer.serialize_records(input_data))
+    assert actual_output == expected_output
+```
+
+## 📊 Advanced Features
+
+### Custom Transformation Functions
+```python
+# Register custom transformation functions
+from adapt.serializer.transforms import TransformRegistry
+
+@TransformRegistry.register('custom_hash')
+def custom_hash_transform(value, config):
+    import hashlib
+    return hashlib.md5(str(value).encode()).hexdigest()[:8]
+
+# Use in configuration
+# transform:
+#   type: custom_hash
+```
+
+### Dynamic Field Generation
+```yaml
+# Generate fields based on data structure
+dynamic:
+  pattern: "metric_*"
+  from_object: "metrics"
+  transform:
+    type: float
+    precision: 2
+```

@@ -35,24 +35,13 @@ ADaPT (Adaptive Data Pipeline Toolkit) is a modular, configuration-driven ETL fr
 
 ADaPT consists of four core packages that form a complete data pipeline ecosystem:
 
-```
-┌─────────────────┐    ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   adapt-utils   │    │ adapt-connector │    │adapt-serializer  │    │ adapt-pipeline  │
-│                 │    │                 │    │                  │    │                 │
-│ • Configuration │    │ • Authorization │    │ • Data Transform │    │ • Orchestration │
-│ • Data Store    │    │ • API Clients   │    │ • Field Mapping  │    │ • CLI Interface │
-│ • Type System   │    │ • Dispatchers   │    │ • Normalization  │    │ • Workflow Mgmt │
-│ • File I/O      │    │ • Post Process  │    │                  │    │                 │
-└─────────────────┘    └─────────────────┘    └──────────────────┘    └─────────────────┘
-        │                        │                        │                        │
-        └────────────────────────┼────────────────────────┼────────────────────────┘
-                                 │                        │
-                    ┌─────────────────────────────────────────────────────┐
-                    │                ADaPT Pipeline                       │
-                    │                                                     │
-                    │         Extract → Transform → Load → Export         │
-                    └─────────────────────────────────────────────────────┘
-```
+![System Overview](docs/assets/images/diagrams/system_overview.svg)
+
+### System Architecture Overview
+
+The ADaPT framework follows a modular architecture where each component has specific responsibilities:
+
+![Data Flow Diagram](docs/assets/images/diagrams/dataflow.svg)
 
 ### Package Responsibilities
 
@@ -62,6 +51,25 @@ ADaPT consists of four core packages that form a complete data pipeline ecosyste
 | **adapt-connector**  | Data source connections and API integrations | Authorization, service clients, dispatchers, post-processors   |
 | **adapt-serializer** | Data transformation and serialization        | Field mapping, data normalization, conditional transformations |
 | **adapt-pipeline**   | Pipeline orchestration and execution         | CLI interface, workflow management, pipeline items             |
+
+### Architecture Benefits
+
+- **🔄 Modularity**: Each package can be used independently or as part of the complete toolkit
+- **🎯 Separation of Concerns**: Clear boundaries between data extraction, transformation, and orchestration
+- **🔧 Configuration-Driven**: All components are configured through YAML, enabling rapid pipeline development
+- **🚀 Scalability**: Modular design allows for easy scaling and customization
+- **🔌 Extensibility**: Plugin architecture supports custom connectors, transformers, and exporters
+
+## 📊 Visual Guide
+
+The ADaPT framework provides comprehensive visual documentation to help you understand the system architecture and data flow:
+
+### 📦 Component Diagrams
+- **Pipeline Module**: [View Diagram](docs/assets/images/diagrams/pipeline_module.svg) | [Sequence Flow](docs/assets/images/diagrams/pipeline_sequence.svg)
+- **Connector Module**: [View Diagram](docs/assets/images/diagrams/connector_module.svg) | [Sequence Flow](docs/assets/images/diagrams/connector_sequence.svg)
+- **Serializer Module**: [View Diagram](docs/assets/images/diagrams/serializer_module.svg) | [Sequence Flow](docs/assets/images/diagrams/serializer_sequence.svg)  
+
+These diagrams are also embedded in each package's README for detailed component-specific documentation.
 
 ## 🛠️ Installation
 
@@ -395,8 +403,6 @@ docker run -it --rm \
   --data-ingestion-config data_config.yaml \
   # ... additional parameters
 ```
-
-
 
 ## 🤝 Contributing
 

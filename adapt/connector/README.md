@@ -9,6 +9,27 @@
 
 The `adapt-connector` package provides data source integration capabilities for the ADaPT (Adaptive Data Pipeline Toolkit) ecosystem. It handles API authentication, client initialization, request dispatching, and response post-processing for various data sources including REST APIs, GraphQL endpoints, databases, and custom integrations.
 
+### Connector Architecture
+
+![Connector Module Architecture](../../docs/assets/images/diagrams/connector_module.svg)
+
+The connector package is built around four main components:
+- **Authorization**: Manages authentication flows and client initialization
+- **Service**: Coordinates connector operations and configuration
+- **Dispatcher**: Handles method invocation and request routing
+- **Post Processor**: Transforms and validates API responses
+
+### Connector Sequence Flow
+
+![Connector Sequence Diagram](../../docs/assets/images/diagrams/connector_sequence.svg)
+
+The typical connector execution flow:
+1. **Initialize**: Load configuration and set up authentication
+2. **Authenticate**: Establish connection with data source
+3. **Dispatch**: Execute API calls or data queries
+4. **Process**: Transform responses and handle errors
+5. **Return**: Provide standardized data output
+
 ## 📦 Features
 
 - **🔐 Authorization Management**: OAuth2, API key, and custom authentication flows
@@ -647,3 +668,82 @@ Licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for detai
 ---
 
 **Part of the ADaPT Ecosystem** - Connecting your data sources with ease. 🔌
+
+## 🔍 Troubleshooting
+
+### Common Issues
+
+#### Authentication Errors
+```bash
+# Error: Invalid credentials
+# Solution: Verify your API keys and tokens
+export API_KEY="your-valid-api-key"
+export API_SECRET="your-valid-api-secret"
+```
+
+#### Configuration Not Found
+```bash
+# Error: Configuration file not found
+# Solution: Check ADAPT_CONFIGS environment variable
+export ADAPT_CONFIGS="/path/to/your/configs"
+ls $ADAPT_CONFIGS/authorization/your_service/
+```
+
+#### Import Errors
+```python
+# Error: ModuleNotFoundError: No module named 'adapt.connector'
+# Solution: Ensure proper installation
+pip install -e /path/to/ADaPT-ETL/adapt/connector
+```
+
+### Debug Mode
+
+Enable debug logging for detailed troubleshooting:
+
+```python
+import logging
+logging.basicConfig(level=logging.DEBUG)
+
+from adapt.connector.service import Service
+# Debug information will be printed during execution
+```
+
+## ✅ Testing
+
+### Unit Tests
+```bash
+# Run connector tests
+cd adapt/connector
+python -m pytest tests/ -v
+```
+
+### Integration Tests
+```python
+from adapt.connector.service import Service
+from adapt.utils import Store
+
+# Test connector initialization
+external_input = Store()
+external_input.add('api_key', 'test-key')
+
+try:
+    service = Service.from_config_path('test_config.yaml', external_input)
+    print("✅ Connector initialized successfully")
+except Exception as e:
+    print(f"❌ Connector initialization failed: {e}")
+```
+
+## 🚀 Performance Tips
+
+- **Connection Pooling**: Reuse client connections when possible
+- **Batch Requests**: Process multiple items in single API calls
+- **Caching**: Cache authentication tokens and configuration objects
+- **Async Processing**: Use async clients for high-throughput scenarios
+
+## 📚 Examples
+
+See the [examples directory](examples/) for complete working examples:
+- Google Ads integration
+- Facebook Ads integration  
+- Custom REST API connector
+- Database connector

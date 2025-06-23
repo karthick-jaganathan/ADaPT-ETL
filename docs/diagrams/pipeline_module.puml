@@ -1,0 +1,36 @@
+@startuml
+skinparam linetype ortho
+skinparam backgroundColor #FDFDFD
+
+package "Pipeline Module" {
+    [Pipeline Runner] as runner #E3F2FD
+    [Item Collection] as items #E8F5E8
+    [Data Ingestion CLI] as cli #FFF3E0
+}
+
+cloud "Yaml\nConfigurations" as config #F5F5F5
+process "Read CLI Inputs\nparameters" as source #E1F5FE
+database "Output\nDestination" as output #E0F2F1
+
+config --> cli
+cli --> runner
+items --> runner
+source --> runner
+runner --> output
+
+note left of runner #F0F8FF
+🚀 The Pipeline Runner orchestrates the flow
+  of data through the pipeline. It manages
+  the execution of items and handles the
+  collection of data.
+end note
+
+note right of items #F1F8E9
+📦 Items are processing units like:
+  - connector
+  - dispatcher
+  - serializer
+  - exporter
+end note
+
+@enduml 

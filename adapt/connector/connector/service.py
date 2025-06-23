@@ -19,7 +19,6 @@ import adapt.utils
 from adapt.utils import config_finder
 from adapt.utils import typing_collection
 from adapt.utils.config_reader import YamlReader
-
 from adapt.connector.authorization import Authorization
 
 

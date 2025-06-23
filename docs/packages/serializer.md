@@ -1,5 +1,5 @@
 ---
-layout: package
+layout: default
 title: Serializer Package
 nav_order: 3
 parent: Packages
@@ -17,6 +17,18 @@ permalink: /packages/serializer/
 ## 🚀 Overview
 
 The `adapt-serializer` package provides powerful data transformation and serialization capabilities for the ADaPT (Adaptive Data Pipeline Toolkit) ecosystem. It enables you to transform raw API responses into structured, normalized data through flexible YAML configurations with support for field mapping, conditional logic, data type conversion, and nested object handling.
+
+### Serializer Module Architecture
+
+The following diagram illustrates the architecture of the Serializer module, showing the three-phase transformation system with inline, derived, and constant field processing, along with the comprehensive type conversion system.
+
+![Serializer Module Architecture Diagram]({{ site.baseurl }}/assets/images/diagrams/serializer_module.svg)
+
+### Serializer Execution Sequence
+
+The following sequence diagram shows the three-phase transformation process of the serializer module, detailing how data is processed through inline, derived, and constant field transformations:
+
+![Serializer Execution Sequence Diagram]({{ site.baseurl }}/assets/images/diagrams/serializer_sequence.svg)
 
 ## 📦 Features
 

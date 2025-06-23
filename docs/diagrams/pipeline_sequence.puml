@@ -1,0 +1,84 @@
+@startuml
+skinparam linetype ortho
+skinparam sequenceMessageAlign center
+skinparam sequence {
+    ArrowColor #4A90E2
+    ActorBorderColor #2C3E50
+    LifeLineBorderColor #BDC3C7
+    LifeLineBackgroundColor #F8F9FA
+    
+    ParticipantBorderColor #34495E
+    ParticipantBackgroundColor #FFFFFF
+    ParticipantFontStyle Bold
+    
+    ActorBackgroundColor #E8F4FD
+    ActorFontStyle Bold
+}
+
+actor "User" as User #E8F4FD
+participant "CLI" as CLI #E1F5FE
+participant "Pipeline" as Pipeline #FFF2CC
+participant "Config Reader" as Config #E8F5E8
+participant "Connector" as Connector #FFE0E6
+participant "Dispatcher" as Dispatcher #E8F5E8
+participant "Serializer" as Serializer #F3E5F5
+participant "Exporter" as Exporter #FFF3E0
+
+autonumber "<b>[000]"
+User -> CLI: Run with arguments
+activate CLI #81D4FA
+
+CLI -> Config: Load pipeline config
+activate Config #A5D6A7
+Config --> CLI: Return config
+deactivate Config
+
+CLI -> Pipeline: Create pipeline instance
+activate Pipeline #FFE082
+
+CLI -> Pipeline: Add pipeline items
+note right #FFFACD: Items created from configuration
+
+Pipeline -> Connector: Execute processor
+activate Connector #FFAB91
+note right #FFF8E1: Step 1: Connect to data source
+Connector --> Pipeline: Return client object
+deactivate Connector
+
+Pipeline -> Pipeline: Forward result to Dispatcher
+activate Pipeline #F4D03F
+deactivate Pipeline
+
+Pipeline -> Dispatcher: Execute processor
+activate Dispatcher #A5D6A7
+note right #F1F8E9: Step 2: Retrieve data
+Dispatcher --> Pipeline: Return data records
+deactivate Dispatcher
+
+Pipeline -> Pipeline: Forward result to Serializer
+activate Pipeline #F4D03F
+deactivate Pipeline
+
+Pipeline -> Serializer: Execute processor
+activate Serializer #CE93D8
+note right #F8F4FF: Step 3: Transform data
+Serializer --> Pipeline: Return transformed data
+deactivate Serializer
+
+Pipeline -> Pipeline: Forward result to Exporter
+activate Pipeline #F4D03F
+deactivate Pipeline
+
+Pipeline -> Exporter: Execute processor
+activate Exporter #FFCC80
+note right #FFF9E6: Step 4: Export data
+Exporter --> Pipeline: Return export status
+deactivate Exporter
+
+Pipeline --> CLI: Pipeline execution completed
+deactivate Pipeline
+
+CLI --> User: Output results
+deactivate CLI
+
+@enduml 

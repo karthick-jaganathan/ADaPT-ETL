@@ -5,6 +5,7 @@ nav_order: 3
 description: "Documentation for all ADaPT packages"
 permalink: /packages/
 has_children: true
+has_toc: false
 ---
 
 # ADaPT Packages
@@ -13,42 +14,25 @@ ADaPT consists of four core packages that work together to provide a complete da
 
 ## Package Overview
 
-| Package | Purpose | Key Components |
-|---------|---------|----------------|
-| **[adapt-utils]({{ site.baseurl }}/packages/utils)** | Core utilities and configuration management | Config readers, data store, type system, exporters |
-| **[adapt-connector]({{ site.baseurl }}/packages/connector)** | Data source connections and API integrations | Authorization, service clients, dispatchers, post-processors |
-| **[adapt-serializer]({{ site.baseurl }}/packages/serializer)** | Data transformation and serialization | Field mapping, data normalization, conditional transformations |
-| **[adapt-pipeline]({{ site.baseurl }}/packages/pipeline)** | Pipeline orchestration and execution | CLI interface, workflow management, pipeline items |
+| Package                                                        | Purpose                                      | Key Components                                                 |
+|----------------------------------------------------------------|----------------------------------------------|----------------------------------------------------------------|
+| **[adapt-utils]({{ site.baseurl }}/packages/utils)**           | Core utilities and configuration management  | Config readers, data store, type system, exporters             |
+| **[adapt-connector]({{ site.baseurl }}/packages/connector)**   | Data source connections and API integrations | Authorization, service clients, dispatchers, post-processors   |
+| **[adapt-serializer]({{ site.baseurl }}/packages/serializer)** | Data transformation and serialization        | Field mapping, data normalization, conditional transformations |
+| **[adapt-pipeline]({{ site.baseurl }}/packages/pipeline)**     | Pipeline orchestration and execution         | CLI interface, workflow management, pipeline items             |
 
 ## Architecture Diagram
 
-```
-┌─────────────────┐    ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   adapt-utils   │    │ adapt-connector │    │adapt-serializer  │    │ adapt-pipeline  │
-│                 │    │                 │    │                  │    │                 │
-│ • Configuration │    │ • Authorization │    │ • Data Transform │    │ • Orchestration │
-│ • Data Store    │    │ • API Clients   │    │ • Field Mapping  │    │ • CLI Interface │
-│ • Type System   │    │ • Dispatchers   │    │ • Normalization  │    │ • Workflow Mgmt │
-│ • File I/O      │    │ • Post Process  │    │                  │    │                 │
-└─────────────────┘    └─────────────────┘    └──────────────────┘    └─────────────────┘
-        │                        │                        │                        │
-        └────────────────────────┼────────────────────────┼────────────────────────┘
-                                 │                        │
-                    ┌─────────────────────────────────────────────────────┐
-                    │                ADaPT Pipeline                       │
-                    │                                                     │
-                    │         Extract → Transform → Load → Export         │
-                    └─────────────────────────────────────────────────────┘
-```
+![ADaPT System Overview]({{ site.baseurl }}/assets/images/diagrams/system_overview.svg)
 
 ## Package Dependencies
 
 The packages have the following dependency relationships:
 
-- **adapt-utils**: No dependencies (foundation package)
-- **adapt-connector**: Depends on adapt-utils
-- **adapt-serializer**: Depends on adapt-utils
-- **adapt-pipeline**: Depends on adapt-utils, adapt-connector, and adapt-serializer
+- **[adapt-utils]({{ site.baseurl }}/packages/utils)**: required by all other packages, providing core utilities and configuration management.
+- **[adapt-connector]({{ site.baseurl }}/packages/connector)**: Depends on adapt-utils, providing API connections and data extraction capabilities.
+- **[adapt-serializer]({{ site.baseurl }}/packages/serializer)**: Depends on adapt-utils, providing data transformation and serialization features.
+- **[adapt-pipeline]({{ site.baseurl }}/packages/pipeline)**: Depends on adapt-utils, adapt-connector, and adapt-serializer to orchestrate the entire data processing workflow.
 
 ## Installation Options
 
@@ -72,12 +56,5 @@ cd ../pipeline && pip install .
 ```bash
 make install MODE=dev
 ```
-
-## Quick Links
-
-- **[Utils Package]({{ site.baseurl }}/packages/utils)** - Configuration, data storage, and utilities
-- **[Connector Package]({{ site.baseurl }}/packages/connector)** - API connections and authorization
-- **[Serializer Package]({{ site.baseurl }}/packages/serializer)** - Data transformation and mapping
-- **[Pipeline Package]({{ site.baseurl }}/packages/pipeline)** - Orchestration and CLI tools
 
 For detailed installation instructions, see the [Installation Guide]({{ site.baseurl }}/installation). 

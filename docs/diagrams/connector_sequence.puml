@@ -1,0 +1,114 @@
+@startuml
+autonumber "<b>[000]"
+
+skinparam backgroundColor #FDFDFD
+skinparam sequenceMessageAlign direction
+skinparam maxMessageSize 250
+
+skinparam sequence {
+    ArrowColor #4A90E2
+    ActorBorderColor #2C3E50
+    LifeLineBorderColor #BDC3C7
+    LifeLineBackgroundColor #F8F9FA
+    
+    ParticipantBorderColor #34495E
+    ParticipantBackgroundColor #FFFFFF
+    ParticipantFontStyle Bold
+    
+    ActorBackgroundColor #E8F4FD
+    ActorFontStyle Bold
+    
+    BoxBorderColor #4A90E2
+    BoxBackgroundColor #F0F8FF
+    BoxFontStyle Bold
+    BoxFontColor #2C3E50
+    
+    GroupBorderColor #4A90E2
+    GroupBackgroundColor #F0F8FF
+    GroupHeaderFontColor #2C3E50
+    GroupHeaderFontStyle Bold
+    
+    LoopBorderColor #4A90E2
+    LoopBackgroundColor #F0F8FF
+    LoopFontColor #2C3E50
+    LoopFontStyle Bold
+}
+
+participant "Pipeline" as pipeline #E3F2FD
+participant "ConfigReader" as config_reader #E8F5E8
+participant "Service" as service #F3E5F5
+participant "config_finder" as config_finder #FFF3E0
+participant "Authorization" as auth #E0F2F1
+participant "typing_collection" as typing #E1F5FE
+participant "External API\n(Google/Facebook)" as api #F5F5F5
+participant "Dispatcher" as dispatcher #E0F2F1
+
+note over pipeline, dispatcher #BBDEFB : <b>Pipeline Execution: Step-by-Step Processing</b>
+
+activate pipeline #2196F3
+
+' Step 1: Load connector configuration
+pipeline -> config_reader ++#4CAF50: load_from_config_location(config_name, module="connector", namespace)
+note right #E8F5E8 : Pipeline loads connector config\n(e.g., campaign.yaml)
+config_reader --> pipeline --: connector_config
+
+' Step 2: Service creates authenticated client
+pipeline -> service ++#CE93D8: initialize(config=connector_config, external_input=auth_store)
+note right #F3E5F5 : Service receives loaded connector\nconfiguration
+
+service -> config_finder ++#FFB74D: config_finder(module="authorization", namespace, config_name)
+config_finder --> service --: auth_config_path
+note right #FFF3E0 : Finds authorization config\ne.g., configs/authorization/google/authorization.yaml
+
+service -> auth ++#4DB6AC: from_config_path(auth_config_path, external_input)
+
+auth -> typing ++#64B5F6: init(config["initializer"], external_input)
+note right #E1F5FE : Creates auth client\ne.g., GoogleAdsClient.load_from_dict()
+
+typing -> api ++#BDBDBD: create_auth_client(credentials)
+api --> typing --: authenticated_client
+typing --> auth --: authenticated_client
+auth --> service --: authenticated_client
+
+service -> service: external_input.add("authorization", auth)
+note left #F3E5F5 : Adds auth client to external_input\nfor use by API client creation
+
+service -> typing ++#64B5F6: init(config["client"], external_input)
+note right #E1F5FE : Creates API service client\ne.g., GoogleAdsServiceClient
+
+typing -> api ++#BDBDBD: create_service_client(auth_client)
+api --> typing --: service_client
+typing --> service --: service_client
+
+service --> pipeline --: service_client
+note left #E3F2FD : **Pipeline forwards this client**\n**to Dispatcher via forward_to**
+
+' Step 3: Dispatcher receives client and fetches data
+pipeline -> dispatcher ++#4DB6AC: receive(client=service_client, config=connector_config, external_input=data_store)
+note right #E0F2F1 : Dispatcher receives the client\ncreated by Service
+
+dispatcher -> typing ++#64B5F6: init(config["arguments"], external_input)
+note right #E1F5FE : Builds request arguments\nfrom config + external inputs
+
+typing --> dispatcher --: request_args
+
+dispatcher -> api ++#BDBDBD: client.method_name(**request_args)
+note right #F5F5F5 : Calls API method\ne.g., search_stream(customer_id, query)
+
+api --> dispatcher --: api_response_data
+dispatcher --> pipeline --: api_response_data
+
+deactivate pipeline
+
+note over pipeline, dispatcher #E1F5FE
+<b>🔗 Key Pipeline Flow:</b>
+1. **📋 Configuration**: Pipeline loads connector configuration via ConfigReader
+2. **🔧 Service Init**: Pipeline calls Service.initialize() with auth_store
+3. **🔐 Authentication**: Service creates authenticated client and returns to Pipeline
+4. **⬅️ Forwarding**: Pipeline automatically forwards client to Dispatcher via forward_to
+5. **📡 Dispatch**: Pipeline calls Dispatcher.receive() with client + config + data_store
+6. **📞 API Call**: Dispatcher builds arguments and calls API to fetch data
+7. **➡️ Next Step**: Pipeline forwards results to next step (Serializer)
+end note
+
+@enduml 

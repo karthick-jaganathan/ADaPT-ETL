@@ -44,7 +44,6 @@ header_pages:
   - installation.md
   - packages/index.md
   - examples.md
-  - diagrams.md
   - api-reference.md
   - contributing.md
 

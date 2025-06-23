@@ -1,0 +1,37 @@
+@startuml
+skinparam linetype ortho
+skinparam backgroundColor #FDFDFD
+
+package " Connector Module " {
+    [Authorization] as auth #E0F2F1
+    [Service] as service #E3F2FD
+    [Dispatcher] as dispatcher #E8F5E8
+    [Post Processor] as postproc #FFF3E0
+}
+
+cloud "Yaml\nConfigurations" as config #F5F5F5
+cloud "External APIs/Services" as apis #F0F4F8
+process "Forward to\ndownstream node" as output #E1F5FE
+
+
+config --> service
+service <--> auth
+service --> dispatcher
+apis <--> dispatcher
+dispatcher --> postproc
+postproc --> output
+
+note right of dispatcher #F1F8E9
+🌐 Interacts with external APIs/Services:
+  - Database APIs (e.g. for internal databases)
+  - Third-party APIs (e.g. for external services)
+  - Custom REST APIs (e.g. for internal services)
+end note
+
+note right of postproc #FFF8E1
+⚙️ Post Processor applies steps (optional):
+    - pre-transformation processing
+    - Response validation
+end note
+
+@enduml
