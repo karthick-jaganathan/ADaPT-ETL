@@ -100,12 +100,7 @@ code,
   color: $link-color !important;
 }
 
-// Logo is a blue/green wordmark; lift it slightly so it stays crisp on the dark sidebar
-@if $color-scheme == dark {
-  .site-logo {
-    filter: brightness(1.35) saturate(1.1);
-  }
-}
+// Logo has its own dark-mode variant (swapped in head_custom); no filter needed.
 
 // Hero section styling
 .hero-section {

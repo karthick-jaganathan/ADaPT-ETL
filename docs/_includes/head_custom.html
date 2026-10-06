@@ -1,5 +1,13 @@
+<link rel="icon" type="image/png" href="{{ '/assets/images/adapt-icon.png' | relative_url }}">
 <link rel="icon" type="image/x-icon" href="{{ '/favicon.ico' | relative_url }}">
 <link rel="shortcut icon" type="image/x-icon" href="{{ '/favicon.ico' | relative_url }}">
+
+<style>
+  /* Dark mode: swap the sidebar logo for the light-wordmark variant. */
+  html[data-adapt-theme="adapt-dark"] .site-logo {
+    background-image: url("{{ '/assets/images/adapt-logo-dark.png' | relative_url }}") !important;
+  }
+</style>
 
 <script>
   /* ADaPT light/dark theme toggle. Applies the saved theme (or the OS preference) before first paint, then injects a 🌙/☀️ button into the header. */
