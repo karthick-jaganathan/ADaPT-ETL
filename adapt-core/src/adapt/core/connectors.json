@@ -1,0 +1,91 @@
+{
+  "connectors": {
+    "facebook_ads": {
+      "family": "ads",
+      "homepage": "https://github.com/karthick-jaganathan/ADaPT-ETL",
+      "install": {
+        "git": "git+https://github.com/karthick-jaganathan/ADaPT-ETL.git@e6224356585018db4242f8137a89f1d183e3ca0a#subdirectory=connectors/ads/facebook_ads"
+      },
+      "key": "facebook_ads",
+      "maintainer": "karthick-jaganathan",
+      "summary": "Facebook Marketing insights & objects",
+      "title": "Facebook Ads",
+      "trust": "official"
+    },
+    "files": {
+      "family": "readers",
+      "homepage": "https://github.com/karthick-jaganathan/ADaPT-ETL",
+      "install": {
+        "git": "git+https://github.com/karthick-jaganathan/ADaPT-ETL.git@e6224356585018db4242f8137a89f1d183e3ca0a#subdirectory=connectors/readers/files"
+      },
+      "key": "files",
+      "maintainer": "karthick-jaganathan",
+      "summary": "Local JSONL/CSV/Parquet (runs offline)",
+      "title": "Files",
+      "trust": "official"
+    },
+    "gcs": {
+      "family": "readers",
+      "homepage": "https://github.com/karthick-jaganathan/ADaPT-ETL",
+      "install": {
+        "git": "git+https://github.com/karthick-jaganathan/ADaPT-ETL.git@e6224356585018db4242f8137a89f1d183e3ca0a#subdirectory=connectors/readers/gcs"
+      },
+      "key": "gcs",
+      "maintainer": "karthick-jaganathan",
+      "summary": "Read objects from Google Cloud Storage",
+      "title": "Google Cloud Storage",
+      "trust": "official"
+    },
+    "google_ads": {
+      "family": "ads",
+      "homepage": "https://github.com/karthick-jaganathan/ADaPT-ETL",
+      "install": {
+        "git": "git+https://github.com/karthick-jaganathan/ADaPT-ETL.git@e6224356585018db4242f8137a89f1d183e3ca0a#subdirectory=connectors/ads/google_ads"
+      },
+      "key": "google_ads",
+      "maintainer": "karthick-jaganathan",
+      "summary": "Google Ads reports & resources (GAQL)",
+      "title": "Google Ads",
+      "trust": "official"
+    },
+    "microsoft_ads": {
+      "family": "ads",
+      "homepage": "https://github.com/karthick-jaganathan/ADaPT-ETL",
+      "install": {
+        "git": "git+https://github.com/karthick-jaganathan/ADaPT-ETL.git@e6224356585018db4242f8137a89f1d183e3ca0a#subdirectory=connectors/ads/microsoft_ads"
+      },
+      "key": "microsoft_ads",
+      "maintainer": "karthick-jaganathan",
+      "summary": "Microsoft Advertising reports",
+      "title": "Microsoft Ads",
+      "trust": "official"
+    },
+    "postgres": {
+      "family": "readers",
+      "homepage": "https://github.com/karthick-jaganathan/ADaPT-ETL",
+      "install": {
+        "git": "git+https://github.com/karthick-jaganathan/ADaPT-ETL.git@e6224356585018db4242f8137a89f1d183e3ca0a#subdirectory=connectors/readers/postgres"
+      },
+      "key": "postgres",
+      "maintainer": "karthick-jaganathan",
+      "summary": "Read-only SELECT queries on PostgreSQL",
+      "title": "PostgreSQL",
+      "trust": "official"
+    },
+    "s3": {
+      "family": "readers",
+      "homepage": "https://github.com/karthick-jaganathan/ADaPT-ETL",
+      "install": {
+        "git": "git+https://github.com/karthick-jaganathan/ADaPT-ETL.git@e6224356585018db4242f8137a89f1d183e3ca0a#subdirectory=connectors/readers/s3"
+      },
+      "key": "s3",
+      "maintainer": "karthick-jaganathan",
+      "summary": "Read objects from Amazon S3",
+      "title": "Amazon S3",
+      "trust": "official"
+    }
+  },
+  "count": 7,
+  "generated_at": "2026-10-06T15:41:42.586184+00:00",
+  "schema_version": 1
+}

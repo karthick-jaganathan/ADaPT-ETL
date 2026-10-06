@@ -236,8 +236,16 @@ def _parser():
                           "records read and written), the outputs written, the state's bookmarks and the error")
     _add_log_options(run)
 
-    commands.add_parser("connectors",
-                        help="list the installed connectors, with the names of their SDK loggers (for --log)")
+    conn = commands.add_parser("connectors",
+                               help="list, search or install connectors (bare: the installed connectors and their "
+                                    "SDK loggers)")
+    conn.add_argument("action", nargs="?", choices=["list", "search", "install"],
+                      help="list (catalog + installed), search TEXT, or install KEY")
+    conn.add_argument("query", nargs="?", metavar="KEY|TEXT",
+                      help="a connector key (install) or text (search)")
+    conn.add_argument("--yes", action="store_true", help="skip the confirmation prompt when installing")
+    conn.add_argument("--hub-url", metavar="URL",
+                      help="catalog URL to use (default: the bundled catalog, or $ADAPT_HUB_URL)")
 
     validate = commands.add_parser("validate", help="check configuration files: adapt-validate, plus the checks of "
                                                      "the installed connectors and query builders", add_help=False)
@@ -523,6 +531,34 @@ def _connector_lines():
     return lines
 
 
+def _connectors_command(args):
+    """`adapt connectors`: bare = installed list; list/search/install use the catalog (the hub)."""
+    action = getattr(args, "action", None)
+    if action is None:
+        lines = _connector_lines()
+        print("\n".join(lines) if lines else "no connectors installed (e.g. adapt connectors install postgres)")
+        return 0
+    from adapt.core import catalog
+    if action == "list":
+        lines = catalog.listing(args.hub_url)
+        print("\n".join(lines) if lines else "the catalog is empty")
+        return 0
+    if action == "search":
+        hits = catalog.search(args.query or "", args.hub_url)
+        if not hits:
+            print("no connectors match %r" % (args.query or ""))
+            return 0
+        for key, entry in sorted(hits.items()):
+            print("  %-16s %-10s %s" % (key, entry.get("trust", "community"), entry.get("summary", "")))
+        return 0
+    if action == "install":
+        if not args.query:
+            sys.stderr.write("adapt: 'connectors install' needs a connector KEY\n")
+            return 2
+        return catalog.install(args.query, assume_yes=args.yes, hub_url=args.hub_url)
+    return 2
+
+
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
     if argv[:1] == ["validate"]:  # every other argument is adapt-validate's, including options before the paths
@@ -540,9 +576,7 @@ def main(argv=None):
             setup.close()
     args = _parser().parse_args(argv)
     if args.command == "connectors":
-        lines = _connector_lines()
-        print("\n".join(lines) if lines else "no connectors installed (e.g. pip install adapt-google-ads)")
-        return 0
+        return _connectors_command(args)
     setup = _log_setup(args)
     if setup is None:
         return 2

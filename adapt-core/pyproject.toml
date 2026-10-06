@@ -55,3 +55,7 @@ packages = [
     "adapt.core.validation",
     "adapt.core.runtime",
 ]
+
+[tool.setuptools.package-data]
+# the bundled connector catalog (default for `adapt connectors`, refreshed from $ADAPT_HUB_URL)
+"adapt.core" = ["connectors.json"]
