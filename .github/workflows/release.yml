@@ -1,0 +1,90 @@
+name: Release
+
+# Publish any ADaPT package to PyPI via Trusted Publishing (no API tokens).
+# Two ways to trigger:
+#   • Push a tag  <dist>@<version>     e.g.  adapt-google-ads@0.1.0   -> publishes to PyPI
+#   • Run manually (Actions tab)        pick a package (or "all") + target (testpypi/pypi)
+#
+# Adding a future connector needs NO change here: the package directory is
+# resolved from each pyproject `name`. Just configure that project's Trusted
+# Publisher on PyPI once (repo + workflow "release.yml" + environment "pypi-release").
+
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: 'PyPI dist name (e.g. adapt-google-ads) or "all"'
+        required: true
+        default: adapt-core
+      target:
+        description: 'Index to publish to'
+        type: choice
+        options: [testpypi, pypi]
+        default: testpypi
+  push:
+    tags:
+      - '*@*'   # <dist>@<version>, e.g. adapt-postgres@0.1.0
+
+permissions:
+  contents: read
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    outputs:
+      packages: ${{ steps.pick.outputs.packages }}
+      target: ${{ steps.pick.outputs.target }}
+    steps:
+      - id: pick
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            tag="${GITHUB_REF_NAME}"
+            dist="${tag%@*}"
+            echo "target=pypi" >> "$GITHUB_OUTPUT"
+            echo "packages=[\"$dist\"]" >> "$GITHUB_OUTPUT"
+          elif [ "${{ inputs.package }}" = "all" ]; then
+            echo "target=${{ inputs.target }}" >> "$GITHUB_OUTPUT"
+            echo 'packages=["adapt-core","adapt-files","adapt-s3","adapt-gcs","adapt-postgres","adapt-google-ads","adapt-microsoft-ads","adapt-facebook-ads"]' >> "$GITHUB_OUTPUT"
+          else
+            echo "target=${{ inputs.target }}" >> "$GITHUB_OUTPUT"
+            echo "packages=[\"${{ inputs.package }}\"]" >> "$GITHUB_OUTPUT"
+          fi
+
+  publish:
+    needs: resolve
+    runs-on: ubuntu-latest
+    environment: pypi-release
+    permissions:
+      id-token: write   # required for Trusted Publishing
+    strategy:
+      fail-fast: false
+      matrix:
+        package: ${{ fromJson(needs.resolve.outputs.packages) }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+
+      - run: python -m pip install --upgrade build
+
+      - name: Resolve directory and build ${{ matrix.package }}
+        shell: bash
+        run: |
+          DIST="${{ matrix.package }}"
+          DIR=""
+          for pp in adapt-core/pyproject.toml connectors/*/*/pyproject.toml; do
+            name=$(grep -m1 '^name = ' "$pp" | sed 's/name = //; s/"//g')
+            if [ "$name" = "$DIST" ]; then DIR="$(dirname "$pp")"; break; fi
+          done
+          if [ -z "$DIR" ]; then echo "::error::no package named $DIST"; exit 1; fi
+          echo "Building $DIST from $DIR"
+          python -m build --outdir "$GITHUB_WORKSPACE/dist" "$DIR"
+
+      - name: Publish to ${{ needs.resolve.outputs.target }}
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist
+          repository-url: ${{ needs.resolve.outputs.target == 'testpypi' && 'https://test.pypi.org/legacy/' || '' }}
