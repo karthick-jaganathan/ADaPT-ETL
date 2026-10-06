@@ -1,0 +1,18 @@
+# Example source folder (see docs/design/source-format.md): this file, and one file per stream in streams/.
+# It reads local files committed next to it (data/: CSV, Parquet and JSON lines) with the files connector, so it runs
+# offline. Check it with: adapt validate examples/sources/readers/files_demo
+# Run it (pip install adapt-files):
+#   adapt run examples/sources/readers/files_demo --set data_root=examples/sources/readers/files_demo/data --allow-connector files
+# Paths are relative to the first root; nothing outside the roots can be read (symbolic links are followed first).
+kind: source
+name: files_demo
+description: Customers, orders and products from local files.
+
+spec:
+  config:
+    data_root: {type: string, description: "The folder the files are read from (relative to the working directory)"}
+    start_date: {type: date, default: "2026-10-01", description: First day of customers' daily files}
+
+auth:
+  provider: files                      # registered by the adapt-files connector
+  roots: ["{{ config.data_root }}"]    # the only folders files can be read from

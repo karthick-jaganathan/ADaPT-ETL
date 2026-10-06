@@ -1,0 +1,30 @@
+# The campaigns of each account.
+partitions:
+  - {name: account_id, values: "{{ config.account_ids }}"}
+requests:
+  - name: raw_campaigns
+    sdk: microsoft_ads
+    service: CampaignManagementService
+    method: GetCampaignsByAccountId
+    arguments:
+      AccountId: "{{ partition.account_id }}"
+      CampaignType: [Search, Shopping, DynamicSearchAds, Audience, PerformanceMax]   # without it, only Search
+    records: {path: Campaign}
+transform:
+  mode: page
+  steps:
+    - name: campaigns
+      select: |
+        SELECT partition->>'account_id'         AS account_id,
+               record->>'Id'                    AS campaign_id,
+               record->>'Name'                  AS campaign_name,
+               record->>'Status'                AS status,            -- Active, Paused, BudgetPaused, ...
+               record->>'CampaignType'          AS campaign_type,
+               record->>'BudgetType'            AS budget_type,
+               (record->>'DailyBudget')::DOUBLE AS daily_budget,
+               record->>'TimeZone'              AS time_zone
+        FROM raw_campaigns
+export:
+  campaigns:
+    step: campaigns
+    primary_key: [account_id, campaign_id]

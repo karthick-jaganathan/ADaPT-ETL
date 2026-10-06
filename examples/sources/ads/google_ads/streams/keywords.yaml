@@ -1,0 +1,40 @@
+# The keywords of each ad group, targeted and excluded (negative).
+partitions:
+  - {name: customer_id, values: "{{ config.customer_ids }}"}
+requests:
+  - name: raw_keywords
+    sdk: google_ads
+    service: GoogleAdsService
+    method: search_stream
+    arguments:
+      customer_id: "{{ partition.customer_id }}"
+      query:
+        gaql:
+          select: [customer.id, campaign.id, ad_group.id, ad_group_criterion.criterion_id,
+                   ad_group_criterion.keyword.text, ad_group_criterion.keyword.match_type, ad_group_criterion.negative,
+                   ad_group_criterion.status, ad_group_criterion.cpc_bid_micros]
+          from: ad_group_criterion
+          where:
+            - {field: ad_group_criterion.type, op: "=", type: enum, value: KEYWORD}
+            - {field: ad_group_criterion.status, op: IN, type: enum, value: [ENABLED, PAUSED]}
+            - {field: ad_group.status, op: IN, type: enum, value: [ENABLED, PAUSED]}
+transform:
+  mode: page
+  steps:
+    - name: keywords
+      select: |
+        SELECT record->>'$.customer.id'                          AS customer_id,
+               record->>'$.campaign.id'                          AS campaign_id,
+               record->>'$.ad_group.id'                          AS ad_group_id,
+               record->>'$.ad_group_criterion.criterion_id'      AS criterion_id,
+               record->>'$.ad_group_criterion.keyword.text'      AS keyword,
+               record->>'$.ad_group_criterion.keyword.match_type' AS match_type,   -- EXACT, PHRASE, BROAD
+               coalesce((record->>'$.ad_group_criterion.negative')::BOOLEAN, false) AS negative,
+               CASE record->>'$.ad_group_criterion.status' WHEN 'ENABLED' THEN 'active' WHEN 'PAUSED' THEN 'paused'
+                    WHEN 'REMOVED' THEN 'removed' END AS status,
+               round((record->>'$.ad_group_criterion.cpc_bid_micros')::BIGINT * 0.000001, 2) AS cpc_bid
+        FROM raw_keywords
+export:
+  keywords:
+    step: keywords
+    primary_key: [customer_id, ad_group_id, criterion_id]

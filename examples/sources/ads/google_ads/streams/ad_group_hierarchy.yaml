@@ -1,0 +1,60 @@
+# Each customer's ad groups with their campaign: the ad groups of up to 200 campaigns per query (batch_size).
+partitions:
+  - {name: customer_id, values: "{{ config.customer_ids }}"}
+requests:
+  - name: raw_campaigns
+    sdk: google_ads
+    service: GoogleAdsService
+    method: search_stream
+    arguments:
+      customer_id: "{{ partition.customer_id }}"
+      query:
+        gaql:
+          select: [customer.id, campaign.id, campaign.name, campaign.status]
+          from: campaign
+          where:
+            - {field: campaign.status, op: IN, type: enum, value: [ENABLED, PAUSED]}
+  - name: raw_ad_groups
+    partitions:                    # campaign_ids: a list of up to 200 of this customer's campaign ids per query
+      - {name: campaign_ids, from: raw_campaigns, field: campaign.id, batch_size: 200}
+    sdk: google_ads
+    service: GoogleAdsService
+    method: search_stream
+    arguments:
+      customer_id: "{{ partition.customer_id }}"
+      query:
+        gaql:
+          select: [customer.id, campaign.id, ad_group.id, ad_group.name, ad_group.status]
+          from: ad_group
+          where:
+            - {field: campaign.id, op: IN, type: int, value: "{{ partition.campaign_ids }}"}
+transform:
+  mode: run                        # the ad group queries take their campaign ids from the campaign query
+  steps:
+    - name: campaign_rows
+      select: |
+        SELECT record->>'$.customer.id'   AS customer_id,
+               record->>'$.campaign.id'   AS campaign_id,
+               record->>'$.campaign.name' AS campaign_name,
+               CASE record->>'$.campaign.status' WHEN 'ENABLED' THEN 'active' WHEN 'PAUSED' THEN 'paused'
+                    WHEN 'REMOVED' THEN 'removed' END AS campaign_status
+        FROM raw_campaigns
+    - name: ad_group_rows
+      select: |
+        SELECT record->>'$.customer.id'   AS customer_id,
+               record->>'$.campaign.id'   AS campaign_id,
+               record->>'$.ad_group.id'   AS ad_group_id,
+               record->>'$.ad_group.name' AS ad_group_name,
+               CASE record->>'$.ad_group.status' WHEN 'ENABLED' THEN 'active' WHEN 'PAUSED' THEN 'paused'
+                    WHEN 'REMOVED' THEN 'removed' END AS ad_group_status
+        FROM raw_ad_groups
+    - name: ad_group_hierarchy
+      select: |
+        SELECT a.customer_id, a.campaign_id, c.campaign_name, c.campaign_status,
+               a.ad_group_id, a.ad_group_name, a.ad_group_status
+        FROM ad_group_rows a
+        LEFT JOIN campaign_rows c USING (customer_id, campaign_id)
+export:
+  ad_group_hierarchy:
+    step: ad_group_hierarchy
+    primary_key: [customer_id, ad_group_id]

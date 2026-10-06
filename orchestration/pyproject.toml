@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "adapt-orchestration"
+version = "0.1.0"
+description = "Spec-driven Dagster orchestration for ADaPT-ETL: named declarative DAGs over the adapt CLI."
+requires-python = ">=3.10"
+dependencies = ["dagster", "dagster-webserver", "duckdb", "pyyaml"]
+
+[tool.dagster]
+module_name = "adapt.orchestration.definitions"
+code_location_name = "adapt"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+packages = ["adapt.orchestration", "adapt.orchestration.runner"]

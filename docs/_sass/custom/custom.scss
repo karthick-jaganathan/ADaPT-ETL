@@ -1,4 +1,76 @@
 // Custom styles for ADaPT documentation
+//
+// Imported by the theme AFTER the active color scheme, so the semantic variables
+// below ($surface-color, $muted-text-color, ...) resolve per scheme (adapt /
+// adapt-dark). The fallbacks only apply to schemes that don't define them (the
+// theme's stock light/dark bundles). Brand blue (#1976d2) and status colors are
+// left as literals because they read on both light and dark backgrounds.
+
+@if $color-scheme == dark {
+  $surface-color: #1d1f24 !default !global;
+  $surface-alt-color: #302d36 !default !global;
+  $surface-border-color: #44434d !default !global;
+  $muted-text-color: #959396 !default !global;
+  $subtle-text-color: #959396 !default !global;
+  $hero-gradient-start: #0f2a47 !default !global;
+  $hero-gradient-end: #16301f !default !global;
+  $brand-tint-color: #13304d !default !global;
+  $brand-tint-strong-color: #1a4470 !default !global;
+  $table-header-bg-color: #4e26af !default !global;
+  $code-border-accent-color: #5f4f94 !default !global;
+  $code-text-color: #e6e1e8 !default !global;
+  $inline-code-background-color: #302d36 !default !global;
+  $footer-background-color: #1d1f24 !default !global;
+  $footer-text-color: #e6e1e8 !default !global;
+  $card-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) !default !global;
+  $card-shadow-hover: 0 6px 18px rgba(0, 0, 0, 0.55) !default !global;
+} @else {
+  $surface-color: #ffffff !default !global;
+  $surface-alt-color: #f8f9fa !default !global;
+  $surface-border-color: #e1e4e8 !default !global;
+  $muted-text-color: #5d6d7e !default !global;
+  $subtle-text-color: #85929e !default !global;
+  $hero-gradient-start: #e3f2fd !default !global;
+  $hero-gradient-end: #f1f8e9 !default !global;
+  $brand-tint-color: #e3f2fd !default !global;
+  $brand-tint-strong-color: #bbdefb !default !global;
+  $table-header-bg-color: #5e41d0 !default !global;
+  $code-border-accent-color: #a48fe0 !default !global;
+  $code-text-color: #24292e !default !global;
+  $inline-code-background-color: #ecf0f1 !default !global;
+  $footer-background-color: #2c3e50 !default !global;
+  $footer-text-color: #ecf0f1 !default !global;
+  $card-shadow: 0 1px 3px rgba(0, 0, 0, 0.06) !default !global;
+  $card-shadow-hover: 0 6px 16px rgba(94, 65, 208, 0.15) !default !global;
+}
+
+$table-border-color: $border-color !default;
+$theme-transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+
+// Smooth color transitions when the theme toggle swaps stylesheets
+body,
+.side-bar,
+.main-header,
+.site-footer,
+.nav-list-link,
+.search-input,
+table,
+th,
+td,
+pre,
+code,
+.feature-card,
+.package-card {
+  transition: $theme-transition;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+  }
+}
 
 // Layout improvements
 .side-bar {
@@ -25,19 +97,30 @@
 .site-title {
   font-weight: 700 !important;
   font-size: 1.5rem !important;
-  color: #1976d2 !important;
+  color: $link-color !important;
+}
+
+// Logo is a blue/green wordmark; lift it slightly so it stays crisp on the dark sidebar
+@if $color-scheme == dark {
+  .site-logo {
+    filter: brightness(1.35) saturate(1.1);
+  }
 }
 
 // Hero section styling
 .hero-section {
-  background: linear-gradient(135deg, #e3f2fd 0%, #f1f8e9 100%);
+  background:
+    radial-gradient(circle at 15% 20%, rgba(94, 65, 208, 0.12) 0%, transparent 45%),
+    radial-gradient(circle at 85% 80%, rgba(139, 195, 74, 0.12) 0%, transparent 45%),
+    linear-gradient(135deg, $hero-gradient-start 0%, $hero-gradient-end 100%);
+  border: 1px solid $surface-border-color;
   padding: 3rem 2rem;
   margin: 0 0 2rem 0;
-  border-radius: 8px;
+  border-radius: 12px;
   text-align: center;
   
   h1 {
-    color: #1976d2;
+    color: $link-color;
     font-size: 2.5rem;
     font-weight: 700;
     margin-bottom: 1rem;
@@ -45,7 +128,7 @@
   
   .subtitle {
     font-size: 1.2rem;
-    color: #34495e;
+    color: $body-text-color;
     margin-bottom: 2rem;
     max-width: 800px;
     margin-left: auto;
@@ -70,18 +153,21 @@
 }
 
 .feature-card {
-  background: #f8f9fa;
-  border: 1px solid #e1e4e8;
-  border-radius: 6px;
+  background: $surface-alt-color;
+  border: 1px solid $surface-border-color;
+  border-radius: 8px;
   padding: 1.5rem;
-  transition: border-color 0.2s ease;
+  box-shadow: $card-shadow;
+  transition: $theme-transition, transform 0.2s ease, box-shadow 0.2s ease;
   
   &:hover {
-    border-color: #1976d2;
+    border-color: $link-color;
+    transform: translateY(-2px);
+    box-shadow: $card-shadow-hover;
   }
   
   h3 {
-    color: #1976d2;
+    color: $link-color;
     margin-top: 0;
     margin-bottom: 1rem;
     
@@ -96,9 +182,151 @@
   }
   
   p {
-    color: #5d6d7e;
+    color: $muted-text-color;
     margin-bottom: 0;
   }
+}
+
+// Package overview grid and cards
+.package-overview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.package-card {
+  border: 1px solid $surface-border-color;
+  border-radius: 8px;
+  padding: 1.5rem;
+  background: $surface-color;
+  box-shadow: $card-shadow;
+  transition: $theme-transition, transform 0.2s ease, box-shadow 0.2s ease;
+  
+  &:hover {
+    border-color: $link-color;
+    transform: translateY(-2px);
+    box-shadow: $card-shadow-hover;
+  }
+  
+  h3 {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    
+    a {
+      text-decoration: none;
+      color: $link-color;
+      
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+  
+  p {
+    color: $muted-text-color;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+  }
+}
+
+// Static diagrams (images and ASCII art)
+.package-diagram {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  border: 1px solid $surface-border-color;
+  border-radius: 6px;
+  background: $surface-alt-color;
+}
+
+.architecture-diagram {
+  background: $code-background-color;
+  border: 1px solid $surface-border-color;
+  border-radius: 6px;
+  padding: 1rem;
+  margin: 1.5rem 0;
+  overflow-x: auto;
+  
+  pre {
+    margin: 0;
+    color: $code-text-color;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 0.85rem;
+    line-height: 1.4;
+  }
+}
+
+img[alt*="Diagram"],
+img[alt*="Architecture"],
+img[alt*="Overview"] {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  border: 1px solid $surface-border-color;
+  border-radius: 6px;
+  background: $surface-alt-color;
+  margin: 1rem 0;
+}
+
+// Mermaid diagrams: rendered in place of `pre > code.language-mermaid`
+.mermaid,
+pre code.language-mermaid {
+  display: block !important;
+  max-width: 100%;
+  margin: 1.5rem auto !important;
+  padding: 1.25rem !important;
+  text-align: center;
+  overflow-x: auto;
+  background-color: $surface-color !important;
+  border: 1px solid $surface-border-color !important;
+  border-radius: 8px !important;
+  box-shadow: $card-shadow;
+  
+  svg {
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+// Dark/light theme toggle injected into the header by _includes/head_custom.html
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  margin: 0 0.5rem;
+  padding: 0;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  color: $body-text-color;
+  background-color: $surface-alt-color;
+  border: 1px solid $surface-border-color;
+  border-radius: 50%;
+  transition: $theme-transition, transform 0.2s ease, box-shadow 0.2s ease;
+  
+  &:hover {
+    border-color: $link-color;
+    box-shadow: 0 0 0 3px rgba(94, 65, 208, 0.15);
+    transform: rotate(-15deg);
+  }
+  
+  &:focus-visible {
+    outline: 2px solid $link-color;
+    outline-offset: 2px;
+  }
+}
+
+.aux-nav-list-item.theme-toggle-item {
+  display: inline-flex;
+  align-items: center;
+}
+
+.site-header > .theme-toggle {
+  flex-shrink: 0;
+  align-self: center;
 }
 
 // Clean code blocks without numbering - override all theme defaults
@@ -118,15 +346,16 @@ figure.highlight {
     border-radius: 6px !important;
     padding: 1rem !important;
     margin: 0 !important;
-    background-color: #f6f8fa !important;
-    border: 1px solid #e1e4e8 !important;
+    background-color: $code-background-color !important;
+    border: 1px solid $code-border-accent-color !important;   // purple-tinted border, like the Note box
+    border-left: 4px solid $link-color !important;
     overflow-x: auto !important;
     font-family: 'SFMono-Regular', 'Consolas', 'Liberation Mono', 'Menlo', monospace !important;
     box-shadow: none !important;
     
     code {
       background-color: transparent !important;
-      color: #24292e !important;
+      color: $code-text-color !important;
       padding: 0 !important;
       border-radius: 0 !important;
       font-size: 0.875rem !important;
@@ -163,7 +392,7 @@ figure.highlight {
 // Output cell styling (simplified)
 .code-output {
   border-radius: 6px !important;
-  border: 1px solid #e1e4e8 !important;
+  border: 1px solid $surface-border-color !important;
   margin: 0.5rem 0 1.5rem 0 !important;
   overflow: hidden !important;
   
@@ -171,11 +400,11 @@ figure.highlight {
     border-radius: 6px !important;
     padding: 1rem !important;
     margin: 0 !important;
-    background-color: #f8f9fa !important;
+    background-color: $surface-alt-color !important;
     border-left: 3px solid #28a745 !important;
     
     code {
-      color: #24292e !important;
+      color: $code-text-color !important;
       font-size: 0.875rem !important;
     }
   }
@@ -185,8 +414,8 @@ figure.highlight {
 
 // Inline code styling
 code {
-  background-color: #ecf0f1 !important;
-  color: #1976d2 !important;
+  background-color: $inline-code-background-color !important;
+  color: $link-color !important;
   padding: 0.2rem 0.4rem !important;
   border-radius: 3px !important;
   font-size: 0.9em !important;
@@ -207,8 +436,8 @@ table {
   margin: 1.5rem 0;
   
   th {
-    background-color: #1976d2;
-    color: white;
+    background-color: $table-header-bg-color;
+    color: #fff;
     font-weight: 600;
     padding: 0.75rem;
     text-align: left;
@@ -216,15 +445,24 @@ table {
   
   td {
     padding: 0.75rem;
-    border-bottom: 1px solid #d5dbdb;
+    border-bottom: 1px solid $table-border-color;
   }
   
   tr:nth-child(even) {
-    background-color: #f8f9fa;
+    background-color: $surface-alt-color;
   }
   
   tr:hover {
-    background-color: #e3f2fd;
+    background-color: $brand-tint-color;
+  }
+}
+
+// Keep the first column (short option tokens) on one line, so the Meaning
+// column no longer squeezes it. Opt-in per table via `{: .nowrap-first }`.
+.nowrap-first {
+  th:first-child,
+  td:first-child {
+    white-space: nowrap;
   }
 }
 
@@ -236,12 +474,12 @@ table {
       font-size: 0.9rem !important;
       
       &:hover {
-        background-color: #e3f2fd;
-        color: #1976d2;
+        background-color: $brand-tint-color;
+        color: $link-color;
       }
       
       &.active {
-        background-color: #1976d2;
+        background-color: $link-color;
         color: white;
       }
     }
@@ -270,17 +508,17 @@ table {
   border-radius: 0 3px 3px 0;
   
   &.note {
-    background-color: #e3f2fd;
-    border-color: #1976d2;
+    background-color: rgba(94, 65, 208, 0.1);
+    border-color: $link-color;
     
     .callout-title {
-      color: #1976d2;
+      color: $link-color;
       font-weight: 600;
     }
   }
   
   &.warning {
-    background-color: #fff3e0;
+    background-color: rgba(255, 152, 0, 0.12);
     border-color: #ff9800;
     
     .callout-title {
@@ -290,7 +528,7 @@ table {
   }
   
   &.important {
-    background-color: #ffebee;
+    background-color: rgba(244, 67, 54, 0.1);
     border-color: #f44336;
     
     .callout-title {
@@ -300,13 +538,52 @@ table {
   }
   
   &.tip {
-    background-color: #f1f8e9;
+    background-color: rgba(139, 195, 74, 0.12);
     border-color: #8bc34a;
     
     .callout-title {
       color: #689f38;
       font-weight: 600;
     }
+  }
+}
+
+// Theme callouts (> {: .note } etc.): in the dark scheme use the light end of
+// each palette for titles/borders so they keep contrast on dark backgrounds.
+@if $color-scheme == dark {
+  $adapt-dark-callouts: (
+    highlight: $yellow-000,
+    important: $blue-000,
+    new: $green-000,
+    note: $purple-000,
+    warning: $red-000,
+  );
+  
+  @each $name, $color in $adapt-dark-callouts {
+    $color: lighten($color, 12%);
+    
+    p.#{$name},
+    blockquote.#{$name} {
+      border-left-color: $color;
+      
+      &::before,
+      > .#{$name}-title {
+        color: $color;
+      }
+    }
+    
+    p.#{$name}-title,
+    blockquote.#{$name}-title {
+      border-left-color: $color;
+      
+      > p:first-child {
+        color: $color;
+      }
+    }
+  }
+  
+  .callout.tip .callout-title {
+    color: #8bc34a;
   }
 }
 
@@ -320,9 +597,9 @@ table {
   transition: all 0.3s ease;
   
   &.btn-primary {
-    background-color: #1976d2;
+    background-color: $link-color;
     color: white;
-    border: 1px solid #1976d2;
+    border: 1px solid $link-color;
     
     &:hover {
       background-color: #1565c0;
@@ -333,11 +610,11 @@ table {
   
   &.btn-outline {
     background-color: transparent;
-    color: #1976d2;
-    border: 1px solid #1976d2;
+    color: $link-color;
+    border: 1px solid $link-color;
     
     &:hover {
-      background-color: #1976d2;
+      background-color: $link-color;
       color: white;
     }
   }
@@ -346,7 +623,7 @@ table {
 // Package badges
 .package-badge {
   display: inline-block;
-  background-color: #1976d2;
+  background-color: $link-color;
   color: white;
   padding: 0.25rem 0.5rem;
   border-radius: 12px;
@@ -407,12 +684,14 @@ table {
     }
   }
   
-  .feature-grid {
+  .feature-grid,
+  .package-overview {
     grid-template-columns: 1fr;
     gap: 1rem;
   }
   
-  .feature-card {
+  .feature-card,
+  .package-card {
     padding: 1rem;
   }
 }
@@ -420,15 +699,15 @@ table {
 // Search enhancements
 .search-input {
   border-radius: 6px !important;
-  border: 1px solid #d5dbdb !important;
+  border: 1px solid $surface-border-color !important;
   margin-left: 1rem !important;
   padding-left: 2.5rem !important;
   width: calc(100% - 2rem) !important;
   max-width: 600px !important;
   
   &:focus {
-    border-color: #1976d2 !important;
-    box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2) !important;
+    border-color: $link-color !important;
+    box-shadow: 0 0 0 2px rgba(94, 65, 208, 0.2) !important;
   }
 }
 
@@ -502,8 +781,8 @@ input[type="search"],
 
 // Footer styling
 .site-footer {
-  background-color: #2c3e50;
-  color: #ecf0f1;
+  background-color: $footer-background-color;
+  color: $footer-text-color;
   padding: 2rem 0;
   margin-top: 3rem;
   
@@ -518,7 +797,7 @@ input[type="search"],
 
 // Breadcrumb styling
 .breadcrumb-nav {
-  background-color: #f8f9fa;
+  background-color: $surface-alt-color;
   padding: 0.5rem 1rem;
   border-radius: 4px;
   margin-bottom: 1rem;
@@ -532,12 +811,12 @@ input[type="search"],
     li {
       &:not(:last-child)::after {
         content: " / ";
-        color: #85929e;
+        color: $subtle-text-color;
         margin: 0 0.5rem;
       }
       
       a {
-        color: #1976d2;
+        color: $link-color;
         text-decoration: none;
         
         &:hover {
@@ -550,7 +829,7 @@ input[type="search"],
 
 // Package-specific styling
 .package-header {
-  background: linear-gradient(135deg, #e3f2fd 0%, #f1f8e9 100%);
+  background: linear-gradient(135deg, $hero-gradient-start 0%, $hero-gradient-end 100%);
   padding: 2rem;
   margin: -1rem -2rem 2rem -2rem;
   border-radius: 8px;
@@ -558,7 +837,7 @@ input[type="search"],
   
   .package-badge {
     display: inline-block;
-    background-color: #1976d2;
+    background-color: $link-color;
     color: white;
     padding: 0.5rem 1rem;
     border-radius: 20px;
@@ -568,28 +847,28 @@ input[type="search"],
   }
   
   h1 {
-    color: #1976d2;
+    color: $link-color;
     margin: 0.5rem 0;
     font-size: 2.2rem;
   }
   
   .package-description {
     font-size: 1.1rem;
-    color: #34495e;
+    color: $body-text-color;
     margin: 0;
   }
 }
 
 .package-footer {
-  background-color: #f8f9fa;
-  border: 1px solid #e1e4e8;
+  background-color: $surface-alt-color;
+  border: 1px solid $surface-border-color;
   border-radius: 6px;
   padding: 2rem;
   margin: 3rem 0 2rem 0;
   text-align: center;
   
   p {
-    color: #34495e;
+    color: $body-text-color;
     font-size: 1.1rem;
     margin-bottom: 1.5rem;
   }
@@ -607,12 +886,12 @@ input[type="search"],
   .nav-list-item {
     &.package-nav {
       .nav-list-link {
-        background-color: #e3f2fd;
-        color: #1976d2;
+        background-color: $brand-tint-color;
+        color: $link-color;
         font-weight: 500;
         
         &:hover {
-          background-color: #bbdefb;
+          background-color: $brand-tint-strong-color;
         }
       }
     }
@@ -621,14 +900,14 @@ input[type="search"],
 
 // Table of contents styling for parent pages
 .child-nav {
-  background: #f8f9fa !important;
-  border: 1px solid #e1e4e8 !important;
+  background: $surface-alt-color !important;
+  border: 1px solid $surface-border-color !important;
   border-radius: 8px !important;
   padding: 2rem !important;
   margin: 3rem 0 2rem 0 !important;
   
   h2 {
-    color: #1976d2 !important;
+    color: $link-color !important;
     font-size: 1.5rem !important;
     margin-bottom: 1.5rem !important;
     text-align: center !important;
@@ -645,20 +924,20 @@ input[type="search"],
     margin: 0 !important;
     
     .nav-list-item {
-      background: white !important;
-      border: 1px solid #e1e4e8 !important;
+      background: $surface-color !important;
+      border: 1px solid $surface-border-color !important;
       border-radius: 6px !important;
       padding: 1rem !important;
       transition: all 0.3s ease !important;
       
       &:hover {
-        border-color: #1976d2 !important;
+        border-color: $link-color !important;
         transform: translateY(-2px) !important;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
+        box-shadow: $card-shadow-hover !important;
       }
       
       .nav-list-link {
-        color: #1976d2 !important;
+        color: $link-color !important;
         font-weight: 600 !important;
         text-decoration: none !important;
         display: block !important;
@@ -674,9 +953,13 @@ input[type="search"],
 // Alternative selector for child navigation
 .children-nav,
 .nav-list.children {
-  background: #f8f9fa !important;
-  border: 1px solid #e1e4e8 !important;
+  background: $surface-alt-color !important;
+  border: 1px solid $surface-border-color !important;
   border-radius: 8px !important;
   padding: 2rem !important;
   margin: 3rem 0 2rem 0 !important;
 } 
+// Aux links (View on GitHub) use the purple accent on hover
+.aux-nav-list-link {
+  &:hover { color: $link-color; }
+}

@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Contributing
-nav_order: 6
+nav_order: 11
 description: "How to contribute to ADaPT"
 permalink: /contributing/
 ---
@@ -14,10 +14,10 @@ We welcome contributions to the ADaPT (Adaptive Data Pipeline Toolkit) project! 
 
 ### Prerequisites
 
-- Python 3.7 or higher
+- Python 3.10 or higher
 - Git
 - Basic understanding of data pipelines and ETL processes
-- Familiarity with YAML configuration files
+- Familiarity with YAML configuration files and SQL
 
 ### Development Environment Setup
 
@@ -34,17 +34,20 @@ We welcome contributions to the ADaPT (Adaptive Data Pipeline Toolkit) project! 
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    
-   # Install in development mode
+   # Install adapt-core and the connectors in development mode
    make install MODE=dev
+   make install-connectors MODE=dev
+   pip install pytest jsonschema
    
    # Verify installation
-   adapt_pipeline --help
+   adapt --help
+   adapt connectors
    ```
 
-4. **Set up environment variables**:
+4. **Run the tests and check the example sources**:
    ```bash
-   export ADAPT_CONFIGS="$(pwd)/configs"
-   export ADAPT_OUTPUT_DIR="/tmp/adapt_dev"
+   make test
+   make validate
    ```
 
 ## 📝 Types of Contributions
@@ -134,21 +137,14 @@ We welcome code contributions including:
 
 **Example:**
 ```python
-def load_configuration(module: str, namespace: str, config_name: str) -> dict:
+def load_source(path):
     """
-    Load configuration from the ADaPT configuration structure.
-    
-    Args:
-        module: Module name (connector, serializer, authorization, pipeline)
-        namespace: Service namespace
-        config_name: Configuration file name
-        
-    Returns:
-        Parsed configuration dictionary
-        
+    Loads the source at `path`: a source folder (source.yaml and one file per stream in streams/), its
+    source.yaml or one of its stream files, or a single-file source.
+
     Raises:
-        FileNotFoundError: If configuration file is not found
-        yaml.YAMLError: If YAML parsing fails
+        SourceFilesError: if `path` is not a source
+        yaml.YAMLError: if a file is not valid YAML
     """
     # Implementation here
 ```
@@ -161,68 +157,55 @@ def load_configuration(module: str, namespace: str, config_name: str) -> dict:
 - **Test with different Python versions** if possible
 
 ```bash
-# Run tests (when test suite is available)
-python -m pytest tests/
+# Run the test suite (core and connectors)
+make test                      # python -m pytest tests connectors -q
+
+# Check the example sources
+make validate                  # adapt validate --strict configs
 
 # Test installation
 make verify
-
-# Test CLI functionality
-adapt_pipeline --help
+make verify-connectors
 ```
 
 ### Configuration Guidelines
 
-When adding new configuration options:
+When adding new source format options:
 
 - **Use clear, descriptive names**
 - **Provide sensible defaults**
-- **Document all options**
-- **Include examples**
-- **Validate configuration** at runtime
+- **Document all options** (in `docs/design/source-format.md` and the package README)
+- **Include examples** (in `examples/sources/`)
+- **Check them in `adapt validate`** (`source_spec` and `source_validator`), so mistakes are found before a run, and
+  regenerate the JSON Schemas: `adapt validate --export-schema docs/schemas`
 
 **Example Configuration:**
 ```yaml
-# Good: Clear structure and documentation
-version: 1.0
-kind: connector
-description: "Example API connector with rate limiting"
-
-client:
-  type: rest_api
-  base_url: "https://api.example.com"
-  timeout: 30
-  rate_limit:
-    requests_per_second: 10
-    burst_limit: 50
-
-# Include inline documentation
-# timeout: Request timeout in seconds (default: 30)
-# rate_limit: Optional rate limiting configuration
+# Good: one stream per file, named requests, SQL steps and explicit exports
+requests:
+  - name: raw_campaigns
+    http: {path: "/accounts/{{ partition.account_id }}/campaigns"}
+    paginator: {type: offset, offset_param: start, limit_param: count, page_size: 100}
+    records: {path: elements}
+transform:
+  mode: page
+  steps:
+    - name: campaigns
+      select: "SELECT record->>'id' AS id, record->>'name' AS name FROM raw_campaigns"
+export:
+  campaigns: {step: campaigns, primary_key: [id]}
 ```
 
 ### Package Structure
 
-When adding new packages or modules:
+The core is one package, `adapt-core/` (installed as `adapt-core`, modules in `adapt-core/source/`, imported
+as `adapt.source.*`), with its `pyproject.toml`, `setup.py`, `README.md`, `LICENSE` and `Makefile`.
 
-- Follow the existing **package structure**
-- Include **setup.py** and **pyproject.toml**
-- Add **README.md** with package documentation
-- Include **LICENSE** file
-- Add **Makefile** for build automation
-
-```
-new_package/
-├── LICENSE
-├── Makefile
-├── README.md
-├── pyproject.toml
-├── setup.py
-└── new_package/
-    ├── __init__.py
-    ├── core_module.py
-    └── utils.py
-```
+SDK connectors for sources (an auth provider plus the read-only calls of a vendor SDK) and reader connectors (files,
+object storage, databases) are not core packages: they live in `connectors/<name>/`, one self-contained distribution
+each (`src/adapt/connectors/<name>/`, its own tests and README). See
+[connectors/README.md](https://github.com/karthick-jaganathan/ADaPT-ETL/blob/master/connectors/README.md) for the layout
+and how to add one.
 
 ## 🔄 Contribution Workflow
 
@@ -248,8 +231,8 @@ Use clear, descriptive commit messages:
 
 ```bash
 # Good commit messages
-git commit -m "Add support for custom authentication headers in connector"
-git commit -m "Fix serializer enum mapping for null values"
+git commit -m "Add support for custom authentication headers in a connector"
+git commit -m "Fix DuckDB transform cast for null enum values"
 git commit -m "Update installation documentation with Docker examples"
 
 # Follow conventional commits format (optional but preferred)
@@ -300,37 +283,21 @@ Brief description of changes
 
 ## 📦 Package-Specific Contributions
 
-### adapt-utils
+### adapt-core
 
 Focus areas:
-- Configuration management improvements
-- New export formats
-- Type system enhancements
-- Utility functions
+- The source format and its checks (`source_spec`, `source_validator`; regenerate the JSON Schemas with
+  `adapt validate --export-schema docs/schemas`)
+- The runtime: auth, partitions, paginators, async jobs, incremental state
+- Outputs and warehouse loading
+- Logging, progress and the run summary
 
-### adapt-connector
-
-Focus areas:
-- New API integrations
-- Authentication methods
-- Request/response handling
-- Error handling improvements
-
-### adapt-serializer
+### Connectors
 
 Focus areas:
-- New transformation types
-- Performance optimizations
-- Data validation
-- Complex data structure handling
-
-### adapt-pipeline
-
-Focus areas:
-- CLI improvements
-- Pipeline orchestration features
-- Error handling and logging
-- Performance monitoring
+- New SDK-backed APIs, or files and databases to read
+- Query builders and their checks
+- Error handling and logging of the vendor SDKs
 
 ## 📖 Documentation Development
 
@@ -470,23 +437,20 @@ bundle install
 ### Manual Testing
 
 ```bash
-# Test basic functionality
-export ADAPT_CONFIGS="$(pwd)/configs"
-adapt_pipeline --namespace test \
-  --pipeline-config data_ingestion.yaml \
-  --data-ingestion-config test_config.yaml \
-  --auth-data api_key="test" \
-  --external-input resource_id="123"
+# Check and run an example source
+adapt validate examples/sources
+adapt run examples/sources/readers/files_demo --set data_root=examples/sources/readers/files_demo/data --allow-connector files \
+  --output jsonl:out
 
 # Test with Docker
-docker-compose build
-docker-compose run --rm adapt-etl adapt_pipeline --help
+docker compose build
+docker compose run --rm adapt-etl adapt connectors
 ```
 
 ### Integration Testing
 
-- Test with **real API configurations** (using test accounts)
-- Verify **end-to-end pipeline execution**
+- Test with **real API accounts** (test accounts) through the connectors
+- Verify **end-to-end runs** of the example sources
 - Test **error handling scenarios**
 - Validate **output data quality**
 

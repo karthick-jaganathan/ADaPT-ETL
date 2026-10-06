@@ -8,141 +8,114 @@ permalink: /
 
 <div class="hero-section">
   <h1>🚀 ADaPT - Adaptive Data Pipeline Toolkit</h1>
-  <p class="subtitle">A Python-based, YAML-configured data pipeline framework for extracting, transforming, and exporting data from various sources to multiple destinations.</p>
-  
+  <p class="subtitle">Extract data from APIs, files and databases with YAML source configurations, shape it with SQL, and write it to files or a warehouse.</p>
+
   <div class="badges">
     <img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="License">
-    <img src="https://img.shields.io/badge/python-3.7+-blue.svg" alt="Python">
+    <img src="https://img.shields.io/badge/python-3.10+-blue.svg" alt="Python">
     <img src="https://img.shields.io/badge/GitHub-ADaPT--ETL-blue.svg" alt="GitHub">
   </div>
-  
+
   <div>
     <a href="{{ site.baseurl }}/installation" class="btn btn-primary">Get Started</a>
     <a href="https://github.com/karthick-jaganathan/ADaPT-ETL" class="btn btn-outline">View on GitHub</a>
   </div>
 </div>
 
-## 🚀 Overview
+## What is ADaPT?
 
-ADaPT (Adaptive Data Pipeline Toolkit) is a modular, configuration-driven ETL framework designed to simplify data extraction, transformation, and loading processes. Built with flexibility and extensibility in mind, ADaPT allows you to create complex data pipelines using simple YAML configurations.
+ADaPT turns a few **YAML files** into a working data pipeline. You describe *what* to pull — from an **API, a file
+store, or a database** — and ADaPT handles the *how*: signing in, paging, retries, shaping the data with SQL, and
+writing it out. No per-connector code, and one command runs any source.
 
-### Key Features
+## How it works
 
-- **🔧 Configuration-Driven**: Define entire pipelines using YAML configurations
-- **🔌 Modular Architecture**: Four independent packages that work together seamlessly
-- **🌐 Multi-Source Support**: Extensible connector architecture for APIs, databases, and file systems
-- **🔄 Flexible Transformations**: Powerful serialization engine with conditional logic and data normalization
-- **📦 Multiple Installation Options**: Install complete toolkit or individual components
-- **🐳 Docker Support**: Containerized deployment with Docker and Docker Compose
-- **🛠️ Developer Friendly**: Comprehensive CLI tools and development utilities
+A **source** is a folder of YAML. `adapt run` executes it in three steps:
 
-## 🏗️ Architecture
+```mermaid
+flowchart LR
+    Y["Source<br/>(YAML)"] --> R["adapt run"]
+    R --> C["Connector"] --> T["DuckDB<br/>transform"] --> O["Output"]
+    P["Orchestration"] -->|per user| R
+```
 
-ADaPT consists of four core packages that form a complete data pipeline ecosystem:
+1. **Fetch** — each stream pulls records through a **connector** (an API, files, or a database).
+2. **Shape** — `transform` steps reshape the records with **DuckDB SQL**.
+3. **Write** — the result lands in the **output** you choose: files, DuckDB, DuckLake, or a dlt destination.
 
-### System Overview
+Run a source once from the command line, or let **orchestration** run it on a schedule — one pipeline across many
+accounts and networks. Two commands cover day-to-day use:
 
-The following diagram illustrates the complete ADaPT ecosystem, showing how data flows from various sources through the four core packages to multiple output destinations:
+- **`adapt run`** — run a source (auth, paging, async report jobs, incremental state, retries and rate limits built in).
+- **`adapt validate`** — check sources without running them, with the file, line and path of every finding.
 
-![ADaPT System Overview]({{ site.baseurl }}/assets/images/diagrams/system_overview.svg)
-
-### Data Flow Process
-
-This diagram shows the sequential data processing flow through the ADaPT pipeline:
-
-![Data Flow Process]({{ site.baseurl }}/assets/images/diagrams/dataflow.svg)
-
-## 📚 Documentation Sections
+## Explore the docs
 
 <div class="feature-grid">
   <div class="feature-card">
-    <h3><a href="{{ site.baseurl }}/installation">🛠️ Installation</a></h3>
-    <p>Comprehensive installation guide with multiple methods, troubleshooting, and development setup.</p>
+    <h3><a href="{{ site.baseurl }}/quickstart/">🚀 Quickstart</a></h3>
+    <p>Install, validate and run your first source in five minutes.</p>
   </div>
-  
+
   <div class="feature-card">
-    <h3><a href="{{ site.baseurl }}/packages/">📦 Packages</a></h3>
-    <p>Detailed documentation for all four core packages with API references and examples.</p>
+    <h3><a href="{{ site.baseurl }}/concepts/">🧩 Concepts</a></h3>
+    <p>Sources, streams, connectors, pipelines, networks and execution modes — the vocabulary.</p>
   </div>
-  
+
   <div class="feature-card">
-    <h3><a href="{{ site.baseurl }}/examples">💡 Examples</a></h3>
-    <p>Practical examples and tutorials for common use cases and integrations.</p>
+    <h3><a href="{{ site.baseurl }}/architecture/">🏗️ Architecture</a></h3>
+    <p>The layers and the <code>adapt run</code> + orchestration flows, with sequence diagrams.</p>
   </div>
-  
+
   <div class="feature-card">
-    <h3><a href="{{ site.baseurl }}/api-reference">📖 API Reference</a></h3>
-    <p>Complete API documentation with class references and method signatures.</p>
+    <h3><a href="{{ site.baseurl }}/adapt-core/">⚙️ adapt-core</a></h3>
+    <p>The CLI and runtime: commands, streams, outputs, logging, connectors and the Python API.</p>
+  </div>
+
+  <div class="feature-card">
+    <h3><a href="{{ site.baseurl }}/orchestration/">🔀 Orchestration</a></h3>
+    <p>Dagster pipelines over the <code>adapt</code> CLI, the shared-vocabulary network map, and execution modes.</p>
+  </div>
+
+  <div class="feature-card">
+    <h3><a href="{{ site.baseurl }}/examples/">💡 Examples</a></h3>
+    <p>Task-oriented recipes for the example sources, from local files to ad platforms.</p>
+  </div>
+
+  <div class="feature-card">
+    <h3><a href="{{ site.baseurl }}/installation/">🛠️ Installation</a></h3>
+    <p>Install adapt-core and the connectors, verify, Docker and development setup.</p>
+  </div>
+
+  <div class="feature-card">
+    <h3><a href="{{ site.baseurl }}/api-reference/">📖 API Reference</a></h3>
+    <p>Every <code>adapt</code> command and option, and the Python entry points.</p>
   </div>
 </div>
 
-## 📦 Core Components
-
-Each ADaPT package is designed with specific responsibilities and can be used independently or as part of the complete toolkit:
-
-<div class="package-overview">
-  <div class="package-card">
-    <h3><a href="{{ site.baseurl }}/packages/pipeline/">🚀 Pipeline Package</a></h3>
-    <p>Pipeline orchestration and execution engine</p>
-  </div>
-
-  <div class="package-card">
-    <h3><a href="{{ site.baseurl }}/packages/connector/">🔌 Connector Package</a></h3>
-    <p>API connectors, authorization, and data extraction</p>
-  </div>
-
-  <div class="package-card">
-    <h3><a href="{{ site.baseurl }}/packages/serializer/">🔄 Serializer Package</a></h3>
-    <p>Data transformation, serialization, and normalization</p>
-  </div>
-
-  <div class="package-card">
-    <h3><a href="{{ site.baseurl }}/packages/utils/">🔧 Utils Package</a></h3>
-    <p>Configuration management, data storage, and utility functions</p>
-  </div>
-</div>
-
-## 🚀 Quick Start
-
-{: .note }
-> **Ready to get started?** Follow these simple steps to set up ADaPT and run your first data pipeline.
-
-### Installation
+## Quick start
 
 ```bash
-# Clone and install
 git clone https://github.com/karthick-jaganathan/ADaPT-ETL.git
 cd ADaPT-ETL
-make install
+make install && make install-connectors
 
-# Verify installation
-adapt_pipeline --help
+adapt connectors                                  # list the installed connectors
+adapt validate examples/sources                   # check every example source
+adapt run examples/sources/readers/files_demo \
+  --set data_root=examples/sources/readers/files_demo/data --allow-connector files --output jsonl:out/
 ```
 
-### Basic Usage
+New here? Follow the [Quickstart]({{ site.baseurl }}/quickstart/) for a guided five-minute tour.
 
-```bash
-# Set environment variables
-export ADAPT_CONFIGS="$(pwd)/configs"
-export ADAPT_OUTPUT_DIR="/path/to/output"
+## Contributing
 
-# Run your first pipeline
-adapt_pipeline --namespace your_namespace \
-  --pipeline-config data_ingestion.yaml \
-  --data-ingestion-config your_config.yaml \
-  --auth-data api_key="your-api-key"
-```
+See the [contributing guide]({{ site.baseurl }}/contributing).
 
-## 🤝 Contributing
+## License
 
-We welcome contributions! See our [Contributing Guide]({{ site.baseurl }}/contributing) for details on how to get started.
+Apache License 2.0.
 
-## 📄 License
+## Support
 
-This project is licensed under the Apache License 2.0 - see the [LICENSE](https://github.com/karthick-jaganathan/ADaPT-ETL/blob/master/LICENSE) file for details.
-
-## 🆘 Support
-
-- **GitHub Issues**: [Report bugs and request features](https://github.com/karthick-jaganathan/ADaPT-ETL/issues)
-- **Documentation**: Browse the sections above for detailed guides
-- **Examples**: Check out practical examples in the Examples section
+Report bugs and request features on [GitHub Issues](https://github.com/karthick-jaganathan/ADaPT-ETL/issues).

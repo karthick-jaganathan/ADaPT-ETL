@@ -1,0 +1,30 @@
+# The keywords of each ad group: one call per ad group (from the ad_groups stream).
+partitions:
+  - {from_stream: ad_groups, fields: [account_id, campaign_id, ad_group_id]}
+requests:
+  - name: raw_keywords
+    sdk: microsoft_ads
+    service: CampaignManagementService
+    method: GetKeywordsByAdGroupId
+    headers: {CustomerAccountId: "{{ partition.account_id }}"}
+    arguments: {AdGroupId: "{{ partition.ad_group_id }}"}
+    records: {path: Keyword}
+transform:
+  mode: page
+  steps:
+    - name: keywords
+      select: |
+        SELECT partition->>'account_id'          AS account_id,
+               partition->>'campaign_id'         AS campaign_id,
+               partition->>'ad_group_id'         AS ad_group_id,
+               record->>'Id'                     AS keyword_id,
+               record->>'Text'                   AS keyword,
+               record->>'MatchType'              AS match_type,        -- Exact, Phrase, Broad
+               record->>'Status'                 AS status,
+               record->>'EditorialStatus'        AS editorial_status,
+               (record->>'$.Bid.Amount')::DOUBLE AS bid                -- null: the ad group's bid applies
+        FROM raw_keywords
+export:
+  keywords:
+    step: keywords
+    primary_key: [account_id, keyword_id]

@@ -1,0 +1,46 @@
+# One row per campaign per day, from a report job.
+partitions:
+  - {name: account_id, values: "{{ config.account_ids }}"}
+incremental: {cursor_field: date, start: "{{ config.start_date }}", window: 30d, lookback: 30d}
+requests:
+  - name: raw_campaign_performance
+    async_job:
+      submit:
+        sdk: microsoft_ads
+        service: ReportingService
+        method: SubmitGenerateReport
+        arguments:
+          ReportRequest:
+            "@type": CampaignPerformanceReportRequest   # SOAP type, built by the connector
+            Aggregation: Daily
+            Format: Csv
+            ExcludeReportHeader: true
+            ExcludeReportFooter: true
+            Columns: [TimePeriod, AccountId, CampaignId, CampaignName, Impressions, Clicks, Spend]
+            Scope: {AccountIds: ["{{ partition.account_id }}"]}
+            Time: {CustomDateRangeStart: "{{ window.start }}", CustomDateRangeEnd: "{{ window.end }}"}
+      poll:
+        method: PollGenerateReport
+        arguments: {ReportRequestId: "{{ submit.result }}"}
+        every: 15s
+        timeout: 30m
+        done_when: {path: Status, equals: Success}
+        fail_when: {path: Status, equals: Error}
+      download: {url: "{{ poll.ReportDownloadUrl }}", format: csv, compression: zip}
+transform:
+  mode: page
+  steps:
+    - name: campaign_performance
+      select: |                    # SQL (DuckDB) over each page of report rows: the report's values are text
+        SELECT record->>'AccountId'                          AS account_id,
+               record->>'CampaignId'                         AS campaign_id,
+               record->>'CampaignName'                       AS campaign_name,
+               (record->>'TimePeriod')::DATE                 AS date,
+               coalesce((record->>'Impressions')::BIGINT, 0) AS impressions,
+               coalesce((record->>'Clicks')::BIGINT, 0)      AS clicks,
+               coalesce((record->>'Spend')::DOUBLE, 0)       AS spend
+        FROM raw_campaign_performance
+export:
+  campaign_performance:
+    step: campaign_performance
+    primary_key: [account_id, campaign_id, date]

@@ -1,0 +1,28 @@
+# Customers: one JSON lines object per day (customers/<day>.jsonl), each line one record as written. A day without
+# an object is skipped with a warning (on_missing: skip); the bookmark still advances.
+incremental:
+  cursor_field: signed_up
+  start: "{{ config.start_date }}"
+  window: 1d
+requests:
+  - name: raw_customers
+    sdk: s3
+    service: object
+    method: read
+    arguments:
+      path: "customers/{{ window.start }}.jsonl"
+      format: jsonl
+      on_missing: skip
+transform:
+  mode: page
+  steps:
+    - name: customers
+      select: |
+        SELECT record->>'id'                          AS customer_id,
+               record->>'name'                        AS customer_name,
+               (record->>'signed_up')::DATE           AS signed_up
+        FROM raw_customers
+export:
+  customers:
+    step: customers
+    primary_key: [customer_id]

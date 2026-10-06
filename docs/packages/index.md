@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Packages
-nav_order: 3
-description: "Documentation for all ADaPT packages"
+nav_order: 10
+description: "The ADaPT packages: adapt-core and its connectors"
 permalink: /packages/
 has_children: true
 has_toc: false
@@ -10,51 +10,51 @@ has_toc: false
 
 # ADaPT Packages
 
-ADaPT consists of four core packages that work together to provide a complete data pipeline framework. Each package serves a specific purpose and can be used independently or as part of the complete toolkit.
+ADaPT is one core package, **adapt-core**, and optional connectors. Every connector depends on adapt-core and registers
+itself under the `adapt.connectors` entry point group, so `adapt connectors` lists it once it is installed.
 
-## Package Overview
+## adapt-core
 
-| Package                                                        | Purpose                                      | Key Components                                                 |
-|----------------------------------------------------------------|----------------------------------------------|----------------------------------------------------------------|
-| **[adapt-utils]({{ site.baseurl }}/packages/utils)**           | Core utilities and configuration management  | Config readers, data store, type system, exporters             |
-| **[adapt-connector]({{ site.baseurl }}/packages/connector)**   | Data source connections and API integrations | Authorization, service clients, dispatchers, post-processors   |
-| **[adapt-serializer]({{ site.baseurl }}/packages/serializer)** | Data transformation and serialization        | Field mapping, data normalization, conditional transformations |
-| **[adapt-pipeline]({{ site.baseurl }}/packages/pipeline)**     | Pipeline orchestration and execution         | CLI interface, workflow management, pipeline items             |
+[`adapt-core/`](https://github.com/karthick-jaganathan/ADaPT-ETL/tree/master/adapt-core) ([documentation]({{ site.baseurl }}/adapt-core/)) - the `adapt`
+command (`adapt run`, `adapt validate`, `adapt connectors`) and the runtime: built-in auth,
+partitions, paginators, async jobs, incremental state, retries and rate limits, SQL transform steps on an embedded
+DuckDB, and the outputs (Singer, JSONL, CSV, TSV, Parquet, DuckDB, DuckLake and, with the `dlt` extra, dlt).
 
-## Architecture Diagram
+Its modules (`adapt.core.*`) include:
 
-![ADaPT System Overview]({{ site.baseurl }}/assets/images/diagrams/system_overview.svg)
+| Module | Purpose |
+|---|---|
+| `cli` | the `adapt` command |
+| `engine.runner` | `SourceRunner`: runs a loaded source |
+| `validation.engine` | `adapt validate`: YAML loading with locations, findings, the command and the JSON Schema export |
+| `validation.source` | `SourceChecker`: the checks of `kind: source` |
+| `validation.schema` | the source format's keys and the JSON Schemas |
+| `config.loader` | finds and loads a source folder (`source.yaml` + `streams/`) or a single-file source |
+| `config.reader` | `load_yaml` |
+| `outputs.output`, `outputs.warehouse`, `outputs.dlt_output`, `outputs.exporter` | the outputs, and atomic file writes |
+| `runtime.components` | the `Connector` and `QueryBuilder` base classes: component discovery and checks |
 
-## Package Dependencies
+## Connectors
 
-The packages have the following dependency relationships:
+| Connector | Package | Reads |
+|---|---|---|
+| `google_ads` | adapt-google-ads | Google Ads (SDK, GAQL query builder) |
+| `microsoft_ads` | adapt-microsoft-ads | Microsoft Advertising (SDK, async reports) |
+| `facebook_ads` | adapt-facebook-ads | Facebook Marketing API (SDK) |
+| `files` | adapt-files | local CSV, TSV, JSON, JSONL and Parquet files |
+| `s3` | adapt-s3 | Amazon S3 and S3-compatible object storage |
+| `gcs` | adapt-gcs | Google Cloud Storage |
+| `postgres` | adapt-postgres | PostgreSQL (read-only queries) |
 
-- **[adapt-utils]({{ site.baseurl }}/packages/utils)**: required by all other packages, providing core utilities and configuration management.
-- **[adapt-connector]({{ site.baseurl }}/packages/connector)**: Depends on adapt-utils, providing API connections and data extraction capabilities.
-- **[adapt-serializer]({{ site.baseurl }}/packages/serializer)**: Depends on adapt-utils, providing data transformation and serialization features.
-- **[adapt-pipeline]({{ site.baseurl }}/packages/pipeline)**: Depends on adapt-utils, adapt-connector, and adapt-serializer to orchestrate the entire data processing workflow.
+Each connector's README (`connectors/<name>/README.md`) has its options, error codes and logs; `connectors/README.md` describes
+the layout and how to write a connector.
 
-## Installation Options
+## Installation
 
-You can install packages individually or as a complete toolkit:
-
-### Complete Installation
 ```bash
-make install
+make install                  # adapt-core
+make install-connectors       # every connector; or e.g. make install-files
+make install MODE=dev         # editable
 ```
 
-### Individual Package Installation
-```bash
-# Install packages in dependency order
-cd adapt/utils && pip install .
-cd ../connector && pip install .
-cd ../serializer && pip install .
-cd ../pipeline && pip install .
-```
-
-### Development Installation
-```bash
-make install MODE=dev
-```
-
-For detailed installation instructions, see the [Installation Guide]({{ site.baseurl }}/installation). 
+See [Installation]({{ site.baseurl }}/installation) for details.

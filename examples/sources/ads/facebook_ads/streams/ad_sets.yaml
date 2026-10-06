@@ -1,0 +1,43 @@
+# The ad sets of each ad account, with their targeting: locations, audiences, ages, placements, ...
+partitions:
+  - {name: account_id, values: "{{ config.account_ids }}"}
+requests:
+  - name: raw_ad_sets
+    sdk: facebook_ads
+    service: AdAccount
+    method: get_ad_sets
+    arguments:
+      id: "act_{{ partition.account_id }}"
+      fields: [id, account_id, campaign_id, name, status, effective_status, optimization_goal, billing_event,
+               bid_strategy, daily_budget, lifetime_budget, start_time, end_time, updated_time, targeting]
+      params: {limit: 100}                   # targeting is large: smaller pages
+transform:
+  mode: page
+  steps:
+    - name: ad_sets
+      select: |
+        SELECT record->>'account_id'                                    AS account_id,
+               record->>'campaign_id'                                   AS campaign_id,
+               record->>'id'                                            AS ad_set_id,
+               record->>'name'                                          AS ad_set_name,
+               record->>'status'                                        AS status,
+               record->>'effective_status'                              AS effective_status,
+               record->>'optimization_goal'                             AS optimization_goal,
+               record->>'billing_event'                                 AS billing_event,
+               record->>'bid_strategy'                                  AS bid_strategy,
+               (record->>'daily_budget')::BIGINT                        AS daily_budget,   -- in the currency's smallest unit
+               (record->>'lifetime_budget')::BIGINT                     AS lifetime_budget,
+               (record->>'start_time')::TIMESTAMPTZ                     AS start_time,     -- in UTC
+               (record->>'end_time')::TIMESTAMPTZ                       AS end_time,
+               (record->>'updated_time')::TIMESTAMPTZ                   AS updated_time,
+               (record->'$.targeting.geo_locations.countries')::VARCHAR[] AS countries,
+               (record->>'$.targeting.age_min')::INTEGER                AS age_min,
+               (record->>'$.targeting.age_max')::INTEGER                AS age_max,
+               (record->'$.targeting.custom_audiences')::JSON[]         AS custom_audiences,   -- [{id, name}]
+               (record->'$.targeting.excluded_custom_audiences')::JSON[] AS excluded_custom_audiences,
+               (record->'targeting')::MAP(VARCHAR, JSON)                AS targeting   -- all of it, as one object
+        FROM raw_ad_sets
+export:
+  ad_sets:
+    step: ad_sets
+    primary_key: [ad_set_id]

@@ -126,6 +126,10 @@ docs/_site/
 docs/.sass-cache/
 docs/.jekyll-cache/
 docs/.jekyll-metadata
+# Jekyll local-preview gems (bundle install --path vendor/bundle)
+docs/vendor/
+docs/.bundle/
+docs/.jekyll-metadata
 
 # Temporary files
 *.tmp

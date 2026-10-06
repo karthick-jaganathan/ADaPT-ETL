@@ -1,0 +1,35 @@
+# Example source folder (see docs/design/source-format.md): this file, and one file per stream in streams/.
+# It reads a PostgreSQL shop database (tables public.customers, public.orders, public.order_lines) with the postgres
+# connector: read-only SELECT queries whose values are bound parameters. Check it with (no database needed):
+#   adapt validate examples/sources/readers/postgres_demo
+# Run it (pip install adapt-postgres; DuckDB installs its postgres extension on the first connect):
+#   ADAPT_SECRET_PG_PASSWORD='...' adapt run examples/sources/readers/postgres_demo --set pg_host=db.example.com \
+#     --allow-connector postgres --output jsonl:out
+# The connection keys are config; the password comes from secrets only (ADAPT_SECRET_<NAME> environment variables or
+# --secrets FILE) and is redacted. A DSN secret works too, in their place: dsn: "{{ secrets.pg_dsn }}".
+kind: source
+name: postgres_demo
+description: Customers, orders and order lines from a PostgreSQL database.
+
+spec:
+  config:
+    start_date: {type: date, default: "-7d", description: First day of orders (read a day at a time)}
+    customer_status: {type: string, default: active, description: Only customers with this status (customers)}
+    pg_host: {type: string, default: localhost, description: The PostgreSQL server's host name}
+    pg_port: {type: integer, default: 5432, description: Its port}
+    pg_database: {type: string, default: shop, description: The database}
+    pg_user: {type: string, default: reader, description: A role that can only read}
+    pg_sslmode: {type: string, default: prefer, description: "libpq sslmode: disable, allow, prefer, require, ..."}
+  secrets:
+    pg_password: {type: string, description: The role's password}
+
+auth:
+  provider: postgres                       # registered by the adapt-postgres connector
+  host: "{{ config.pg_host }}"             # the connection keys are config: literal text or references
+  port: "{{ config.pg_port }}"
+  database: "{{ config.pg_database }}"
+  user: "{{ config.pg_user }}"
+  password: "{{ secrets.pg_password }}"    # the only credential: a secret reference only
+  sslmode: "{{ config.pg_sslmode }}"
+  options: {application_name: adapt-postgres-demo, connect_timeout: "10"}  # extra libpq connection parameters
+  statement_timeout: 5min                  # Postgres' statement_timeout for every statement the connector runs

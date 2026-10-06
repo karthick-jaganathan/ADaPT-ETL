@@ -1,0 +1,29 @@
+# Example source folder (see docs/design/source-format.md): this file, and one file per stream in streams/.
+# It reads csv, jsonl and parquet objects from an S3 bucket (or an S3-compatible store) with the s3 connector.
+# Check it with (no network, no bucket needed):
+#   adapt validate examples/sources/readers/s3_demo
+# Run it (pip install adapt-s3; DuckDB installs its httpfs extension on the first connect):
+#   ADAPT_SECRET_S3_KEY_ID=AKIA... ADAPT_SECRET_S3_SECRET=... \
+#     adapt run examples/sources/readers/s3_demo --set bucket_root=s3://my-bucket/exports/ --allow-connector s3 --output jsonl:out
+# The credentials come from secrets only (ADAPT_SECRET_<NAME> environment variables or --secrets FILE) and are
+# redacted. Keys without a scheme are relative to the first root; nothing outside the roots can be read, and a URL
+# with a `?` (a query DuckDB would read as connection settings) is refused before anything is read.
+kind: source
+name: s3_demo
+description: Customers, orders and events from objects in an S3 bucket.
+
+spec:
+  config:
+    bucket_root: {type: string, default: "s3://acme-data/exports/", description: "The URL prefix objects are read from (s3://bucket/prefix/)"}
+    region: {type: string, default: us-east-1, description: The bucket's region}
+    start_date: {type: date, default: "2026-10-01", description: First day of customers' daily objects}
+  secrets:
+    s3_key_id: {type: string, description: The access key id}
+    s3_secret: {type: string, description: The secret access key}
+
+auth:
+  provider: s3                         # registered by the adapt-s3 connector
+  roots: ["{{ config.bucket_root }}"]  # the only URL prefixes objects can be read from
+  key_id: "{{ secrets.s3_key_id }}"    # credentials: secret references only, never written in the source
+  secret: "{{ secrets.s3_secret }}"
+  region: "{{ config.region }}"        # settings: literal values or references

@@ -1,0 +1,26 @@
+# Example source folder (see docs/design/source-format.md): this file, and one file per stream in streams/.
+# Check it with: adapt validate examples/sources/ads/microsoft_ads
+# Run it (pip install adapt-microsoft-ads): adapt run examples/sources/ads/microsoft_ads \
+#   --set account_ids=... --set customer_id=...
+# Secrets come from ADAPT_SECRET_<NAME> environment variables or --secrets FILE.
+kind: source
+name: microsoft_ads
+
+spec:
+  config:
+    account_ids: {type: list, items: string}
+    customer_id: {type: string}
+    start_date: {type: date, default: "-30d"}
+  secrets:
+    developer_token: {type: string}
+    client_id: {type: string}
+    client_secret: {type: string, required: false, description: For web apps; leave out for desktop and mobile apps}
+    refresh_token: {type: string}
+
+auth:
+  provider: microsoft_ads              # registered by the adapt-microsoft-ads connector
+  developer_token: "{{ secrets.developer_token }}"
+  client_id: "{{ secrets.client_id }}"
+  client_secret: "{{ secrets.client_secret }}"
+  refresh_token: "{{ secrets.refresh_token }}"
+  customer_id: "{{ config.customer_id }}"

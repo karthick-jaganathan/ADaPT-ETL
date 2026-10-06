@@ -1,0 +1,40 @@
+# One row per campaign per day.
+partitions:
+  - {name: account_id, values: "{{ config.account_ids }}"}
+incremental:
+  cursor_field: date
+  start: "{{ config.start_date }}"
+  window: 7d
+  lookback: 28d                    # attribution windows restate results for up to 28 days
+retry: {max_attempts: 5, max_delay: 5m}   # throttling can last minutes
+requests:
+  - name: raw_campaign_insights
+    sdk: facebook_ads
+    service: AdAccount
+    method: get_insights           # an edge: paged by the connector
+    arguments:
+      id: "act_{{ partition.account_id }}"
+      fields: [account_id, campaign_id, campaign_name, date_start, impressions, clicks, spend]
+      params:
+        level: campaign
+        time_increment: 1
+        time_range: {since: "{{ window.start }}", until: "{{ window.end }}"}
+        limit: 500
+transform:
+  mode: page
+  steps:
+    - name: campaign_insights
+      select: |                    # SQL (DuckDB) over each page of records: insights numbers are text
+        SELECT record->>'account_id'                         AS account_id,
+               record->>'campaign_id'                        AS campaign_id,
+               record->>'campaign_name'                      AS campaign_name,
+               (record->>'date_start')::DATE                 AS date,
+               coalesce((record->>'impressions')::BIGINT, 0) AS impressions,
+               coalesce((record->>'clicks')::BIGINT, 0)      AS clicks,
+               coalesce((record->>'spend')::DOUBLE, 0)       AS spend,
+               round(spend / nullif(clicks, 0), 4)           AS cpc
+        FROM raw_campaign_insights
+export:
+  campaign_insights:
+    step: campaign_insights
+    primary_key: [campaign_id, date]

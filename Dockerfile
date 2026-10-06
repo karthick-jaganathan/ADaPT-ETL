@@ -39,24 +39,18 @@ RUN apt-get update && apt-get install -y \
     make \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for better caching
-COPY requirements.txt .
-
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
-
 # Copy the entire project
 COPY . .
 
-# Install the ADaPT packages in dependency order
+# Install adapt-core (the `adapt` and `adapt-validate` commands) and the source connectors, which bring their own
+# dependencies (vendor SDKs, or DuckDB for files, s3, gcs and postgres)
 # Alternative 1: Using make (requires make to be installed)
-RUN make install MODE=dev
+RUN make install MODE=dev && make install-connectors MODE=dev
 
 # Alternative 2: Direct pip installation (uncomment if make is not available)
-# RUN cd adapt/utils && pip install -e . && cd ../.. && \
-#     cd adapt/connector && pip install -e . && cd ../.. && \
-#     cd adapt/serializer && pip install -e . && cd ../.. && \
-#     cd adapt/pipeline && pip install -e . && cd ../..
+# RUN pip install -e adapt-core \
+#     -e connectors/ads/google_ads -e connectors/ads/microsoft_ads -e connectors/ads/facebook_ads \
+#     -e connectors/readers/files -e connectors/readers/s3 -e connectors/readers/gcs -e connectors/readers/postgres
 
 # Create a non-root user
 RUN useradd --create-home --shell /bin/bash adapt && \
@@ -64,4 +58,4 @@ RUN useradd --create-home --shell /bin/bash adapt && \
 USER adapt
 
 # Default command
-CMD ["adapt_pipeline", "--help"]
+CMD ["adapt", "--help"]

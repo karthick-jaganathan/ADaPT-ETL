@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "adapt-facebook-ads"
+version = "0.0.1"
+description = "Adaptive Data Pipeline Toolkit - Facebook (Meta) Ads connector (the facebook_ads auth provider and Marketing API reads)"
+readme = "README.md"
+license = "Apache-2.0"
+authors = [
+    {name = "Karthick Jaganathan"},
+]
+keywords = ["data", "pipeline", "etl", "connector", "facebook-ads", "meta-ads"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+requires-python = ">=3.10"
+dependencies = [
+    "adapt-core~=0.0.1",
+    "facebook_business>=26.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/karthick-jaganathan/ADaPT-ETL"
+Repository = "https://github.com/karthick-jaganathan/ADaPT-ETL"
+
+[project.entry-points."adapt.connectors"]
+facebook_ads = "adapt.connectors.facebook_ads.connector:FacebookAdsConnector"
+
+[tool.setuptools]
+# src layout: adapt and adapt.connectors are namespace packages shared with the other ADaPT distributions
+package-dir = {"" = "src"}
+packages = ["adapt.connectors.facebook_ads"]

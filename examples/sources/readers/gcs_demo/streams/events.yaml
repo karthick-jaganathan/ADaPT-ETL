@@ -1,0 +1,28 @@
+# Events: Parquet parts in date folders (events/day=2026-10-01/part-0.parquet, ...). `match` (a Python regex) selects
+# the objects under `path` whose key relative to it fully matches; `recursive: true` looks in its sub-folders too.
+# Other objects there (e.g. _SUCCESS markers) are not read.
+requests:
+  - name: raw_events
+    sdk: gcs
+    service: object
+    method: read
+    arguments:
+      path: events/
+      match: 'day=\d{4}-\d{2}-\d{2}/part-\d+\.parquet'
+      recursive: true
+      format: parquet
+      options: {filename: true}
+transform:
+  mode: page
+  steps:
+    - name: events
+      select: |
+        SELECT (record->>'event_id')::BIGINT          AS event_id,
+               record->>'kind'                        AS kind,
+               (record->>'value')::DECIMAL(12,2)      AS value,
+               regexp_extract(record->>'filename', 'day=([0-9-]+)/', 1)::DATE AS day
+        FROM raw_events
+export:
+  events:
+    step: events
+    primary_key: [event_id]

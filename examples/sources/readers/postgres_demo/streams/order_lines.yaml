@@ -1,0 +1,48 @@
+# The lines of each day's orders: the order ids come from the first query, up to 500 per query (batch_size), bound
+# as a list ($ids) - `id = ANY($ids)` reads the lines of a batch in one query.
+incremental:
+  cursor_field: ordered_on
+  start: "{{ config.start_date }}"
+  window: 1d
+requests:
+  - name: raw_orders
+    sdk: postgres
+    service: database
+    method: query
+    arguments:
+      query: |
+        SELECT id, updated_at FROM public.orders
+        WHERE updated_at >= $since AND updated_at < $until + INTERVAL 1 DAY
+      params:
+        since: "{{ window.start }}"
+        until: "{{ window.end }}"
+  - name: raw_lines
+    partitions:
+      - {name: ids, from: raw_orders, field: id, batch_size: 500}
+    sdk: postgres
+    service: database
+    method: query
+    arguments:
+      query: |
+        SELECT order_id, line_number, product_id, quantity, unit_price
+        FROM public.order_lines
+        WHERE order_id = ANY($ids::BIGINT[])
+      params:
+        ids: "{{ partition.ids }}"
+transform:
+  mode: run                        # the line queries take their order ids from the order query
+  steps:
+    - name: order_lines
+      select: |
+        SELECT (l.record->>'order_id')::BIGINT            AS order_id,
+               (l.record->>'line_number')::INTEGER        AS line_number,
+               (l.record->>'product_id')::BIGINT          AS product_id,
+               (l.record->>'quantity')::INTEGER           AS quantity,
+               (l.record->>'unit_price')::DECIMAL(12,2)   AS unit_price,
+               (o.record->>'updated_at')::TIMESTAMPTZ::DATE AS ordered_on
+        FROM raw_lines l
+        JOIN raw_orders o ON (o.record->>'id')::BIGINT = (l.record->>'order_id')::BIGINT
+export:
+  order_lines:
+    step: order_lines
+    primary_key: [order_id, line_number]

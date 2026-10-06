@@ -1,0 +1,35 @@
+# The audiences each ad group targets or excludes (negative): one call per ad group (from the ad_groups stream).
+partitions:
+  - {from_stream: ad_groups, fields: [account_id, campaign_id, ad_group_id]}
+requests:
+  - name: raw_audience_targets
+    sdk: microsoft_ads
+    service: CampaignManagementService
+    method: GetAdGroupCriterionsByIds       # without criterion IDs: all of the ad group's criteria of this type
+    headers: {CustomerAccountId: "{{ partition.account_id }}"}
+    arguments:
+      AdGroupId: "{{ partition.ad_group_id }}"
+      # each audience type: the composite `Audience` is not valid for ad groups (error 4115)
+      CriterionType: [RemarketingList, InMarketAudience, CustomAudience, CustomerList, CombinedList,
+                      SimilarRemarketingList, ProductAudience, ImpressionBasedRemarketingList, CustomSegment]
+    records: {path: AdGroupCriterion}       # a one-part response: the list itself
+transform:
+  mode: page
+  steps:
+    - name: audience_targets
+      select: |
+        SELECT partition->>'account_id'                       AS account_id,
+               partition->>'campaign_id'                      AS campaign_id,
+               partition->>'ad_group_id'                      AS ad_group_id,
+               record->>'Id'                                  AS criterion_id,
+               record->>'$.Criterion.AudienceId'              AS audience_id,
+               record->>'$.Criterion.AudienceType'            AS audience_type,   -- RemarketingList, InMarket, Custom, ...
+               record->>'Type'                                AS criterion_type,  -- Biddable or NegativeAdGroupCriterion
+               coalesce(criterion_type = 'NegativeAdGroupCriterion', false) AS negative,
+               (record->>'$.CriterionBid.Multiplier')::DOUBLE AS bid_multiplier,
+               record->>'Status'                              AS status
+        FROM raw_audience_targets
+export:
+  audience_targets:
+    step: audience_targets
+    primary_key: [account_id, ad_group_id, criterion_id]

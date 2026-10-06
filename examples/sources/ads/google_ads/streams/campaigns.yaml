@@ -1,0 +1,66 @@
+# Each campaign with its settings, budget and metrics (the legacy connector + serializer pair for campaigns).
+partitions:
+  - {name: customer_id, values: "{{ config.customer_ids }}"}
+requests:
+  - name: raw_campaigns
+    sdk: google_ads
+    service: GoogleAdsService
+    method: search_stream
+    arguments:
+      customer_id: "{{ partition.customer_id }}"
+      query:
+        gaql:
+          select: [customer.id, customer.descriptive_name, customer.currency_code, customer.time_zone,
+                   customer.auto_tagging_enabled, customer.tracking_url_template,
+                   customer.conversion_tracking_setting.conversion_tracking_id,
+                   customer.remarketing_setting.google_global_site_tag, campaign.id, campaign.name,
+                   campaign.status, campaign.advertising_channel_type, campaign.bidding_strategy_type,
+                   campaign.start_date_time, campaign.end_date_time, campaign.target_cpa.target_cpa_micros,
+                   campaign.target_roas.target_roas, campaign_budget.id, campaign_budget.amount_micros,
+                   metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.conversions,
+                   metrics.conversions_value]
+          from: campaign
+          where:
+            - {field: campaign.status, op: IN, type: enum, value: [ENABLED, PAUSED]}
+            - {field: campaign.id, op: IN, type: int, value: "{{ config.campaign_ids }}", skip_if_empty: true}
+            - {field: campaign.advertising_channel_type, op: IN, type: enum, value: "{{ config.channel_types }}",
+               skip_if_empty: true}
+transform:
+  mode: page
+  steps:
+    - name: campaigns
+      select: |
+        SELECT record->>'$.customer.id'                                             AS customer_id,
+               record->>'$.customer.descriptive_name'                               AS customer_name,
+               record->>'$.customer.currency_code'                                  AS customer_currency,
+               record->>'$.customer.time_zone'                                      AS customer_timezone,
+               (record->>'$.customer.auto_tagging_enabled')::BOOLEAN                AS auto_tagging_enabled,
+               record->>'$.customer.tracking_url_template'                          AS tracking_url_template,
+               record->>'$.customer.conversion_tracking_setting.conversion_tracking_id' AS conversion_tracking_id,
+               record->>'$.customer.remarketing_setting.google_global_site_tag'     AS google_global_site_tag,
+               record->>'$.campaign.id'                                             AS campaign_id,
+               record->>'$.campaign.name'                                           AS campaign_name,
+               CASE record->>'$.campaign.status' WHEN 'ENABLED' THEN 'active' WHEN 'PAUSED' THEN 'paused'
+                    WHEN 'REMOVED' THEN 'removed' END AS status,
+               record->>'$.campaign.advertising_channel_type'                       AS advertising_channel_type,
+               record->>'$.campaign.bidding_strategy_type'                          AS bidding_strategy_type,
+               (record->>'$.campaign.start_date_time')::TIMESTAMP::DATE             AS start_date,
+               (record->>'$.campaign.end_date_time')::TIMESTAMP::DATE               AS end_date,
+               record->>'$.campaign_budget.id'                                      AS budget_id,
+               round((record->>'$.campaign_budget.amount_micros')::BIGINT * 0.000001, 2) AS budget_amount,
+               round((record->>'$.campaign.target_cpa.target_cpa_micros')::BIGINT * 0.000001, 2) AS target_cpa,
+               round((record->>'$.campaign.target_roas.target_roas')::DOUBLE, 2)    AS target_roas,
+               coalesce((record->>'$.metrics.impressions')::BIGINT, 0)              AS impressions,
+               coalesce((record->>'$.metrics.clicks')::BIGINT, 0)                   AS clicks,
+               coalesce(round((record->>'$.metrics.cost_micros')::BIGINT * 0.000001, 2), 0) AS cost,
+               coalesce(round((record->>'$.metrics.conversions')::DOUBLE, 2), 0)    AS conversions,
+               coalesce(round((record->>'$.metrics.conversions_value')::DOUBLE, 2), 0) AS conversion_value,
+               coalesce(round(clicks / nullif(impressions, 0), 6), 0)               AS ctr,
+               coalesce(round(cost / nullif(clicks, 0), 2), 0)                      AS cpc,
+               coalesce(round(cost / nullif(conversions, 0), 2), 0)                 AS cost_per_conversion,
+               coalesce(round(conversion_value / nullif(cost, 0), 2), 0)            AS roas
+        FROM raw_campaigns
+export:
+  campaigns:
+    step: campaigns
+    primary_key: [customer_id, campaign_id]

@@ -1,0 +1,12 @@
+# The metadata pipeline: the account's entities. A node's name is an adapt stream name of the network's source; `after`
+# lists the nodes it runs after (its upstream nodes). Only the ORDER is here - nothing network specific: what each node
+# runs (its `adapt run` command) is built by its wrapper (adapt/orchestration/wrappers.py) from the network's entry in
+# networks.yaml and the source's declared spec. Runs as the per-network Dagster jobs `ads_metadata__<network>`.
+name: metadata
+nodes:
+  campaigns:          {}
+  ad_groups:          {after: [campaigns]}
+  ad_group_hierarchy: {after: [campaigns]}
+  location_targets:   {after: [campaigns]}
+  keywords:           {after: [ad_groups]}
+  audience_targets:   {after: [ad_groups]}

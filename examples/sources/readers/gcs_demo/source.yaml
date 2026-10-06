@@ -1,0 +1,26 @@
+# Example source folder (see docs/design/source-format.md): this file, and one file per stream in streams/.
+# It reads csv and parquet objects from a Google Cloud Storage bucket with the gcs connector, through GCS's
+# S3-compatible access with an HMAC key. Check it with (no network, no bucket needed):
+#   adapt validate examples/sources/readers/gcs_demo
+# Run it (pip install adapt-gcs; DuckDB installs its httpfs extension on the first connect):
+#   ADAPT_SECRET_GCS_KEY_ID=GOOG1E... ADAPT_SECRET_GCS_SECRET=... \
+#     adapt run examples/sources/readers/gcs_demo --set bucket_root=gs://my-bucket/exports/ --allow-connector gcs --output jsonl:out
+# The HMAC key comes from secrets only (ADAPT_SECRET_<NAME> environment variables or --secrets FILE) and is redacted.
+# Keys without a scheme are relative to the first root; nothing outside the roots can be read, and a URL with a `?`
+# (a query DuckDB would read as connection settings) is refused before anything is read.
+kind: source
+name: gcs_demo
+description: Orders and events from objects in a Google Cloud Storage bucket.
+
+spec:
+  config:
+    bucket_root: {type: string, default: "gs://acme-data/exports/", description: "The URL prefix objects are read from (gs://bucket/prefix/)"}
+  secrets:
+    gcs_key_id: {type: string, description: The HMAC key's access id}
+    gcs_secret: {type: string, description: The HMAC key's secret}
+
+auth:
+  provider: gcs                        # registered by the adapt-gcs connector
+  roots: ["{{ config.bucket_root }}"]  # the only URL prefixes objects can be read from
+  key_id: "{{ secrets.gcs_key_id }}"   # credentials: secret references only, never written in the source
+  secret: "{{ secrets.gcs_secret }}"

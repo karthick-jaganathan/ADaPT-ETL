@@ -1,3 +1,98 @@
-<link rel="stylesheet" href="{{ '/assets/css/custom.scss' | relative_url }}">
 <link rel="icon" type="image/x-icon" href="{{ '/favicon.ico' | relative_url }}">
-<link rel="shortcut icon" type="image/x-icon" href="{{ '/favicon.ico' | relative_url }}"> 
+<link rel="shortcut icon" type="image/x-icon" href="{{ '/favicon.ico' | relative_url }}">
+
+<script>
+  /* ADaPT light/dark theme toggle. Applies the saved theme (or the OS preference) before first paint, then injects a 🌙/☀️ button into the header. */
+  (function () {
+    var STORAGE_KEY = 'adapt-theme';
+    var LIGHT = 'adapt';
+    var DARK = 'adapt-dark';
+    var mermaidSettings = {{ site.mermaid | jsonify }} || {};
+
+    function savedTheme() {
+      try { return localStorage.getItem(STORAGE_KEY); } catch (e) { return null; }
+    }
+
+    function preferredTheme() {
+      var saved = savedTheme();
+      if (saved === LIGHT || saved === DARK) return saved;
+      return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? DARK : LIGHT;
+    }
+
+    var current = preferredTheme();
+
+    function applyTheme(theme) {
+      current = theme;
+      document.documentElement.setAttribute('data-adapt-theme', theme);
+      if (window.jtd && typeof jtd.setTheme === 'function') {
+        jtd.setTheme(theme);
+      }
+    }
+
+    /* Mermaid config for the current theme; read by _includes/mermaid_config.js. */
+    window.adaptMermaidConfig = function () {
+      var vars = Object.assign({}, mermaidSettings.themeVariables || {});
+      if (current === DARK) Object.assign(vars, mermaidSettings.darkThemeVariables || {});
+      return { theme: mermaidSettings.theme || 'default', themeVariables: vars };
+    };
+
+    function rerenderMermaid() {
+      var mermaid = window.adaptMermaid;
+      var nodes = document.querySelectorAll('[data-adapt-mermaid-src]');
+      if (!mermaid || !nodes.length) return;
+      Array.prototype.forEach.call(nodes, function (el) {
+        el.removeAttribute('data-processed');
+        el.textContent = el.getAttribute('data-adapt-mermaid-src');
+      });
+      mermaid.initialize(window.adaptMermaidConfig());
+      mermaid.run({ nodes: Array.prototype.slice.call(nodes) });
+    }
+
+    function updateButton(button) {
+      var dark = current === DARK;
+      button.textContent = dark ? '☀️' : '🌙';
+      button.setAttribute('aria-label', dark ? 'Switch to light theme' : 'Switch to dark theme');
+      button.setAttribute('title', dark ? 'Switch to light theme' : 'Switch to dark theme');
+      button.setAttribute('aria-pressed', dark ? 'true' : 'false');
+    }
+
+    function injectToggle() {
+      if (document.querySelector('.theme-toggle')) return;
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'theme-toggle btn-reset';
+      updateButton(button);
+      button.addEventListener('click', function () {
+        var next = current === DARK ? LIGHT : DARK;
+        applyTheme(next);
+        try { localStorage.setItem(STORAGE_KEY, next); } catch (e) { /* storage unavailable */ }
+        updateButton(button);
+        rerenderMermaid();
+      });
+
+      var auxList = document.querySelector('.aux-nav .aux-nav-list');
+      if (auxList) {
+        var item = document.createElement('li');
+        item.className = 'aux-nav-list-item theme-toggle-item';
+        item.appendChild(button);
+        auxList.insertBefore(item, auxList.firstChild);
+        return;
+      }
+      var header = document.querySelector('.aux-nav') || document.querySelector('.site-header');
+      if (header) header.appendChild(button);
+    }
+
+    /* The default stylesheet is the light "adapt" scheme; only swap when needed. */
+    if (current !== LIGHT) {
+      applyTheme(current);
+    } else {
+      document.documentElement.setAttribute('data-adapt-theme', LIGHT);
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', injectToggle);
+    } else {
+      injectToggle();
+    }
+  })();
+</script>

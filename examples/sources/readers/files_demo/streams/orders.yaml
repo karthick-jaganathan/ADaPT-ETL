@@ -1,0 +1,27 @@
+# Orders: every CSV file in data/orders/ (a glob), one per region; `filename` adds each file's path (relative to its
+# root) to its records. CSV values are read as text; the step casts them.
+requests:
+  - name: raw_orders
+    sdk: files
+    service: file
+    method: read
+    arguments:
+      path: "orders/*.csv"
+      format: csv
+      options: {header: true, filename: true}
+transform:
+  mode: page
+  steps:
+    - name: orders
+      select: |
+        SELECT (record->>'order_id')::BIGINT          AS order_id,
+               regexp_extract(record->>'filename', '([^/]+)\.csv$', 1) AS region,
+               (record->>'product_id')::BIGINT        AS product_id,
+               (record->>'quantity')::INTEGER         AS quantity,
+               (record->>'amount')::DECIMAL(12,2)     AS amount,
+               (record->>'ordered_on')::DATE          AS ordered_on
+        FROM raw_orders
+export:
+  orders:
+    step: orders
+    primary_key: [order_id]

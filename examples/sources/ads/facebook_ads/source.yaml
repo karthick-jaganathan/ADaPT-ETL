@@ -1,0 +1,23 @@
+# Example source folder (see docs/design/source-format.md): this file, and one file per stream in streams/.
+# Check it with: adapt validate examples/sources/ads/facebook_ads
+# Run it (pip install adapt-facebook-ads): adapt run examples/sources/ads/facebook_ads --set account_ids=...
+# Secrets come from ADAPT_SECRET_<NAME> environment variables or --secrets FILE.
+kind: source
+name: facebook_ads
+description: Campaign insights, one row per campaign per day.
+
+spec:
+  config:
+    account_ids: {type: list, items: string, description: Ad account IDs without the act_ prefix}
+    start_date: {type: date, default: "-30d"}
+  secrets:
+    access_token: {type: string}
+    app_id: {type: string, required: false}
+    app_secret: {type: string, required: false}
+
+auth:
+  provider: facebook_ads               # registered by the adapt-facebook-ads connector
+  access_token: "{{ secrets.access_token }}"
+  app_id: "{{ secrets.app_id }}"
+  app_secret: "{{ secrets.app_secret }}"
+  api_version: v26.0

@@ -1,0 +1,29 @@
+# Example source folder (see docs/design/source-format.md): this file, and one file per stream in streams/.
+# Check it with: adapt validate examples/sources/ads/google_ads
+# Run it (pip install adapt-google-ads): adapt run examples/sources/ads/google_ads --set customer_ids=...
+# Secrets come from ADAPT_SECRET_<NAME> environment variables or --secrets FILE.
+kind: source
+name: google_ads
+description: Campaigns with their settings, and campaign performance with one row per campaign per day.
+
+spec:
+  config:
+    customer_ids: {type: list, items: string, description: Customer IDs without dashes}
+    login_customer_id: {type: string, required: false}
+    start_date: {type: date, default: "-30d"}
+    campaign_ids: {type: list, items: integer, required: false, description: Only these campaigns (campaigns)}
+    channel_types: {type: list, items: string, required: false, description: "e.g. SEARCH,PERFORMANCE_MAX (campaigns)"}
+  secrets:
+    developer_token: {type: string}
+    client_id: {type: string}
+    client_secret: {type: string}
+    refresh_token: {type: string}
+
+auth:
+  provider: google_ads                 # registered by the adapt-google-ads connector
+  developer_token: "{{ secrets.developer_token }}"
+  client_id: "{{ secrets.client_id }}"
+  client_secret: "{{ secrets.client_secret }}"
+  refresh_token: "{{ secrets.refresh_token }}"
+  login_customer_id: "{{ config.login_customer_id }}"
+  api_version: v25

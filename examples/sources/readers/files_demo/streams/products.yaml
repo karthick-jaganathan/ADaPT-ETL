@@ -1,0 +1,23 @@
+# The product catalog: one Parquet file (the format comes from its extension). Its DECIMAL and DATE columns arrive
+# as exact JSON numbers and text.
+requests:
+  - name: raw_products
+    sdk: files
+    service: file
+    method: read
+    arguments:
+      path: products.parquet
+transform:
+  mode: page
+  steps:
+    - name: products
+      select: |
+        SELECT (record->>'product_id')::BIGINT        AS product_id,
+               record->>'product_name'                AS product_name,
+               (record->>'unit_price')::DECIMAL(10,2) AS unit_price,
+               (record->>'launched_on')::DATE         AS launched_on
+        FROM raw_products
+export:
+  products:
+    step: products
+    primary_key: [product_id]

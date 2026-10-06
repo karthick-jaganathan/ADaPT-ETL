@@ -1,0 +1,28 @@
+# Customers with a status, read with the `table` method: the connector writes the SELECT, quoting the names and binding
+# the `where` values.
+requests:
+  - name: raw_customers
+    sdk: postgres
+    service: database
+    method: table
+    arguments:
+      schema: public
+      table: customers
+      columns: [id, name, email, status, created_at]
+      where:
+        - {column: status, op: "=", value: "{{ config.customer_status }}"}
+transform:
+  mode: page
+  steps:
+    - name: customers
+      select: |
+        SELECT (record->>'id')::BIGINT                AS customer_id,
+               record->>'name'                        AS customer_name,
+               lower(record->>'email')                AS email,
+               record->>'status'                      AS status,
+               (record->>'created_at')::TIMESTAMPTZ   AS created_at
+        FROM raw_customers
+export:
+  customers:
+    step: customers
+    primary_key: [customer_id]

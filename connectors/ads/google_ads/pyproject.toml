@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "adapt-google-ads"
+version = "0.0.1"
+description = "Adaptive Data Pipeline Toolkit - Google Ads connector (google_ads auth provider, gaql query builder)"
+readme = "README.md"
+license = "Apache-2.0"
+authors = [
+    {name = "Karthick Jaganathan"},
+]
+keywords = ["data", "pipeline", "etl", "connector", "google-ads", "gaql"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+requires-python = ">=3.10"
+dependencies = [
+    "adapt-core~=0.0.1",
+    "google-ads>=33.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/karthick-jaganathan/ADaPT-ETL"
+Repository = "https://github.com/karthick-jaganathan/ADaPT-ETL"
+
+[project.entry-points."adapt.connectors"]
+google_ads = "adapt.connectors.google_ads.connector:GoogleAdsConnector"
+
+[project.entry-points."adapt.query_builders"]
+gaql = "adapt.connectors.google_ads.gaql:GaqlBuilder"
+
+[tool.setuptools]
+# src layout: adapt and adapt.connectors are namespace packages shared with the other ADaPT distributions
+package-dir = {"" = "src"}
+packages = ["adapt.connectors.google_ads"]

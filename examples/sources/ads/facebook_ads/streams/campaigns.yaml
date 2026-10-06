@@ -1,0 +1,37 @@
+# The campaigns of each ad account. Budgets are in the currency's smallest unit (cents for USD).
+partitions:
+  - {name: account_id, values: "{{ config.account_ids }}"}
+requests:
+  - name: raw_campaigns
+    sdk: facebook_ads
+    service: AdAccount
+    method: get_campaigns
+    arguments:
+      id: "act_{{ partition.account_id }}"
+      fields: [id, account_id, name, status, effective_status, objective, buying_type, bid_strategy, daily_budget,
+               lifetime_budget, start_time, stop_time, created_time, updated_time]
+      params: {limit: 500}
+transform:
+  mode: page
+  steps:
+    - name: campaigns
+      select: |
+        SELECT record->>'account_id'                  AS account_id,
+               record->>'id'                          AS campaign_id,
+               record->>'name'                        AS campaign_name,
+               record->>'status'                      AS status,            -- ACTIVE, PAUSED, ARCHIVED, ...
+               record->>'effective_status'            AS effective_status,
+               record->>'objective'                   AS objective,
+               record->>'buying_type'                 AS buying_type,
+               record->>'bid_strategy'                AS bid_strategy,
+               (record->>'daily_budget')::BIGINT      AS daily_budget,      -- null: the ad sets have the budgets
+               (record->>'lifetime_budget')::BIGINT   AS lifetime_budget,
+               (record->>'start_time')::TIMESTAMPTZ   AS start_time,        -- in UTC
+               (record->>'stop_time')::TIMESTAMPTZ    AS stop_time,
+               (record->>'created_time')::TIMESTAMPTZ AS created_time,
+               (record->>'updated_time')::TIMESTAMPTZ AS updated_time
+        FROM raw_campaigns
+export:
+  campaigns:
+    step: campaigns
+    primary_key: [campaign_id]

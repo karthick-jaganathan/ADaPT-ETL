@@ -1,0 +1,37 @@
+# Orders, a day at a time: the query's values are named parameters ($since, $until), bound - never pasted into the
+# query. window.end is the window's last day, so the query reads up to the end of that day. `total` is read as text:
+# steps read JSON numbers as doubles, and text casts to DECIMAL exactly.
+incremental:
+  cursor_field: updated_on
+  start: "{{ config.start_date }}"
+  window: 1d
+requests:
+  - name: raw_orders
+    sdk: postgres
+    service: database
+    method: query
+    arguments:
+      query: |
+        SELECT id, customer_id, status, total::VARCHAR AS total, currency, updated_at
+        FROM public.orders
+        WHERE updated_at >= $since AND updated_at < $until + INTERVAL 1 DAY
+      params:
+        since: "{{ window.start }}"
+        until: "{{ window.end }}"
+transform:
+  mode: page
+  steps:
+    - name: orders
+      select: |
+        SELECT (record->>'id')::BIGINT                AS order_id,
+               (record->>'customer_id')::BIGINT       AS customer_id,
+               record->>'status'                      AS status,
+               (record->>'total')::DECIMAL(18,2)      AS total,
+               record->>'currency'                    AS currency,
+               (record->>'updated_at')::TIMESTAMPTZ   AS updated_at,
+               (record->>'updated_at')::TIMESTAMPTZ::DATE AS updated_on
+        FROM raw_orders
+export:
+  orders:
+    step: orders
+    primary_key: [order_id]

@@ -1,0 +1,1136 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "definitions": {
+    "async_job": {
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "required": [
+            "download"
+          ]
+        },
+        {
+          "required": [
+            "results"
+          ]
+        }
+      ],
+      "properties": {
+        "download": {
+          "additionalProperties": false,
+          "properties": {
+            "<<": {},
+            "compression": {
+              "enum": [
+                "zip",
+                "gzip",
+                "none"
+              ]
+            },
+            "format": {
+              "enum": [
+                "csv",
+                "jsonl",
+                "json"
+              ]
+            },
+            "url": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "url",
+            "format"
+          ],
+          "type": "object"
+        },
+        "poll": {
+          "additionalProperties": false,
+          "properties": {
+            "<<": {},
+            "arguments": {
+              "type": "object"
+            },
+            "done_when": {
+              "$ref": "#/definitions/poll_condition"
+            },
+            "every": {
+              "description": "e.g. 15s, 30m, 1h, 7d",
+              "pattern": "^[0-9]+[smhd]$",
+              "type": "string"
+            },
+            "fail_when": {
+              "$ref": "#/definitions/poll_condition"
+            },
+            "method": {
+              "type": "string"
+            },
+            "timeout": {
+              "description": "e.g. 15s, 30m, 1h, 7d",
+              "pattern": "^[0-9]+[smhd]$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "method",
+            "every",
+            "timeout",
+            "done_when"
+          ],
+          "type": "object"
+        },
+        "results": {
+          "$ref": "#/definitions/sdk_request"
+        },
+        "submit": {
+          "$ref": "#/definitions/sdk_request"
+        }
+      },
+      "required": [
+        "submit",
+        "poll"
+      ],
+      "type": "object"
+    },
+    "auth": {
+      "else": {
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "oauth2_refresh_token"
+                }
+              },
+              "required": [
+                "type"
+              ]
+            },
+            "then": {
+              "additionalProperties": false,
+              "properties": {
+                "<<": {},
+                "client_id": {},
+                "client_secret": {},
+                "refresh_token": {},
+                "scopes": {},
+                "token_url": {},
+                "type": {}
+              },
+              "required": [
+                "token_url",
+                "client_id",
+                "client_secret",
+                "refresh_token"
+              ],
+              "type": "object"
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "api_key"
+                }
+              },
+              "required": [
+                "type"
+              ]
+            },
+            "then": {
+              "additionalProperties": false,
+              "properties": {
+                "<<": {},
+                "in": {},
+                "name": {},
+                "type": {},
+                "value": {}
+              },
+              "required": [
+                "name",
+                "value"
+              ],
+              "type": "object"
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "bearer"
+                }
+              },
+              "required": [
+                "type"
+              ]
+            },
+            "then": {
+              "additionalProperties": false,
+              "properties": {
+                "<<": {},
+                "token": {},
+                "type": {}
+              },
+              "required": [
+                "token"
+              ],
+              "type": "object"
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "basic"
+                }
+              },
+              "required": [
+                "type"
+              ]
+            },
+            "then": {
+              "additionalProperties": false,
+              "properties": {
+                "<<": {},
+                "password": {},
+                "type": {},
+                "username": {}
+              },
+              "required": [
+                "username",
+                "password"
+              ],
+              "type": "object"
+            }
+          }
+        ],
+        "properties": {
+          "type": {
+            "enum": [
+              "oauth2_refresh_token",
+              "api_key",
+              "bearer",
+              "basic"
+            ]
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "if": {
+        "required": [
+          "provider"
+        ]
+      },
+      "then": {
+        "description": "Connector provider; its keys are defined by the connector.",
+        "not": {
+          "required": [
+            "type"
+          ]
+        },
+        "properties": {
+          "provider": {
+            "type": "string"
+          }
+        }
+      },
+      "type": "object"
+    },
+    "export": {
+      "additionalProperties": false,
+      "properties": {
+        "<<": {},
+        "description": {
+          "type": "string"
+        },
+        "primary_key": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "step": {
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "step"
+      ],
+      "type": "object"
+    },
+    "http_request": {
+      "additionalProperties": false,
+      "properties": {
+        "<<": {},
+        "headers": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "json": {},
+        "method": {
+          "enum": [
+            "GET",
+            "POST",
+            "PUT",
+            "PATCH",
+            "DELETE"
+          ]
+        },
+        "params": {
+          "type": "object"
+        },
+        "path": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "type": "object"
+    },
+    "incremental": {
+      "additionalProperties": false,
+      "properties": {
+        "<<": {},
+        "cursor_field": {
+          "type": "string"
+        },
+        "lookback": {
+          "description": "whole days, e.g. 0d, 3d",
+          "pattern": "^[0-9]+d$",
+          "type": "string"
+        },
+        "start": {},
+        "window": {
+          "description": "whole days, at least 1d, e.g. 1d, 7d",
+          "pattern": "^0*[1-9][0-9]*d$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "cursor_field",
+        "start"
+      ],
+      "type": "object"
+    },
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "<<": {},
+        "default": {
+          "description": "Dates accept offsets from today, e.g. -30d."
+        },
+        "description": {
+          "type": "string"
+        },
+        "items": {
+          "description": "Item type of a `list` input.",
+          "enum": [
+            "string",
+            "integer",
+            "number",
+            "boolean",
+            "date"
+          ]
+        },
+        "required": {
+          "description": "Default true.",
+          "type": "boolean"
+        },
+        "type": {
+          "enum": [
+            "string",
+            "integer",
+            "number",
+            "boolean",
+            "date",
+            "list"
+          ]
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "type": "object"
+    },
+    "inputs": {
+      "additionalProperties": {
+        "$ref": "#/definitions/input"
+      },
+      "propertyNames": {
+        "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+        "type": "string"
+      },
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "paginator": {
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "none"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "additionalProperties": false,
+            "properties": {
+              "<<": {},
+              "type": {}
+            },
+            "type": "object"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "offset"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "additionalProperties": false,
+            "properties": {
+              "<<": {},
+              "limit_param": {
+                "type": "string"
+              },
+              "offset_param": {
+                "type": "string"
+              },
+              "page_size": {
+                "minimum": 1,
+                "type": "integer"
+              },
+              "type": {}
+            },
+            "required": [
+              "offset_param",
+              "limit_param",
+              "page_size"
+            ],
+            "type": "object"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "cursor"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "anyOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "<<": {},
+                  "param": {
+                    "type": "string"
+                  },
+                  "token_path": {
+                    "type": "string"
+                  },
+                  "type": {}
+                },
+                "required": [
+                  "token_path",
+                  "param"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "<<": {},
+                  "next_url_path": {
+                    "type": "string"
+                  },
+                  "type": {}
+                },
+                "required": [
+                  "next_url_path"
+                ],
+                "type": "object"
+              }
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "page_number"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "additionalProperties": false,
+            "properties": {
+              "<<": {},
+              "page_param": {
+                "type": "string"
+              },
+              "page_size": {
+                "minimum": 1,
+                "type": "integer"
+              },
+              "size_param": {
+                "type": "string"
+              },
+              "start": {
+                "type": "integer"
+              },
+              "type": {}
+            },
+            "required": [
+              "page_param"
+            ],
+            "type": "object"
+          }
+        }
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "none",
+            "offset",
+            "cursor",
+            "page_number"
+          ]
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "type": "object"
+    },
+    "partition": {
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "<<": {},
+            "name": {
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+              "type": "string"
+            },
+            "values": {
+              "type": [
+                "array",
+                "string"
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "values"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "<<": {},
+            "field": {
+              "type": "string"
+            },
+            "from_stream": {
+              "type": "string"
+            },
+            "name": {
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "from_stream",
+            "field"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "One partition per distinct combination of these fields in the parent's records, named after them.",
+          "properties": {
+            "<<": {},
+            "fields": {
+              "items": {
+                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+                "type": "string"
+              },
+              "minItems": 1,
+              "type": "array",
+              "uniqueItems": true
+            },
+            "from_stream": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "from_stream",
+            "fields"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "poll_condition": {
+      "additionalProperties": false,
+      "properties": {
+        "<<": {},
+        "equals": {},
+        "in": {
+          "type": "array"
+        },
+        "path": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "type": "object"
+    },
+    "rate_limit": {
+      "additionalProperties": false,
+      "properties": {
+        "<<": {},
+        "per": {
+          "description": "e.g. 15s, 30m, 1h, 7d",
+          "pattern": "^[0-9]+[smhd]$",
+          "type": "string"
+        },
+        "requests": {
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "requests",
+        "per"
+      ],
+      "type": "object"
+    },
+    "records": {
+      "additionalProperties": false,
+      "properties": {
+        "<<": {},
+        "explode": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "request_item": {
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "sdk"
+                ]
+              },
+              {
+                "required": [
+                  "service"
+                ]
+              },
+              {
+                "required": [
+                  "method"
+                ]
+              },
+              {
+                "required": [
+                  "arguments"
+                ]
+              },
+              {
+                "required": [
+                  "headers"
+                ]
+              },
+              {
+                "required": [
+                  "async_job"
+                ]
+              }
+            ]
+          },
+          "required": [
+            "http"
+          ]
+        },
+        {
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "http"
+                ]
+              },
+              {
+                "required": [
+                  "async_job"
+                ]
+              }
+            ]
+          },
+          "required": [
+            "sdk",
+            "method"
+          ]
+        },
+        {
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "http"
+                ]
+              },
+              {
+                "required": [
+                  "sdk"
+                ]
+              },
+              {
+                "required": [
+                  "service"
+                ]
+              },
+              {
+                "required": [
+                  "method"
+                ]
+              },
+              {
+                "required": [
+                  "arguments"
+                ]
+              },
+              {
+                "required": [
+                  "headers"
+                ]
+              }
+            ]
+          },
+          "required": [
+            "async_job"
+          ]
+        }
+      ],
+      "properties": {
+        "<<": {},
+        "arguments": {
+          "type": "object"
+        },
+        "async_job": {
+          "$ref": "#/definitions/async_job"
+        },
+        "headers": {
+          "additionalProperties": {
+            "type": [
+              "string",
+              "integer"
+            ]
+          },
+          "type": "object"
+        },
+        "http": {
+          "$ref": "#/definitions/http_request"
+        },
+        "method": {
+          "type": "string"
+        },
+        "name": {
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+          "type": "string"
+        },
+        "paginator": {
+          "$ref": "#/definitions/paginator"
+        },
+        "partitions": {
+          "items": {
+            "$ref": "#/definitions/request_partition"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "records": {
+          "$ref": "#/definitions/records"
+        },
+        "sdk": {
+          "type": "string"
+        },
+        "service": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    },
+    "request_partition": {
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "<<": {},
+            "batch_size": {
+              "description": "One request per list of up to N distinct values: the partition's name holds the list (e.g. for GAQL `IN`).",
+              "minimum": 1,
+              "type": "integer"
+            },
+            "name": {
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+              "type": "string"
+            },
+            "values": {
+              "type": [
+                "array",
+                "string"
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "values"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "<<": {},
+            "batch_size": {
+              "description": "One request per list of up to N distinct values: the partition's name holds the list (e.g. for GAQL `IN`).",
+              "minimum": 1,
+              "type": "integer"
+            },
+            "field": {
+              "type": "string"
+            },
+            "from": {
+              "description": "An earlier request of this stream (fields are dotted paths in its records) or a step of this stream (fields are its columns).",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+              "type": "string"
+            },
+            "name": {
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "from",
+            "field"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "One request partition per distinct combination of these fields.",
+          "properties": {
+            "<<": {},
+            "batch_size": {
+              "description": "One request per list of up to N distinct values of the one field that is not a stream partition, which names the list (the stream partition fields keep the partition's rows).",
+              "minimum": 1,
+              "type": "integer"
+            },
+            "fields": {
+              "items": {
+                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+                "type": "string"
+              },
+              "minItems": 1,
+              "type": "array",
+              "uniqueItems": true
+            },
+            "from": {
+              "description": "An earlier request of this stream (fields are dotted paths in its records) or a step of this stream (fields are its columns).",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "from",
+            "fields"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "retry": {
+      "additionalProperties": false,
+      "properties": {
+        "<<": {},
+        "backoff": {
+          "enum": [
+            "exponential",
+            "constant"
+          ]
+        },
+        "codes": {
+          "description": "HTTP status codes or provider error codes.",
+          "items": {
+            "type": [
+              "integer",
+              "string"
+            ]
+          },
+          "type": "array"
+        },
+        "max_attempts": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "max_delay": {
+          "description": "e.g. 15s, 30m, 1h, 7d",
+          "pattern": "^[0-9]+[smhd]$",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "sdk_request": {
+      "additionalProperties": false,
+      "properties": {
+        "<<": {},
+        "arguments": {
+          "type": "object"
+        },
+        "headers": {
+          "additionalProperties": {
+            "type": [
+              "string",
+              "integer"
+            ]
+          },
+          "description": "Per-request headers the connector supports, e.g. CustomerAccountId (microsoft_ads).",
+          "type": "object"
+        },
+        "method": {
+          "type": "string"
+        },
+        "sdk": {
+          "type": "string"
+        },
+        "service": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "sdk",
+        "method"
+      ],
+      "type": "object"
+    },
+    "step": {
+      "additionalProperties": false,
+      "properties": {
+        "<<": {},
+        "description": {
+          "type": "string"
+        },
+        "name": {
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+          "type": "string"
+        },
+        "select": {
+          "description": "One DuckDB SELECT over the stream's request tables (columns record, partition, config: JSON; window_start, window_end, today: DATE) and earlier steps; `$name` reads spec.config.<name>.",
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "select"
+      ],
+      "type": "object"
+    },
+    "stream": {
+      "additionalProperties": false,
+      "properties": {
+        "<<": {},
+        "description": {
+          "type": "string"
+        },
+        "export": {
+          "additionalProperties": {
+            "$ref": "#/definitions/export"
+          },
+          "description": "The stream's outputs: each export is an output table with the rows of one step.",
+          "minProperties": 1,
+          "propertyNames": {
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "incremental": {
+          "$ref": "#/definitions/incremental"
+        },
+        "name": {
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+          "type": "string"
+        },
+        "on_partition_error": {
+          "enum": [
+            "fail",
+            "skip"
+          ]
+        },
+        "partitions": {
+          "items": {
+            "$ref": "#/definitions/partition"
+          },
+          "type": "array"
+        },
+        "rate_limit": {
+          "$ref": "#/definitions/rate_limit"
+        },
+        "requests": {
+          "description": "Named requests: the raw rows of each one are a table of the stream's SQL, named after it (columns record, partition, config, window_start, window_end, today).",
+          "items": {
+            "$ref": "#/definitions/request_item"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "retry": {
+          "$ref": "#/definitions/retry"
+        },
+        "transform": {
+          "$ref": "#/definitions/transform"
+        }
+      },
+      "required": [
+        "name",
+        "requests",
+        "transform",
+        "export"
+      ],
+      "type": "object"
+    },
+    "transform": {
+      "additionalProperties": false,
+      "description": "Named SQL steps that shape the stream's requests.",
+      "properties": {
+        "<<": {},
+        "mode": {
+          "description": "page: the steps run on each page of the stream's one request; run: the requests and steps run in dependency order over all of the run's rows, then the exports are written.",
+          "enum": [
+            "page",
+            "run"
+          ]
+        },
+        "steps": {
+          "items": {
+            "$ref": "#/definitions/step"
+          },
+          "minItems": 1,
+          "type": "array"
+        }
+      },
+      "required": [
+        "mode",
+        "steps"
+      ],
+      "type": "object"
+    }
+  },
+  "description": "One stream of a source folder: streams/<name>.yaml, where the file name is the stream name. Generated by `adapt-validate --export-schema`; run adapt-validate on the folder for the full set of checks.",
+  "properties": {
+    "<<": {},
+    "description": {
+      "type": "string"
+    },
+    "export": {
+      "additionalProperties": {
+        "$ref": "#/definitions/export"
+      },
+      "description": "The stream's outputs: each export is an output table with the rows of one step.",
+      "minProperties": 1,
+      "propertyNames": {
+        "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+        "type": "string"
+      },
+      "type": "object"
+    },
+    "incremental": {
+      "$ref": "#/definitions/incremental"
+    },
+    "on_partition_error": {
+      "enum": [
+        "fail",
+        "skip"
+      ]
+    },
+    "partitions": {
+      "items": {
+        "$ref": "#/definitions/partition"
+      },
+      "type": "array"
+    },
+    "rate_limit": {
+      "$ref": "#/definitions/rate_limit"
+    },
+    "requests": {
+      "description": "Named requests: the raw rows of each one are a table of the stream's SQL, named after it (columns record, partition, config, window_start, window_end, today).",
+      "items": {
+        "$ref": "#/definitions/request_item"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "retry": {
+      "$ref": "#/definitions/retry"
+    },
+    "transform": {
+      "$ref": "#/definitions/transform"
+    }
+  },
+  "required": [
+    "requests",
+    "transform",
+    "export"
+  ],
+  "title": "ADaPT source stream",
+  "type": "object"
+}

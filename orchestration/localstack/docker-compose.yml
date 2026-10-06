@@ -1,0 +1,18 @@
+# LocalStack S3 for testing the adapt-s3 connector locally (and as the S3 backend for ADAPT_EXECUTION=docker runs).
+# Community image (no license needed); only the S3 service.
+#   docker compose -f orchestration/localstack/docker-compose.yml up -d
+# then populate the bucket with orchestration/localstack/up.sh (or ./up.sh).
+services:
+  localstack:
+    image: localstack/localstack:3
+    container_name: adapt-localstack
+    ports:
+      - "4566:4566"            # the S3 (and edge) endpoint
+    environment:
+      - SERVICES=s3
+      - EAGER_SERVICE_LOADING=1
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:4566/_localstack/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 20

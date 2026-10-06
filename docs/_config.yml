@@ -16,6 +16,57 @@ markdown: kramdown
 highlighter: rouge
 remote_theme: just-the-docs/just-the-docs
 
+# Mermaid diagrams (architecture + sequence diagrams in docs/architecture.md)
+mermaid:
+  version: "10.9.1"
+  # Passed to mermaid.initialize() by _includes/mermaid_config.js.
+  # darkThemeVariables are merged over themeVariables in the adapt-dark scheme.
+  theme: base
+  themeVariables:
+    fontFamily: "-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif"
+    fontSize: "16px"
+    primaryColor: "#ede7f6"
+    primaryBorderColor: "#5e41d0"
+    primaryTextColor: "#311b70"
+    secondaryColor: "#f3e5f5"
+    secondaryBorderColor: "#9575cd"
+    tertiaryColor: "#f8f9fa"
+    tertiaryBorderColor: "#d5dbdb"
+    lineColor: "#5e41d0"
+    noteBkgColor: "#ede7f6"
+    noteBorderColor: "#9575cd"
+    noteTextColor: "#311b70"
+    textColor: "#34495e"
+  flowchart:
+    htmlLabels: true
+    curve: basis
+    nodeSpacing: 55
+    rankSpacing: 65
+    padding: 10
+  sequence:
+    actorFontSize: 15
+    messageFontSize: 14
+    noteFontSize: 14
+    boxMargin: 10
+    width: 150
+  darkThemeVariables:
+    darkMode: true
+    fontFamily: "-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif"
+    fontSize: "16px"
+    background: "#161d27"
+    primaryColor: "#2a1f45"
+    primaryBorderColor: "#b39ddb"
+    primaryTextColor: "#e6edf3"
+    secondaryColor: "#241a3d"
+    secondaryBorderColor: "#8bc34a"
+    tertiaryColor: "#1b2430"
+    tertiaryBorderColor: "#2a3441"
+    lineColor: "#b39ddb"
+    noteBkgColor: "#241a3d"
+    noteBorderColor: "#9575cd"
+    noteTextColor: "#e6edf3"
+    textColor: "#c9d1d9"
+
 # Kramdown settings
 kramdown:
   input: GFM
@@ -42,6 +93,7 @@ plugins:
 header_pages:
   - index.md
   - installation.md
+  - architecture.md
   - packages/index.md
   - examples.md
   - api-reference.md

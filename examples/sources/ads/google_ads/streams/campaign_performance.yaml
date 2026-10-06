@@ -1,0 +1,43 @@
+# One row per campaign per day.
+partitions:
+  - {name: customer_id, values: "{{ config.customer_ids }}"}
+incremental:
+  cursor_field: date
+  start: "{{ config.start_date }}"
+  window: 7d
+  lookback: 30d                    # conversions are restated for weeks; re-read the last 30 days each run
+requests:
+  - name: raw_campaign_performance
+    sdk: google_ads
+    service: GoogleAdsService
+    method: search_stream
+    arguments:
+      customer_id: "{{ partition.customer_id }}"
+      query:
+        gaql:                      # the gaql query builder (adapt-google-ads) writes the escaped query
+          select: [customer.id, campaign.id, campaign.name, campaign.status, segments.date,
+                   metrics.impressions, metrics.clicks, metrics.cost_micros]
+          from: campaign
+          where:
+            - {field: segments.date, op: BETWEEN, type: date, value: ["{{ window.start }}", "{{ window.end }}"]}
+            - {field: campaign.status, op: IN, type: enum, value: [ENABLED, PAUSED]}
+transform:
+  mode: page
+  steps:
+    - name: campaign_performance
+      select: |                    # SQL (DuckDB) over each page of rows: ids and counts are text, money is in micros
+        SELECT record->>'$.customer.id'                                  AS customer_id,
+               record->>'$.campaign.id'                                  AS campaign_id,
+               record->>'$.campaign.name'                                AS campaign_name,
+               CASE record->>'$.campaign.status' WHEN 'ENABLED' THEN 'active' WHEN 'PAUSED' THEN 'paused'
+                    WHEN 'REMOVED' THEN 'removed' END AS status,
+               (record->>'$.segments.date')::DATE                        AS date,
+               coalesce((record->>'$.metrics.impressions')::BIGINT, 0)   AS impressions,
+               coalesce((record->>'$.metrics.clicks')::BIGINT, 0)        AS clicks,
+               coalesce(round((record->>'$.metrics.cost_micros')::BIGINT * 0.000001, 2), 0) AS cost,
+               round(clicks / nullif(impressions, 0), 6)                 AS ctr
+        FROM raw_campaign_performance
+export:
+  campaign_performance:
+    step: campaign_performance
+    primary_key: [customer_id, campaign_id, date]

@@ -1,0 +1,47 @@
+# The audiences each ad group targets or excludes (negative): one column per kind of audience; the others are null.
+partitions:
+  - {name: customer_id, values: "{{ config.customer_ids }}"}
+requests:
+  - name: raw_audience_targets
+    sdk: google_ads
+    service: GoogleAdsService
+    method: search_stream
+    arguments:
+      customer_id: "{{ partition.customer_id }}"
+      query:
+        gaql:
+          select: [customer.id, campaign.id, ad_group.id, ad_group_criterion.criterion_id, ad_group_criterion.type,
+                   ad_group_criterion.user_list.user_list, ad_group_criterion.user_interest.user_interest_category,
+                   ad_group_criterion.custom_audience.custom_audience,
+                   ad_group_criterion.combined_audience.combined_audience, ad_group_criterion.audience.audience,
+                   ad_group_criterion.negative, ad_group_criterion.bid_modifier, ad_group_criterion.status]
+          from: ad_group_criterion
+          where:
+            - {field: ad_group_criterion.type, op: IN, type: enum,
+               value: [USER_LIST, USER_INTEREST, CUSTOM_AUDIENCE, COMBINED_AUDIENCE, AUDIENCE]}
+            - {field: ad_group_criterion.status, op: IN, type: enum, value: [ENABLED, PAUSED]}
+            - {field: ad_group.status, op: IN, type: enum, value: [ENABLED, PAUSED]}
+transform:
+  mode: page
+  steps:
+    - name: audience_targets
+      select: |
+        SELECT record->>'$.customer.id'                                             AS customer_id,
+               record->>'$.campaign.id'                                             AS campaign_id,
+               record->>'$.ad_group.id'                                             AS ad_group_id,
+               record->>'$.ad_group_criterion.criterion_id'                         AS criterion_id,
+               record->>'$.ad_group_criterion.type'                                 AS audience_type,  -- USER_LIST, ...
+               record->>'$.ad_group_criterion.user_list.user_list'                  AS user_list,
+               record->>'$.ad_group_criterion.user_interest.user_interest_category' AS user_interest,
+               record->>'$.ad_group_criterion.custom_audience.custom_audience'      AS custom_audience,
+               record->>'$.ad_group_criterion.combined_audience.combined_audience'  AS combined_audience,
+               record->>'$.ad_group_criterion.audience.audience'                    AS audience,
+               coalesce((record->>'$.ad_group_criterion.negative')::BOOLEAN, false) AS negative,
+               (record->>'$.ad_group_criterion.bid_modifier')::DOUBLE               AS bid_modifier,
+               CASE record->>'$.ad_group_criterion.status' WHEN 'ENABLED' THEN 'active' WHEN 'PAUSED' THEN 'paused'
+                    WHEN 'REMOVED' THEN 'removed' END AS status
+        FROM raw_audience_targets
+export:
+  audience_targets:
+    step: audience_targets
+    primary_key: [customer_id, ad_group_id, criterion_id]

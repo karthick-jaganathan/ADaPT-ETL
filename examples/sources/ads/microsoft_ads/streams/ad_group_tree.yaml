@@ -1,0 +1,58 @@
+# Campaign/ad-group hierarchy using request-level partitions.
+partitions:
+  - {name: account_id, values: "{{ config.account_ids }}"}
+requests:
+  - name: raw_campaigns
+    sdk: microsoft_ads
+    service: CampaignManagementService
+    method: GetCampaignsByAccountId
+    arguments:
+      AccountId: "{{ partition.account_id }}"
+      CampaignType: [Search, Shopping, DynamicSearchAds, Audience, PerformanceMax]
+    records: {path: Campaign}
+  - name: raw_ad_groups
+    partitions:
+      - {from: campaign_rows, fields: [account_id, campaign_id]}   # account_id: this account's campaigns only
+    sdk: microsoft_ads
+    service: CampaignManagementService
+    method: GetAdGroupsByCampaignId
+    headers: {CustomerAccountId: "{{ partition.account_id }}"}
+    arguments: {CampaignId: "{{ partition.campaign_id }}", ReturnAdditionalFields: [AdGroupType]}
+    records: {path: AdGroup}
+transform:
+  mode: run                        # two requests, the second partitioned by a step: in dependency order
+  steps:
+    - name: campaign_rows
+      select: |
+        SELECT partition->>'account_id'         AS account_id,
+               record->>'Id'                    AS campaign_id,
+               record->>'Name'                  AS campaign_name,
+               record->>'Status'                AS campaign_status,
+               record->>'CampaignType'          AS campaign_type,
+               record->>'BudgetType'            AS budget_type,
+               (record->>'DailyBudget')::DOUBLE AS daily_budget,
+               record->>'TimeZone'              AS time_zone
+        FROM raw_campaigns
+    - name: ad_group_rows
+      select: |
+        SELECT partition->>'account_id'             AS account_id,
+               partition->>'campaign_id'            AS campaign_id,
+               record->>'Id'                        AS ad_group_id,
+               record->>'Name'                      AS ad_group_name,
+               record->>'Status'                    AS ad_group_status,
+               record->>'AdGroupType'               AS ad_group_type,
+               (record->>'$.CpcBid.Amount')::DOUBLE AS cpc_bid,
+               record->>'Language'                  AS language,
+               record->>'Network'                   AS network
+        FROM raw_ad_groups
+    - name: ad_group_tree
+      select: |
+        SELECT a.account_id, a.campaign_id, c.campaign_name, c.campaign_status, c.campaign_type,
+               c.budget_type, c.daily_budget, c.time_zone,
+               a.ad_group_id, a.ad_group_name, a.ad_group_status, a.ad_group_type, a.cpc_bid, a.language, a.network
+        FROM ad_group_rows a
+        LEFT JOIN campaign_rows c USING (account_id, campaign_id)
+export:
+  ad_group_tree:
+    step: ad_group_tree
+    primary_key: [account_id, ad_group_id]

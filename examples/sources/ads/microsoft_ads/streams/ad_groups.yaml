@@ -1,0 +1,30 @@
+# The ad groups of each campaign: one call per campaign (from the campaigns stream).
+partitions:
+  - {from_stream: campaigns, fields: [account_id, campaign_id]}   # partition.account_id and partition.campaign_id
+requests:
+  - name: raw_ad_groups
+    sdk: microsoft_ads
+    service: CampaignManagementService
+    method: GetAdGroupsByCampaignId
+    headers: {CustomerAccountId: "{{ partition.account_id }}"}    # the request names only the campaign
+    arguments: {CampaignId: "{{ partition.campaign_id }}", ReturnAdditionalFields: [AdGroupType]}
+    records: {path: AdGroup}
+transform:
+  mode: page
+  steps:
+    - name: ad_groups
+      select: |
+        SELECT partition->>'account_id'             AS account_id,
+               partition->>'campaign_id'            AS campaign_id,
+               record->>'Id'                        AS ad_group_id,
+               record->>'Name'                      AS ad_group_name,
+               record->>'Status'                    AS status,
+               record->>'AdGroupType'               AS ad_group_type,
+               (record->>'$.CpcBid.Amount')::DOUBLE AS cpc_bid,
+               record->>'Language'                  AS language,
+               record->>'Network'                   AS network
+        FROM raw_ad_groups
+export:
+  ad_groups:
+    step: ad_groups
+    primary_key: [account_id, ad_group_id]

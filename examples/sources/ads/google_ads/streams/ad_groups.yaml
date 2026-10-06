@@ -1,0 +1,36 @@
+# The ad groups of each customer's campaigns.
+partitions:
+  - {name: customer_id, values: "{{ config.customer_ids }}"}
+requests:
+  - name: raw_ad_groups
+    sdk: google_ads
+    service: GoogleAdsService
+    method: search_stream
+    arguments:
+      customer_id: "{{ partition.customer_id }}"
+      query:
+        gaql:
+          select: [customer.id, campaign.id, ad_group.id, ad_group.name, ad_group.status, ad_group.type,
+                   ad_group.cpc_bid_micros]
+          from: ad_group
+          where:
+            - {field: ad_group.status, op: IN, type: enum, value: [ENABLED, PAUSED]}
+            - {field: campaign.status, op: IN, type: enum, value: [ENABLED, PAUSED]}
+transform:
+  mode: page
+  steps:
+    - name: ad_groups
+      select: |                    # SQL (DuckDB) over each page of rows: ids are text, money is in micros
+        SELECT record->>'$.customer.id'   AS customer_id,
+               record->>'$.campaign.id'   AS campaign_id,
+               record->>'$.ad_group.id'   AS ad_group_id,
+               record->>'$.ad_group.name' AS ad_group_name,
+               CASE record->>'$.ad_group.status' WHEN 'ENABLED' THEN 'active' WHEN 'PAUSED' THEN 'paused'
+                    WHEN 'REMOVED' THEN 'removed' END AS status,
+               record->>'$.ad_group.type' AS ad_group_type,                     -- SEARCH_STANDARD, DISPLAY_STANDARD, ...
+               round((record->>'$.ad_group.cpc_bid_micros')::BIGINT * 0.000001, 2) AS cpc_bid
+        FROM raw_ad_groups
+export:
+  ad_groups:
+    step: ad_groups
+    primary_key: [customer_id, ad_group_id]
