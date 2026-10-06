@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "adapt-core"
-version = "0.0.1"
-description = "Adaptive Data Pipeline Toolkit - core runtime for `kind: source` configurations"
+version = "0.0.2"
+description = "Declarative data connectors — pull from APIs, files and databases with YAML, shape with SQL, write anywhere."
 readme = "README.md"
 license = "Apache-2.0"
 authors = [
