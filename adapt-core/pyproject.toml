@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "adapt-core"
-version = "0.0.2"
+version = "0.0.3"
 description = "Declarative data connectors — pull from APIs, files and databases with YAML, shape with SQL, write anywhere."
 readme = "README.md"
 license = "Apache-2.0"
