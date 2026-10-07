@@ -79,6 +79,11 @@ class OpGraphTest(unittest.TestCase):
 
 
 class TriggerTest(unittest.TestCase):
+    def setUp(self):
+        patcher = mock.patch.object(accounts, "load_accounts", lambda: [dict(row) for row in ACCOUNTS])
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
     def _configs(self, *args):
         return [definitions.run_config_for(row) for row, _effective, _job in definitions.plan(*args)]
 
@@ -130,7 +135,8 @@ class TriggerTest(unittest.TestCase):
         wrapper_script.chmod(0o755)
         env = {"ADAPT_BIN": str(wrapper_script), "ADAPT_PIPELINE_WAREHOUSE_DIR": str(SCRATCH / "warehouse"),
                "ADAPT_PIPELINE_RUNS_DIR": str(SCRATCH / "runs"), "ADAPT_EXECUTION": "subprocess"}
-        with mock.patch.dict(os.environ, env), mock.patch.object(accounts, "app_config", lambda n: dict(FAKE_APP)):
+        with mock.patch.dict(os.environ, env), mock.patch.object(accounts, "app_config", lambda n, region=None: dict(FAKE_APP)), \
+                mock.patch.object(accounts, "load_accounts", lambda: [dict(row) for row in ACCOUNTS]):
             return definitions.trigger(pipeline, "u1")
 
     def test_trigger_selects_the_pipelines_job(self):

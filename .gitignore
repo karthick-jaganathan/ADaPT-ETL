@@ -149,3 +149,11 @@ dmypy.json
 # IDE settings
 .idea
 .vscode
+
+# Local account/secret configs (dev/testing) — never commit real credentials.
+# Use the committed *.example.yaml templates; real files live in ~/.adapt/ or are served by the accounts API.
+secrets.yaml
+accounts.yaml
+credentials.yaml
+credentials.json
+**/.adapt/

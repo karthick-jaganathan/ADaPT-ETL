@@ -18,10 +18,11 @@
 #
 #   bash orchestration/k8s/setup.sh
 #
-# Environment: ADAPT_K8S_CONTEXT (kind-adapt), ADAPT_K8S_SECRET (adapt-secrets), ADAPT_APP_CONFIG_GOOGLE_ADS (the
-# secrets file, ~/.adapt/google-secrets.yaml), KIND_BIN / KIND_CLUSTER (kind, adapt: the LocalStack and Postgres images
-# are loaded from the local docker onto the kind node when they are there; SKIP_KIND_LOAD=1 lets the node pull them),
-# PYTHON (a python with PyYAML: orchestration/.venv/bin/python).
+# Environment: ADAPT_K8S_CONTEXT (kind-adapt), ADAPT_K8S_SECRET (adapt-secrets), ADAPT_SECRETS_FILE
+# (~/.adapt/secrets.yaml) and ADAPT_ACCOUNTS_FILE (~/.adapt/accounts.yaml) - the providers the Secret is built from -
+# ADAPT_K8S_USER (u1, whose google_ads account's token is used), KIND_BIN / KIND_CLUSTER (kind, adapt: the LocalStack
+# and Postgres images are loaded from the local docker onto the kind node when they are there; SKIP_KIND_LOAD=1 lets
+# the node pull them), PYTHON (a python with PyYAML: orchestration/.venv/bin/python).
 #
 # The pipeline image itself (adapt-pipeline:local, imagePullPolicy Never) is built and loaded separately:
 #   bash orchestration/docker/build.sh && kind load docker-image adapt-pipeline:local --name adapt
@@ -32,7 +33,9 @@ PROJECT_DIR="$(dirname "$HERE")"
 CONTEXT="${ADAPT_K8S_CONTEXT:-kind-adapt}"
 NAMESPACE=adapt   # the namespace of the manifests
 SECRET="${ADAPT_K8S_SECRET:-adapt-secrets}"
-GOOGLE_SECRETS="${ADAPT_APP_CONFIG_GOOGLE_ADS:-$HOME/.adapt/google-secrets.yaml}"
+export ADAPT_SECRETS_FILE="${ADAPT_SECRETS_FILE:-$HOME/.adapt/secrets.yaml}"
+export ADAPT_ACCOUNTS_FILE="${ADAPT_ACCOUNTS_FILE:-$HOME/.adapt/accounts.yaml}"
+DEMO_USER="${ADAPT_K8S_USER:-u1}"
 KIND_BIN="${KIND_BIN:-$(command -v kind || echo /tmp/bin/kind)}"
 KIND_CLUSTER="${KIND_CLUSTER:-adapt}"
 PYTHON="${PYTHON:-$PROJECT_DIR/.venv/bin/python}"
@@ -41,7 +44,8 @@ PIPELINE_IMAGE="${ADAPT_IMAGE:-adapt-pipeline:local}"
 k() { kubectl --context "$CONTEXT" "$@"; }
 say() { printf '\n== %s\n' "$*"; }
 
-[[ -f "$GOOGLE_SECRETS" ]] || { echo "no secrets file at $GOOGLE_SECRETS" >&2; exit 1; }
+[[ -f "$ADAPT_SECRETS_FILE" ]] || { echo "no secrets file at $ADAPT_SECRETS_FILE" >&2; exit 1; }
+[[ -f "$ADAPT_ACCOUNTS_FILE" ]] || { echo "no accounts file at $ADAPT_ACCOUNTS_FILE" >&2; exit 1; }
 [[ -x "$PYTHON" ]] || PYTHON=python3
 
 say "namespace $NAMESPACE (context $CONTEXT)"
@@ -65,29 +69,35 @@ if [[ "$CONTEXT" == kind-* && -x "$KIND_BIN" && "${SKIP_KIND_LOAD:-}" != 1 ]]; t
   fi
 fi
 
-say "Secrets catalog-postgres-auth and $SECRET (values from $GOOGLE_SECRETS; not printed)"
+say "Secrets catalog-postgres-auth and $SECRET (from $ADAPT_SECRETS_FILE + $ADAPT_ACCOUNTS_FILE; not printed)"
 # Reuse the catalog password the running Postgres was initialised with; generate one the first time.
 CATALOG_PASSWORD="$(k -n "$NAMESPACE" get secret catalog-postgres-auth \
   -o go-template='{{index .data "POSTGRES_PASSWORD" | base64decode}}' 2>/dev/null || true)"
 [[ -n "$CATALOG_PASSWORD" ]] || CATALOG_PASSWORD="$(openssl rand -hex 24)"
 export CATALOG_PASSWORD
-"$PYTHON" - "$GOOGLE_SECRETS" "$NAMESPACE" "$SECRET" <<'PY' | k apply --server-side --force-conflicts -f -
+PYTHONPATH="$PROJECT_DIR/src${PYTHONPATH:+:$PYTHONPATH}" \
+"$PYTHON" - "$DEMO_USER" "$NAMESPACE" "$SECRET" <<'PY' | k apply --server-side --force-conflicts -f -
 import json
 import os
 import sys
 
-import yaml
+from adapt.orchestration import accounts
 
-path, namespace, name = sys.argv[1:4]
-with open(os.path.expanduser(path)) as handle:
-    values = yaml.safe_load(handle) or {}
-google = ("developer_token", "client_id", "client_secret", "refresh_token")
-missing = [key for key in google if not values.get(key)]
+user, namespace, name = sys.argv[1:4]
+network = "google_ads"
+rows = [row for row in accounts.load_accounts() if row["user_id"] == user and row["network"] == network]
+if not rows:
+    sys.exit("no %s account for user %r in %s" % (network, user, os.environ.get("ADAPT_ACCOUNTS_FILE")))
+row = rows[0]
+app = accounts.app_config(network, row.get("region"))   # app creds, resolved for the account's region
+values = {"developer_token": app.get("developer_token"), "client_id": app.get("client_id"),
+          "client_secret": app.get("client_secret"), "refresh_token": row.get("token")}  # the token lives on the account
+missing = [key for key, value in values.items() if not value]
 if missing:
-    sys.exit("%s has no %s" % (path, ", ".join(missing)))
+    sys.exit("cannot build %s: no %s (secrets/accounts for %s)" % (name, ", ".join(missing), user))
 password = os.environ["CATALOG_PASSWORD"]
 labels = {"app.kubernetes.io/part-of": "adapt-pipeline"}
-adapt = {"ADAPT_SECRET_%s" % key.upper(): str(values[key]) for key in google}
+adapt = {"ADAPT_SECRET_%s" % key.upper(): str(value) for key, value in values.items()}
 adapt.update(ADAPT_DUCKLAKE_S3_KEY_ID=os.environ.get("ADAPT_K8S_S3_KEY_ID", "test"),
              ADAPT_DUCKLAKE_S3_SECRET=os.environ.get("ADAPT_K8S_S3_SECRET", "test"),
              ADAPT_DUCKLAKE_CATALOG_PASSWORD=password)

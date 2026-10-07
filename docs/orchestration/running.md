@@ -95,7 +95,9 @@ The images and manifests live next to the code, on GitHub:
 | `ADAPT_PIPELINE_NETWORKS` | default `config/networks.yaml` |
 | `ADAPT_PIPELINE_WAREHOUSE_DIR` | default `warehouse/` |
 | `ADAPT_PIPELINE_RUNS_DIR` | each node's `--summary` JSON |
-| `ADAPT_APP_CONFIG_<NETWORK>` | overrides the path of a network's app-level values/secrets |
+| `ADAPT_ACCOUNTS_URL` / `ADAPT_ACCOUNTS_FILE` | the accounts provider (API, else a file; default `~/.adapt/accounts.yaml`) |
+| `ADAPT_SECRETS_URL` / `ADAPT_SECRETS_FILE` | the secrets provider (API, else a file; default `~/.adapt/secrets.yaml`) |
+| `ADAPT_REGION` | fallback region when an account row has none (selects the secrets region overlay) |
 | `DAGSTER_HOME` | where runs are recorded, so the Dagster UI shows them (above) |
 
 **Execution mode:** `ADAPT_EXECUTION`, `ADAPT_IMAGE`, `ADAPT_DOCKER_ARGS`, `ADAPT_DOCKER_BIN`, `ADAPT_K8S_*`,

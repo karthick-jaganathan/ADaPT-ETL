@@ -16,6 +16,7 @@ without running it - the command the custom campaigns wrapper builds for an acco
 ids for.
 """
 
+import os
 import subprocess
 import sys
 
@@ -28,6 +29,12 @@ from adapt.orchestration.definitions import job_name, trigger
 from adapt.orchestration.runner import k8s_catalog_schema, k8s_data_path
 from adapt.orchestration.spec import load_pipeline, load_pipelines
 from adapt.orchestration.wrappers import wrapper_for
+
+# Resolve accounts/secrets from the committed example files unless the environment already points elsewhere
+# (ADAPT_ACCOUNTS_URL / ADAPT_SECRETS_URL for the API, or ADAPT_ACCOUNTS_FILE / ADAPT_SECRETS_FILE for ~/.adapt).
+_EXAMPLES = os.path.join(os.path.dirname(__file__), "examples")
+os.environ.setdefault("ADAPT_ACCOUNTS_FILE", os.path.join(_EXAMPLES, "accounts.example.yaml"))
+os.environ.setdefault("ADAPT_SECRETS_FILE", os.path.join(_EXAMPLES, "secrets.example.yaml"))
 
 USER_ID, ACCOUNT_ID = "u1", "1000000001"
 PIPELINES = ("metadata", "performance")

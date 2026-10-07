@@ -5,6 +5,7 @@ wrapper needs to build the node's command.
 """
 
 import dataclasses
+import os
 import re
 from pathlib import Path
 
@@ -60,7 +61,8 @@ def make_context(user_id, account_id, network, upstream=None, networks=None, acc
         raise KeyError("network %r is not in networks.yaml (known: %s)" % (network, ", ".join(sorted(networks))))
     entry = networks[network]
     row = accounts_module.get_account(user_id, account_id, network, accounts)
-    app = (app_loader or accounts_module.app_config)(network)
+    region = row.get("region") or os.environ.get("ADAPT_REGION")
+    app = (app_loader or accounts_module.app_config)(network, region)
     warehouse = warehouse_for(user_id)
     schema = schema_for(network, account_id)
     if schema == warehouse.stem:

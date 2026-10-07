@@ -124,8 +124,8 @@ Three declarative files drive it, and no code knows anything network-specific:
 - **`config/networks.yaml`** — per network: its ADaPT `source`, the `inputs` templates (how to fill the source's
   declared `spec`), the `connectors` and container `image`, and the shared-vocabulary **`streams:`** map (and optional
   **`after:`** edge overrides).
-- **`accounts.py`** — the `(user, account, network, …)` rows and each network's app-level secrets file (a database in
-  production).
+- **`accounts.py`** — the account provider (`(user, account, network, region, token, …)` rows) and the secrets
+  provider (each network's app-level credentials, by region); both an API or a file (a database in production).
 
 Each node's **wrapper** turns `(node, context)` into the `adapt run` argv and the secret environment. The default
 wrapper derives the `--set` flags from the *source's own declared spec* filled by the network's `inputs`; a custom

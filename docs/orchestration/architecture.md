@@ -162,15 +162,20 @@ The argv, with warehouse `warehouse/<user>.duckdb` and schema `<network>_<accoun
 Example: `campaigns_from_db` (campaigns on google_ads) looks the account's campaign ids up in a stub campaigns DB
 (`CAMPAIGN_DB`) and adds `--set campaign_ids=1,2,3`. An account not in the DB gets the default (unfiltered) command.
 
-### Accounts: the lookup
+### Accounts and secrets: the providers
 
-- `accounts.ACCOUNTS` is a list of rows `{user_id, account_id, network, ...}`.
-- In production it is a query against the accounts database with the same row shape.
-- `app_config(network)` loads app-level values/secrets at run time — for google_ads from `~/.adapt/google-secrets.yaml`
-  (`$ADAPT_APP_CONFIG_GOOGLE_ADS` overrides the path).
-- The per-user OAuth refresh token:
-  - in production comes from the DB row ({% raw %}`refresh_token: "secret:{{ row.refresh_token }}"`{% endraw %});
-  - in this prototype is `app.refresh_token` from the secrets file.
+Two providers, read at run time (the API first, a local file for development only):
+
+- **Accounts** — `load_accounts()` reads `ADAPT_ACCOUNTS_URL` (HTTP) or `ADAPT_ACCOUNTS_FILE`
+  (default `~/.adapt/accounts.yaml`). A `clients` map (client → `name`, `region`, `accounts[]`) is flattened to rows
+  `{user_id, account_id, network, region, token, …}`; a flat `accounts` list is used as-is. In production this is the
+  accounts database / API with the same shape.
+- **Secrets** — `app_config(network, region)` reads `ADAPT_SECRETS_URL` (HTTP) or `ADAPT_SECRETS_FILE`
+  (default `~/.adapt/secrets.yaml`): a `secrets` map `network → {default, regions}` of app-level API credentials
+  (`developer_token`, `client_id`, `client_secret`, …). The account's `region` selects which `regions[region]` values
+  overlay `default`. **No tokens here.**
+- The per-user OAuth token rides on the account row ({% raw %}`refresh_token: "secret:{{ row.token }}"`{% endraw %}) —
+  never in the secrets provider.
 
 ### Op graphs + trigger
 

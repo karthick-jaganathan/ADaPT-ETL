@@ -7,7 +7,9 @@ run the `adapt` CLI per **user** and **network** as Dagster op graphs. It never 
 - **Pipelines** (`config/pipelines/<name>.yaml`) — a named DAG of canonical node names and their `after` edges.
 - **Networks** (`config/networks.yaml`) — each network's ADaPT source, `inputs`, `connectors`, `image` and `streams:`
   map (alias or `false`-skip each canonical node), so one pipeline runs across networks.
-- **Accounts** (`src/adapt/orchestration/accounts.py`) — the `(user, account, network)` rows a trigger fans out over.
+- **Accounts & secrets** (`src/adapt/orchestration/accounts.py`) — the account provider (the `(user, account,
+  network)` rows a trigger fans out over, each with its own `token`) and the secrets provider (per-network app
+  credentials by region); each an API (`ADAPT_ACCOUNTS_URL` / `ADAPT_SECRETS_URL`) or a file for development.
 - **Wrappers** — turn a node into its `adapt run` command, derived from the source's declared `spec`.
 - **Execution** — a local subprocess (default), a `docker run`, or a Kubernetes Job (`ADAPT_EXECUTION`); see
   [docker/](docker/README.md), [k8s/](k8s/) and [localstack/](localstack/README.md).

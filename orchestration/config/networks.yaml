@@ -38,7 +38,7 @@ networks:
       developer_token:   "secret:{{ app.developer_token }}"
       client_id:         "secret:{{ app.client_id }}"
       client_secret:     "secret:{{ app.client_secret }}"
-      refresh_token:     "secret:{{ app.refresh_token }}"   # production: the user's token from the DB row
+      refresh_token:     "secret:{{ row.token }}"   # the user's OAuth token, from the account row
     streams:                                # google_ads names every canonical node the same (identity)
       campaigns:           campaigns
       ad_groups:           ad_groups
@@ -60,7 +60,7 @@ networks:
       developer_token: "secret:{{ app.developer_token }}"
       client_id:       "secret:{{ app.client_id }}"
       client_secret:   "secret:{{ app.client_secret }}"   # optional (web apps only); unset leaves it to the source
-      refresh_token:   "secret:{{ app.refresh_token }}"
+      refresh_token:   "secret:{{ row.token }}"
     streams:                                # microsoft names the hierarchy stream differently (an alias)
       campaigns:           campaigns
       ad_groups:           ad_groups
@@ -78,7 +78,7 @@ networks:
     inputs:
       account_ids:  "{{ row.account_id }}"                 # the ad account id, without the act_ prefix
       start_date:   "-7d"
-      access_token: "secret:{{ app.access_token }}"
+      access_token: "secret:{{ row.token }}"               # the user's access token, from the account row
       app_id:       "secret:{{ app.app_id }}"              # optional
       app_secret:   "secret:{{ app.app_secret }}"          # optional
     streams:                                # facebook aliases two streams and has none for the targeting nodes

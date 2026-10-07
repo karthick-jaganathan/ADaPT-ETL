@@ -9,7 +9,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from tests.helpers import FAKE_APP, GOOGLE_SECRET_ENV, PROJECT_DIR, google_context
+from tests.helpers import ACCOUNTS, FAKE_APP, GOOGLE_SECRET_ENV, PROJECT_DIR, google_context
 from adapt.orchestration import REPO_ROOT, accounts, definitions, execution_mode, k8s_settings
 from adapt.orchestration.runner import (K8sJobError, RunFailed, counts_from_log, k8s_command,
                                         k8s_job_manifest, k8s_job_name, run)
@@ -264,7 +264,8 @@ class K8sRunTest(unittest.TestCase):
                "ADAPT_PIPELINE_WAREHOUSE_DIR": str(SCRATCH / "warehouse"),
                "ADAPT_PIPELINE_RUNS_DIR": str(SCRATCH / "runs")}
         env.update(extra_env or {})
-        with mock.patch.dict(os.environ, env), mock.patch.object(accounts, "app_config", lambda n: dict(FAKE_APP)):
+        with mock.patch.dict(os.environ, env), mock.patch.object(accounts, "app_config", lambda n, region=None: dict(FAKE_APP)), \
+                mock.patch.object(accounts, "load_accounts", lambda: [dict(row) for row in ACCOUNTS]):
             return definitions.trigger("metadata", "u1")
 
     def test_trigger_runs_every_node_as_a_job_in_dependency_order(self):

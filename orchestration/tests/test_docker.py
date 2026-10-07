@@ -8,7 +8,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from tests.helpers import FAKE_APP, GOOGLE_SECRET_ENV, PROJECT_DIR, google_context
+from tests.helpers import ACCOUNTS, FAKE_APP, GOOGLE_SECRET_ENV, PROJECT_DIR, google_context
 from adapt.orchestration import REPO_ROOT, accounts, adapt_image, definitions, execution_mode
 from adapt.orchestration.runner import DockerCommandError, RunFailed, container_name, docker_command, run
 from adapt.orchestration.spec import SpecError, load_networks, parse_networks
@@ -193,7 +193,8 @@ class DockerRunTest(unittest.TestCase):
                "ADAPT_PIPELINE_WAREHOUSE_DIR": str(SCRATCH / "warehouse"),
                "ADAPT_PIPELINE_RUNS_DIR": str(SCRATCH / "runs")}
         env.update(extra_env or {})
-        with mock.patch.dict(os.environ, env), mock.patch.object(accounts, "app_config", lambda n: dict(FAKE_APP)):
+        with mock.patch.dict(os.environ, env), mock.patch.object(accounts, "app_config", lambda n, region=None: dict(FAKE_APP)), \
+                mock.patch.object(accounts, "load_accounts", lambda: [dict(row) for row in ACCOUNTS]):
             return definitions.trigger("metadata", "u1")
 
     def test_trigger_runs_every_node_in_a_container(self):

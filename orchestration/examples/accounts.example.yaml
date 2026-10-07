@@ -1,0 +1,28 @@
+# The account registry — the accounts provider.
+# Copy to ~/.adapt/accounts.yaml (dev/testing) or serve the same document from ADAPT_ACCOUNTS_URL (production).
+#
+# A `clients` map groups accounts under a client (the user_id). Each account carries its own `token`
+# (the user's OAuth token, surfaced to a run as row.token). The client's `region` selects which region's
+# secrets (secrets.yaml) a run uses. A flat `accounts:` list of rows is also accepted for quick dev.
+#
+# All ids below are placeholders — replace with your own.
+version: "1"
+clients:
+  "u1":
+    name: Example Client
+    region: us-west-2
+    accounts:
+      - network: google_ads
+        customer_id: "1000000001"
+        login_customer_id: "2000000002"      # the manager account, when there is one
+        token: REPLACE_ME_GOOGLE_REFRESH_TOKEN
+        timezone: America/Los_Angeles
+      - network: microsoft_ads
+        customer_id: "1000000003"
+        customer_id_manager: "2000000004"
+        token: REPLACE_ME_MICROSOFT_REFRESH_TOKEN
+        timezone: America/New_York
+      - network: facebook_ads
+        customer_id: "1000000005"            # the ad account id, without the act_ prefix
+        token: REPLACE_ME_FACEBOOK_ACCESS_TOKEN
+        timezone: America/New_York

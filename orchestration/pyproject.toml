@@ -7,7 +7,7 @@ name = "adapt-orchestration"
 version = "0.1.0"
 description = "Spec-driven Dagster orchestration for ADaPT-ETL: named declarative DAGs over the adapt CLI."
 requires-python = ">=3.10"
-dependencies = ["dagster", "dagster-webserver", "duckdb", "pyyaml"]
+dependencies = ["dagster", "dagster-webserver", "duckdb", "pyyaml", "requests"]
 
 [tool.dagster]
 module_name = "adapt.orchestration.definitions"

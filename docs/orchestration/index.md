@@ -20,7 +20,7 @@ Named declarative DAGs (**pipelines**) run the `adapt` CLI per **user** and **ne
 
 {: .note }
 **Prototype stubs:** `config/networks.yaml` (the network registry) and `src/adapt/orchestration/accounts.py` (the
-account lookup) are stand-ins; in production both come from a database / registry service.
+account + secrets providers) are stand-ins; in production both come from a database / registry service (API).
 
 | Page | What it covers |
 |---|---|
@@ -40,7 +40,8 @@ For how orchestration fits the whole ADaPT system (with sequence diagrams), see 
     alias or `false`-skip each canonical node.
 
   So one pipeline runs across many networks that name (or lack) streams differently.
-- **Accounts** (`accounts.py`) — the `(user, account, network)` rows a trigger fans out over.
+- **Accounts & secrets** (`accounts.py`) — the account provider (the `(user, account, network)` rows a trigger fans
+  out over, each carrying its own `token`) and the secrets provider (per-network app credentials, by region).
 - **Wrappers** — turn a node into its `adapt run` command, derived from the source's declared `spec`.
 - **Execution** — each node runs as a local subprocess (default), a `docker run`, or a Kubernetes Job
   (`ADAPT_EXECUTION`; see [Execution modes]({{ site.baseurl }}/orchestration/running/#execution-modes)).
