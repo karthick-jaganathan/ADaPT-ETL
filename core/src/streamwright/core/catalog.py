@@ -1,9 +1,12 @@
 #!/usr/bin/env python
 """The connector catalog: discover and install connectors from the StreamWright hub.
 
-A catalog is a static index (bundled with streamwright, optionally refreshed from a
-remote hub URL) that maps a connector key to how it's installed - a PyPI
-requirement, a pinned git URL, or an image. The key is the same name used in
+A catalog is a static index that maps a connector key to how it's installed - a
+PyPI requirement, a pinned git URL, or an image. It is read from the live hub
+(DEFAULT_HUB, or $STREAMWRIGHT_HUB_URL / --hub-url); when the hub is unreachable,
+from the last copy fetched (~/.streamwright/connectors.json), else from the copy
+bundled with this release - with a warning either way. The hub URL "bundled" uses
+the bundled copy only (no network): for reproducible builds. The key is the same name used in
 source YAML (`provider`/`sdk`); the install source is just a delivery detail, so
 a package can move from git to PyPI without changing what users type.
 
@@ -24,7 +27,10 @@ except ImportError:  # pragma: no cover
 from streamwright.core.runtime import components
 
 HUB_ENV = "STREAMWRIGHT_HUB_URL"
+DEFAULT_HUB = "https://karthick-jaganathan.github.io/streamwright-hub/index.json"
+BUNDLED = "bundled"  # a hub URL that means: the catalog bundled with this release, no network
 CACHE = Path(os.path.expanduser("~/.streamwright/connectors.json"))
+TIMEOUT_S = 5
 
 
 def _bundled():
@@ -32,12 +38,18 @@ def _bundled():
     return json.loads(text)
 
 
+def _valid(data):
+    return isinstance(data, dict) and isinstance(data.get("connectors"), dict)
+
+
 def _remote(url):
     import requests
 
-    response = requests.get(url, timeout=10)
+    response = requests.get(url, timeout=TIMEOUT_S)
     response.raise_for_status()
     data = response.json()
+    if not _valid(data):
+        raise ValueError("not a connector catalog (no `connectors` mapping)")
     try:
         CACHE.parent.mkdir(parents=True, exist_ok=True)
         CACHE.write_text(json.dumps(data))
@@ -47,19 +59,39 @@ def _remote(url):
 
 
 def load(hub_url=None):
-    """The catalog: the remote hub if configured (cached), else the bundled default."""
-    url = hub_url or os.environ.get(HUB_ENV)
-    if url:
-        try:
-            return _remote(url)
-        except Exception:  # offline or hub down: fall back
-            pass
+    """
+    The catalog: the live hub (`hub_url`, else $STREAMWRIGHT_HUB_URL, else DEFAULT_HUB; each fetch is cached). When the
+    hub cannot be read, the cached copy, else the bundled one, with a warning on stderr. `bundled`: the bundled copy only.
+    """
+    url = hub_url or os.environ.get(HUB_ENV) or DEFAULT_HUB
+    if url == BUNDLED:
+        return _bundled()
+    try:
+        return _remote(url)
+    except Exception as exc:  # offline, hub down or a bad publish: fall back, visibly
+        reason = type(exc).__name__  # network errors: the type is enough; an HTTP status or a bad index says why
+        status = getattr(getattr(exc, "response", None), "status_code", None)
+        if status:
+            reason = "HTTP %s" % status
+        elif isinstance(exc, ValueError):
+            reason += ": %s" % str(exc)[:100]
     if CACHE.exists():
         try:
-            return json.loads(CACHE.read_text())
+            data = json.loads(CACHE.read_text())
+            if _valid(data):
+                sys.stderr.write("streamwright: the connector hub %s is unreachable (%s); using the copy fetched on %s\n"
+                                 % (url, reason, _mtime(CACHE)))
+                return data
         except Exception:
             pass
+    sys.stderr.write("streamwright: the connector hub %s is unreachable (%s); using the catalog bundled with this "
+                     "release\n" % (url, reason))
     return _bundled()
+
+
+def _mtime(path):
+    import datetime
+    return datetime.datetime.fromtimestamp(path.stat().st_mtime).strftime("%Y-%m-%d %H:%M")
 
 
 def connectors(hub_url=None):

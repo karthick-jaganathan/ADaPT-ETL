@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "streamwright"
-version = "0.1.4"
+version = "0.1.5"
 description = "Declarative data connectors — pull from APIs, files and databases with YAML, shape with SQL, write anywhere."
 readme = "README.md"
 license = "Apache-2.0"
@@ -58,5 +58,5 @@ packages = [
 ]
 
 [tool.setuptools.package-data]
-# the bundled connector catalog (default for `streamwright connectors`, refreshed from $STREAMWRIGHT_HUB_URL)
+# the bundled connector catalog (the fallback of `streamwright connectors` when the live hub is unreachable)
 "streamwright.core" = ["connectors.json"]

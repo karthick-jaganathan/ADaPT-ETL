@@ -29,6 +29,10 @@ streamwright connectors install google_ads   # an API connector (pulls in its SD
 streamwright connectors install google_ads meta_ads microsoft_ads   # several at once (one pip install)
 ```
 
+The catalog comes from the live [StreamWright hub](https://github.com/karthick-jaganathan/streamwright-hub). When it is
+unreachable, the CLI warns and uses the last copy it fetched, else the one bundled with this release;
+`--hub-url bundled` uses the bundled copy only, with no network (reproducible builds).
+
 ## Quickstart
 
 ```bash

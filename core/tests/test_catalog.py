@@ -1,6 +1,7 @@
 """`streamwright connectors install KEY [KEY ...]` and search: resolution, consent and the single pip command."""
 
 import io
+import json
 import sys
 
 import pytest
@@ -125,3 +126,79 @@ def test_cli_search_joins_its_words(pip, capsys):
     assert cli.main(["connectors", "search", "meta", "insights"]) == 0
     out = capsys.readouterr().out
     assert "meta_ads" in out and "google_ads" not in out
+
+
+# --- where the catalog comes from: the live hub, else the last fetched copy, else the bundled one ---
+
+GOOD = {"schema_version": 1, "connectors": {"files": CATALOG["files"]}}
+
+
+class Response:
+    def __init__(self, data, status=200):
+        self.data, self.status = data, status
+
+    def raise_for_status(self):
+        if self.status >= 400:
+            raise RuntimeError("HTTP %d" % self.status)
+
+    def json(self):
+        return self.data
+
+
+@pytest.fixture
+def hub(monkeypatch, tmp_path):
+    """No $STREAMWRIGHT_HUB_URL, a private cache file, and requests.get answering from `responses` (url -> data)."""
+    monkeypatch.delenv(catalog.HUB_ENV, raising=False)
+    monkeypatch.setattr(catalog, "CACHE", tmp_path / "connectors.json")
+    state = {"responses": {}, "urls": []}
+
+    def get(url, timeout):
+        state["urls"].append(url)
+        if url not in state["responses"]:
+            raise ConnectionError("cannot reach %s" % url)
+        return Response(state["responses"][url])
+    monkeypatch.setattr("requests.get", get)
+    return state
+
+
+def test_the_live_hub_is_the_default_and_is_cached(hub, capsys):
+    hub["responses"][catalog.DEFAULT_HUB] = GOOD
+    assert catalog.load() == GOOD
+    assert hub["urls"] == [catalog.DEFAULT_HUB]
+    assert json.loads(catalog.CACHE.read_text()) == GOOD
+    assert capsys.readouterr().err == ""
+
+
+def test_the_hub_url_can_be_set(hub, monkeypatch):
+    hub["responses"]["https://hub.example/a.json"] = GOOD
+    hub["responses"]["https://hub.example/b.json"] = GOOD
+    monkeypatch.setenv(catalog.HUB_ENV, "https://hub.example/a.json")
+    catalog.load()
+    catalog.load("https://hub.example/b.json")                    # --hub-url wins over the environment
+    assert hub["urls"] == ["https://hub.example/a.json", "https://hub.example/b.json"]
+
+
+def test_bundled_uses_no_network(hub):
+    data = catalog.load(catalog.BUNDLED)
+    assert hub["urls"] == [] and data == catalog._bundled()
+
+
+def test_an_unreachable_hub_falls_back_to_the_last_fetched_copy_with_a_warning(hub, capsys):
+    catalog.CACHE.write_text(json.dumps(GOOD))
+    assert catalog.load() == GOOD
+    err = capsys.readouterr().err
+    assert "the connector hub %s is unreachable (ConnectionError" % catalog.DEFAULT_HUB in err
+    assert "using the copy fetched on" in err
+
+
+def test_with_no_fetched_copy_the_bundled_catalog_is_used_with_a_warning(hub, capsys):
+    assert catalog.load() == catalog._bundled()
+    assert "using the catalog bundled with this release" in capsys.readouterr().err
+
+
+def test_a_malformed_index_is_not_used_nor_cached(hub, capsys):
+    catalog.CACHE.write_text(json.dumps(GOOD))
+    hub["responses"][catalog.DEFAULT_HUB] = {"oops": True}
+    assert catalog.load() == GOOD                                   # the good copy, not the bad publish
+    assert json.loads(catalog.CACHE.read_text()) == GOOD
+    assert "not a connector catalog" in capsys.readouterr().err
