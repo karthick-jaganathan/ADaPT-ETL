@@ -6,7 +6,7 @@ signing in, paging, retries, shaping the data with DuckDB SQL, and writing it ou
 No per-connector code, and one command runs any source.
 
 The `streamwright` package is the heart of it: the `streamwright` command plus the runtime for
-`kind: source` sources. *(Formerly published as `adapt-core`.)*
+`kind: source` sources.
 
 - **`streamwright run`** executes a source · **`streamwright validate`** checks one · **`streamwright connectors`** browses and installs connectors.
 - A source is a folder — `source.yaml` (`spec`, `auth`, `http`) and one file per stream in `streams/` — or a single YAML file.
