@@ -38,6 +38,7 @@ dlt = ["dlt>=1.0"]
 [project.urls]
 Homepage = "https://github.com/karthick-jaganathan/streamwright"
 Repository = "https://github.com/karthick-jaganathan/streamwright"
+Documentation = "https://streamwright.web.app/docs/"
 
 [project.scripts]
 # `streamwright run`, `streamwright validate`, `streamwright connectors` - one CLI (see streamwright.core.cli)

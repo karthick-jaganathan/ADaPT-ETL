@@ -42,8 +42,8 @@ streamwright run streamwright/examples/sources/readers/files_demo \
   --allow-connector files --output jsonl:out
 ```
 
-📖 **Full documentation:** https://adapt-9e96d.web.app/docs/ — command line,
+📖 **Full documentation:** https://streamwright.web.app/docs/ — command line,
 streams, outputs, logging, connectors & readers and the Python API.
 
-- Architecture guide: https://adapt-9e96d.web.app/docs/architecture/
-- Connectors & readers: https://adapt-9e96d.web.app/docs/connectors/
+- Architecture guide: https://streamwright.web.app/docs/architecture/
+- Connectors & readers: https://streamwright.web.app/docs/connectors/
