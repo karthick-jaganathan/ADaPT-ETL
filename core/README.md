@@ -26,6 +26,7 @@ connectors yet. Add the ones you need on demand:
 streamwright connectors list                 # browse the hub
 streamwright connectors install files        # a reader (files, s3, gcs, postgres)
 streamwright connectors install google_ads   # an API connector (pulls in its SDK)
+streamwright connectors install google_ads meta_ads microsoft_ads   # several at once (one pip install)
 ```
 
 ## Quickstart

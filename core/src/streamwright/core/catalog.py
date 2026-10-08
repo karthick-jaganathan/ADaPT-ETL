@@ -74,12 +74,13 @@ def installed():
 
 
 def search(text, hub_url=None):
-    text = (text or "").lower()
+    """The catalog connectors whose key, title, summary or family contains every word of `text`."""
+    words = (text or "").lower().split()
     hits = {}
     for key, entry in connectors(hub_url).items():
         haystack = " ".join([key, entry.get("title", ""), entry.get("summary", ""),
                              entry.get("family", "")]).lower()
-        if text in haystack:
+        if all(word in haystack for word in words):
             hits[key] = entry
     return hits
 
@@ -111,40 +112,62 @@ def listing(hub_url=None):
 
 
 def install(key, assume_yes=False, hub_url=None, pip_args=()):
-    """Resolve `key` in the catalog and install it (pip for pip/git; images are run, not installed)."""
-    entry = connectors(hub_url).get(key)
-    if not entry:
-        sys.stderr.write("streamwright: unknown connector %r (try: streamwright connectors list)\n" % key)
-        return 2
-    inst = entry.get("install", {})
-    trust = entry.get("trust", "community")
+    """Resolve one connector `key` in the catalog and install it (see install_many)."""
+    return install_many([key], assume_yes=assume_yes, hub_url=hub_url, pip_args=pip_args)
 
-    if "image" in inst:
-        print("%r is distributed as an image, not a Python package:" % key)
-        print("  %s" % inst["image"])
-        print("Run it with the docker or k8s execution mode (it is not pip-installed).")
+
+def install_many(keys, assume_yes=False, hub_url=None, pip_args=()):
+    """
+    Resolve connector `keys` in the catalog and install them with ONE pip command, so pip resolves their
+    dependencies together. Every key is checked first: an unknown key, or a connector without an installable
+    source, installs nothing. Image-distributed connectors are reported, not installed. Non-"official"
+    connectors need one confirmation for all of them (or `assume_yes`), and are refused non-interactively.
+    """
+    keys = list(dict.fromkeys(keys))  # in order, without repeats
+    if not keys:
+        sys.stderr.write("streamwright: 'connectors install' needs at least one connector KEY\n")
+        return 2
+    catalog = connectors(hub_url)
+    unknown = [key for key in keys if key not in catalog]
+    if unknown:
+        sys.stderr.write("streamwright: unknown connector%s %s (try: streamwright connectors list)\n" % (
+            "s" if len(unknown) > 1 else "", ", ".join(repr(key) for key in unknown)))
+        return 2
+
+    specs, untrusted = [], []
+    for key in keys:
+        entry = catalog[key]
+        inst = entry.get("install", {})
+        if "image" in inst:
+            print("%r is distributed as an image, not a Python package:" % key)
+            print("  %s" % inst["image"])
+            print("Run it with the docker or k8s execution mode (it is not pip-installed).")
+            continue
+        spec = inst.get("pip") or inst.get("git")
+        if not spec:
+            sys.stderr.write("streamwright: connector %r has no installable source\n" % key)
+            return 2
+        specs.append(spec)
+        trust = entry.get("trust", "community")
+        if trust != "official":
+            untrusted.append((key, trust, _source_of(inst)))
+    if not specs:
         return 0
 
-    spec = inst.get("pip") or inst.get("git")
-    if not spec:
-        sys.stderr.write("streamwright: connector %r has no installable source\n" % key)
-        return 2
-
-    if trust != "official" and not assume_yes:
-        source = _source_of(inst)
+    if untrusted and not assume_yes:
+        names = ", ".join("%s connector %r" % (trust, key) for key, trust, _ in untrusted)
         if not sys.stdin.isatty():
-            sys.stderr.write(
-                "streamwright: refusing to install %s connector %r non-interactively; pass --yes to confirm (%s)\n"
-                % (trust, key, source))
+            sys.stderr.write("streamwright: refusing to install %s non-interactively; pass --yes to confirm (%s)\n"
+                             % (names, "; ".join(source for _, _, source in untrusted)))
             return 2
-        sys.stderr.write(
-            "\n  WARNING: %r is a %s connector. Installing runs third-party code from:\n    %s\n"
-            % (key, trust, source))
+        sys.stderr.write("\n  WARNING: installing runs third-party code from:\n")
+        for key, trust, source in untrusted:
+            sys.stderr.write("    %s (%s): %s\n" % (key, trust, source))
         answer = input("  Continue? [y/N] ").strip().lower()
         if answer not in ("y", "yes"):
             print("aborted")
             return 1
 
-    cmd = [sys.executable, "-m", "pip", "install", *pip_args, spec]
-    print("+ " + " ".join(cmd))
+    cmd = [sys.executable, "-m", "pip", "install", *pip_args, *specs]
+    print("+ " + " ".join(cmd), flush=True)
     return subprocess.call(cmd)
