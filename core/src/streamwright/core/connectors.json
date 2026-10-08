@@ -4,7 +4,7 @@
       "family": "ads",
       "homepage": "https://github.com/karthick-jaganathan/streamwright",
       "install": {
-        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@b0257ef77574af5ff0f3eff125a2a707b08c571f#subdirectory=connectors/ads/facebook_ads"
+        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@e1822c585ea8654f0db6f70b856c79b7005c2e1e#subdirectory=connectors/ads/facebook_ads"
       },
       "key": "facebook_ads",
       "maintainer": "karthick-jaganathan",
@@ -16,7 +16,7 @@
       "family": "readers",
       "homepage": "https://github.com/karthick-jaganathan/streamwright",
       "install": {
-        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@b0257ef77574af5ff0f3eff125a2a707b08c571f#subdirectory=connectors/readers/files"
+        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@e1822c585ea8654f0db6f70b856c79b7005c2e1e#subdirectory=connectors/readers/files"
       },
       "key": "files",
       "maintainer": "karthick-jaganathan",
@@ -28,7 +28,7 @@
       "family": "readers",
       "homepage": "https://github.com/karthick-jaganathan/streamwright",
       "install": {
-        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@b0257ef77574af5ff0f3eff125a2a707b08c571f#subdirectory=connectors/readers/gcs"
+        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@e1822c585ea8654f0db6f70b856c79b7005c2e1e#subdirectory=connectors/readers/gcs"
       },
       "key": "gcs",
       "maintainer": "karthick-jaganathan",
@@ -40,7 +40,7 @@
       "family": "ads",
       "homepage": "https://github.com/karthick-jaganathan/streamwright",
       "install": {
-        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@b0257ef77574af5ff0f3eff125a2a707b08c571f#subdirectory=connectors/ads/google_ads"
+        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@e1822c585ea8654f0db6f70b856c79b7005c2e1e#subdirectory=connectors/ads/google_ads"
       },
       "key": "google_ads",
       "maintainer": "karthick-jaganathan",
@@ -52,7 +52,7 @@
       "family": "ads",
       "homepage": "https://github.com/karthick-jaganathan/streamwright",
       "install": {
-        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@b0257ef77574af5ff0f3eff125a2a707b08c571f#subdirectory=connectors/ads/microsoft_ads"
+        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@e1822c585ea8654f0db6f70b856c79b7005c2e1e#subdirectory=connectors/ads/microsoft_ads"
       },
       "key": "microsoft_ads",
       "maintainer": "karthick-jaganathan",
@@ -64,7 +64,7 @@
       "family": "readers",
       "homepage": "https://github.com/karthick-jaganathan/streamwright",
       "install": {
-        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@b0257ef77574af5ff0f3eff125a2a707b08c571f#subdirectory=connectors/readers/postgres"
+        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@e1822c585ea8654f0db6f70b856c79b7005c2e1e#subdirectory=connectors/readers/postgres"
       },
       "key": "postgres",
       "maintainer": "karthick-jaganathan",
@@ -76,7 +76,7 @@
       "family": "readers",
       "homepage": "https://github.com/karthick-jaganathan/streamwright",
       "install": {
-        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@b0257ef77574af5ff0f3eff125a2a707b08c571f#subdirectory=connectors/readers/s3"
+        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@e1822c585ea8654f0db6f70b856c79b7005c2e1e#subdirectory=connectors/readers/s3"
       },
       "key": "s3",
       "maintainer": "karthick-jaganathan",
@@ -86,6 +86,6 @@
     }
   },
   "count": 7,
-  "generated_at": "2026-10-06T15:41:42.586184+00:00",
+  "generated_at": "2026-10-08T09:04:30.593297+00:00",
   "schema_version": 1
 }
