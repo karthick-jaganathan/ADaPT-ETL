@@ -1,7 +1,7 @@
 # Example source folder (see docs/design/source-format.md): this file, and one file per stream in streams/.
-# Check it with: adapt validate examples/sources/ads/google_ads
-# Run it (pip install adapt-google-ads): adapt run examples/sources/ads/google_ads --set customer_ids=...
-# Secrets come from ADAPT_SECRET_<NAME> environment variables or --secrets FILE.
+# Check it with: streamwright validate examples/sources/ads/google_ads
+# Run it (pip install streamwright-google-ads): streamwright run examples/sources/ads/google_ads --set customer_ids=...
+# Secrets come from STREAMWRIGHT_SECRET_<NAME> environment variables or --secrets FILE.
 kind: source
 name: google_ads
 description: Campaigns with their settings, and campaign performance with one row per campaign per day.
@@ -20,7 +20,7 @@ spec:
     refresh_token: {type: string}
 
 auth:
-  provider: google_ads                 # registered by the adapt-google-ads connector
+  provider: google_ads                 # registered by the streamwright-google-ads connector
   developer_token: "{{ secrets.developer_token }}"
   client_id: "{{ secrets.client_id }}"
   client_secret: "{{ secrets.client_secret }}"

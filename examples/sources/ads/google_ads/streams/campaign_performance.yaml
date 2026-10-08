@@ -14,7 +14,7 @@ requests:
     arguments:
       customer_id: "{{ partition.customer_id }}"
       query:
-        gaql:                      # the gaql query builder (adapt-google-ads) writes the escaped query
+        gaql:                      # the gaql query builder (streamwright-google-ads) writes the escaped query
           select: [customer.id, campaign.id, campaign.name, campaign.status, segments.date,
                    metrics.impressions, metrics.clicks, metrics.cost_micros]
           from: campaign

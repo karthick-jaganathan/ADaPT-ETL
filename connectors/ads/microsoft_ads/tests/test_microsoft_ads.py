@@ -12,7 +12,7 @@ import zipfile
 import pytest
 
 pytest.importorskip("bingads")
-pytest.importorskip("adapt.connectors.microsoft_ads.connector")
+pytest.importorskip("streamwright.connectors.microsoft_ads.connector")
 
 import bingads.service_client as service_client  # noqa: E402
 from bingads.authorization import OAuthTokens, _UriOAuthService  # noqa: E402
@@ -20,12 +20,12 @@ from bingads.exceptions import OAuthTokenRequestException  # noqa: E402
 from suds.transport import Reply, TransportError  # noqa: E402
 from suds.transport.http import HttpTransport  # noqa: E402
 
-from adapt.connectors.microsoft_ads.connector import MicrosoftAdsConnector  # noqa: E402
-from adapt.core import cli
-from adapt.core.runtime import components  # noqa: E402
-from adapt.core.engine.runner import SourceError, SourceRunner  # noqa: E402
-from adapt.core.config.loader import load_source  # noqa: E402
-from adapt.core.runtime.testing import MemoryOutput  # noqa: E402
+from streamwright.connectors.microsoft_ads.connector import MicrosoftAdsConnector  # noqa: E402
+from streamwright.core import cli
+from streamwright.core.runtime import components  # noqa: E402
+from streamwright.core.engine.runner import SourceError, SourceRunner  # noqa: E402
+from streamwright.core.config.loader import load_source  # noqa: E402
+from streamwright.core.runtime.testing import MemoryOutput  # noqa: E402
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".."))
 EXAMPLE = os.path.join(REPO_ROOT, "examples", "sources", "ads", "microsoft_ads")  # a source folder
@@ -216,7 +216,7 @@ def account_entities(soap):
 
 def test_the_microsoft_ads_example_runs_end_to_end(soap, api, capsys, caplog, monkeypatch):
     for name, value in SECRETS.items():
-        monkeypatch.setenv("ADAPT_SECRET_" + name.upper(), value)
+        monkeypatch.setenv("STREAMWRIGHT_SECRET_" + name.upper(), value)
     today = datetime.date.today().isoformat()
     soap.handlers["SubmitGenerateReport"] = submitted(lambda xml: "job-" + re.search(r"<\w+:long>(\d+)<", xml).group(1))
     soap.handlers["PollGenerateReport"] = lambda xml: status("Success", "%s/reports/%s.zip?sv=1&sig=SAS-SECRET" % (
@@ -292,7 +292,7 @@ def test_the_microsoft_ads_example_runs_end_to_end(soap, api, capsys, caplog, mo
 
 
 def test_reports_are_polled_until_done(soap, api, caplog):
-    caplog.set_level(logging.INFO, logger="adapt.source")
+    caplog.set_level(logging.INFO, logger="streamwright.source")
     statuses = [status("Pending"), status("Pending"), status("Success", api.url + "/r.zip")]
     soap.handlers["SubmitGenerateReport"] = submitted(lambda xml: "job-1")
     soap.handlers["PollGenerateReport"] = lambda xml: statuses.pop(0)
@@ -411,14 +411,14 @@ def test_oauth_failures_stop_the_run(soap, monkeypatch):
 @pytest.mark.parametrize("sdk_logs", [False, True])
 def test_network_logs_show_the_soap_messages_redacted(soap, api, capsys, monkeypatch, sdk_logs):
     for name, value in SECRETS.items():
-        monkeypatch.setenv("ADAPT_SECRET_" + name.upper(), value)
+        monkeypatch.setenv("STREAMWRIGHT_SECRET_" + name.upper(), value)
     today = datetime.date.today().isoformat()
     soap.handlers["SubmitGenerateReport"] = submitted(lambda xml: "job-1")
     soap.handlers["PollGenerateReport"] = lambda xml: status("Success", api.url + "/r.zip?sv=1&sig=SAS-SECRET")
     api.routes[("GET", "/r.zip")] = lambda request: (200, report([[today, "123456", "1", "A", "1", "1", "1"]]))
-    # the SDK's loggers as `adapt connectors` lists them: suds.client, suds.transport
-    logging_options = ["--log", "adapt.network=INFO"] if not sdk_logs else [
-        "--log", "adapt.network=DEBUG", "--log", "suds.client=DEBUG", "--log", "suds.transport=DEBUG"]
+    # the SDK's loggers as `streamwright connectors` lists them: suds.client, suds.transport
+    logging_options = ["--log", "streamwright.network=INFO"] if not sdk_logs else [
+        "--log", "streamwright.network=DEBUG", "--log", "suds.client=DEBUG", "--log", "suds.transport=DEBUG"]
     assert cli.main(["run", EXAMPLE, "--stream", "campaign_performance", "--set", "account_ids=123456", "--set",
                      "customer_id=555", "--set", "start_date=today"] + logging_options) == 0
     err = capsys.readouterr().err
@@ -426,12 +426,12 @@ def test_network_logs_show_the_soap_messages_redacted(soap, api, capsys, monkeyp
             "\"123456\"}, window %s..%s: " % (today, today)
     assert where + "microsoft_ads ReportingService.SubmitGenerateReport: " in err
     assert where + "microsoft_ads ReportingService.PollGenerateReport: " in err
-    assert "INFO adapt.network: " + where + "GET %s/r.zip?sv=1&sig=***: 200, " % api.url in err
+    assert "INFO streamwright.network: " + where + "GET %s/r.zip?sv=1&sig=***: 200, " % api.url in err
     if sdk_logs:
         assert "DEBUG suds.client: sending to (https://reporting.api.bingads.microsoft.com/" in err
         assert re.search(r"<\w+:DeveloperToken>\*\*\*</\w+:DeveloperToken>", err)
         assert re.search(r"<\w+:AuthenticationToken>\*\*\*</\w+:AuthenticationToken>", err)
-        assert "sig=***" in err.split("PollGenerateReportResponse", 1)[1]  # the reply, before adapt reads the URL
+        assert "sig=***" in err.split("PollGenerateReportResponse", 1)[1]  # the reply, before streamwright reads the URL
     else:
         assert "suds.client" not in err
     for value in list(SECRETS.values()) + ["access-1", "refresh-2", "SAS-SECRET"]:

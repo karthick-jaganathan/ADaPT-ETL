@@ -1,7 +1,7 @@
-# The namespace of the pipeline's Kubernetes Jobs (ADAPT_EXECUTION=k8s) and of the in-cluster object store + catalog.
+# The namespace of the pipeline's Kubernetes Jobs (STREAMWRIGHT_EXECUTION=k8s) and of the in-cluster object store + catalog.
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: adapt
+  name: streamwright
   labels:
-    app.kubernetes.io/part-of: adapt-pipeline
+    app.kubernetes.io/part-of: streamwright-pipeline

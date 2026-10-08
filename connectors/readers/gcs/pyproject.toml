@@ -3,9 +3,9 @@ requires = ["setuptools>=61.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "adapt-gcs"
-version = "0.0.1"
-description = "Adaptive Data Pipeline Toolkit - gcs connector (csv, tsv, json, jsonl and parquet objects in Google Cloud Storage, read with DuckDB)"
+name = "streamwright-gcs"
+version = "0.1.0"
+description = "StreamWright - gcs connector (csv, tsv, json, jsonl and parquet objects in Google Cloud Storage, read with DuckDB)"
 readme = "README.md"
 license = "Apache-2.0"
 authors = [
@@ -24,18 +24,18 @@ classifiers = [
 requires-python = ">=3.10"
 # DuckDB installs its httpfs extension on the first connect (or ahead of time: INSTALL httpfs)
 dependencies = [
-    "adapt-core~=0.0.1",
+    "streamwright~=0.1.0",
     "duckdb>=1.5",
 ]
 
 [project.urls]
-Homepage = "https://github.com/karthick-jaganathan/ADaPT-ETL"
-Repository = "https://github.com/karthick-jaganathan/ADaPT-ETL"
+Homepage = "https://github.com/karthick-jaganathan/streamwright"
+Repository = "https://github.com/karthick-jaganathan/streamwright"
 
-[project.entry-points."adapt.connectors"]
-gcs = "adapt.connectors.gcs.connector:GcsConnector"
+[project.entry-points."streamwright.connectors"]
+gcs = "streamwright.connectors.gcs.connector:GcsConnector"
 
 [tool.setuptools]
-# src layout: adapt and adapt.connectors are namespace packages shared with the other ADaPT distributions
+# src layout: streamwright and streamwright.connectors are namespace packages shared with the other StreamWright distributions
 package-dir = {"" = "src"}
-packages = ["adapt.connectors.gcs"]
+packages = ["streamwright.connectors.gcs"]

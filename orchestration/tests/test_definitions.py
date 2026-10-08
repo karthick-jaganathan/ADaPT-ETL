@@ -8,13 +8,13 @@ from pathlib import Path
 from unittest import mock
 
 from tests.helpers import ACCOUNTS, FAKE_APP, PROJECT_DIR
-from adapt.orchestration import accounts, definitions
-from adapt.orchestration.accounts import AccountError
-from adapt.orchestration.runner import RunFailed, run
-from adapt.orchestration.spec import SpecError, parse_pipeline
+from streamwright.orchestration import accounts, definitions
+from streamwright.orchestration.accounts import AccountError
+from streamwright.orchestration.runner import RunFailed, run
+from streamwright.orchestration.spec import SpecError, parse_pipeline
 from dagster import Definitions
 
-FAKE_ADAPT = str(Path(__file__).resolve().parent / "fake_adapt.py")
+FAKE_STREAMWRIGHT = str(Path(__file__).resolve().parent / "fake_streamwright.py")
 SCRATCH = PROJECT_DIR / "tests" / ".scratch"
 
 
@@ -112,7 +112,7 @@ class TriggerTest(unittest.TestCase):
         folder.mkdir(parents=True, exist_ok=True)
         self.addCleanup(shutil.rmtree, SCRATCH, True)
         (folder / "bad.yaml").write_text("name: bad\nnodes: {campaigns: {}, ad_performance: {after: [campaigns]}}\n")
-        with mock.patch.dict(os.environ, {"ADAPT_PIPELINE_DIR": str(folder)}):
+        with mock.patch.dict(os.environ, {"STREAMWRIGHT_PIPELINE_DIR": str(folder)}):
             with self.assertRaisesRegex(SpecError, "does not map .*ad_performance"):
                 definitions.plan("bad", "u1")
             with self.assertRaisesRegex(SpecError, "does not map .*ad_performance"):
@@ -130,11 +130,11 @@ class TriggerTest(unittest.TestCase):
     def _trigger(self, pipeline):
         SCRATCH.mkdir(parents=True, exist_ok=True)
         self.addCleanup(shutil.rmtree, SCRATCH, True)
-        wrapper_script = SCRATCH / "adapt"
-        wrapper_script.write_text("#!/bin/sh\nexec %s %s \"$@\"\n" % (sys.executable, FAKE_ADAPT))
+        wrapper_script = SCRATCH / "streamwright"
+        wrapper_script.write_text("#!/bin/sh\nexec %s %s \"$@\"\n" % (sys.executable, FAKE_STREAMWRIGHT))
         wrapper_script.chmod(0o755)
-        env = {"ADAPT_BIN": str(wrapper_script), "ADAPT_PIPELINE_WAREHOUSE_DIR": str(SCRATCH / "warehouse"),
-               "ADAPT_PIPELINE_RUNS_DIR": str(SCRATCH / "runs"), "ADAPT_EXECUTION": "subprocess"}
+        env = {"STREAMWRIGHT_BIN": str(wrapper_script), "STREAMWRIGHT_PIPELINE_WAREHOUSE_DIR": str(SCRATCH / "warehouse"),
+               "STREAMWRIGHT_PIPELINE_RUNS_DIR": str(SCRATCH / "runs"), "STREAMWRIGHT_EXECUTION": "subprocess"}
         with mock.patch.dict(os.environ, env), mock.patch.object(accounts, "app_config", lambda n, region=None: dict(FAKE_APP)), \
                 mock.patch.object(accounts, "load_accounts", lambda: [dict(row) for row in ACCOUNTS]):
             return definitions.trigger(pipeline, "u1")
@@ -166,7 +166,7 @@ class TriggerTest(unittest.TestCase):
         self.assertEqual(results[0]["nodes"]["campaign_performance"]["records"], {"campaign_performance": 5})
 
     def test_trigger_executes_the_graph_in_order(self):
-        """The whole metadata op graph against a stand-in adapt: dependency order, upstream flow, secrets only in env."""
+        """The whole metadata op graph against a stand-in streamwright: dependency order, upstream flow, secrets only in env."""
         results = self._trigger("metadata")
         self.assertEqual(len(results), 1)
         result = results[0]
@@ -191,27 +191,27 @@ class RunnerTest(unittest.TestCase):
 
     def test_secrets_go_through_env_and_are_redacted(self):
         log = ListLog()
-        result = run([sys.executable, FAKE_ADAPT, "--stream", "campaigns"],
-                     {"ADAPT_SECRET_DEVELOPER_TOKEN": FAKE_APP["developer_token"]}, log, SCRATCH / "s.json")
+        result = run([sys.executable, FAKE_STREAMWRIGHT, "--stream", "campaigns"],
+                     {"STREAMWRIGHT_SECRET_DEVELOPER_TOKEN": FAKE_APP["developer_token"]}, log, SCRATCH / "s.json")
         self.assertEqual(result["status"], "ok")
         self.assertEqual(result["records"], {"campaigns": 5})
-        self.assertIn(("info", "[2026-10-05 00:00:00,000] INFO adapt.source: got token ***"), log.lines)
+        self.assertIn(("info", "[2026-10-05 00:00:00,000] INFO streamwright.source: got token ***"), log.lines)
         self.assertEqual(log.lines[1][0], "warning")
         self.assertNotIn(FAKE_APP["developer_token"], repr(log.lines))
-        self.assertNotIn("ADAPT_SECRET_DEVELOPER_TOKEN", os.environ)
+        self.assertNotIn("STREAMWRIGHT_SECRET_DEVELOPER_TOKEN", os.environ)
 
     def test_non_zero_exit_raises(self):
-        with mock.patch.dict(os.environ, {"FAKE_ADAPT_EXIT": "1"}):
+        with mock.patch.dict(os.environ, {"FAKE_STREAMWRIGHT_EXIT": "1"}):
             with self.assertRaises(RunFailed) as caught:
-                run([sys.executable, FAKE_ADAPT], {"ADAPT_SECRET_DEVELOPER_TOKEN": FAKE_APP["developer_token"]},
+                run([sys.executable, FAKE_STREAMWRIGHT], {"STREAMWRIGHT_SECRET_DEVELOPER_TOKEN": FAKE_APP["developer_token"]},
                     logging.getLogger("test"), SCRATCH / "f.json")
         self.assertIn("exited with 1", str(caught.exception))
         self.assertNotIn(FAKE_APP["developer_token"], str(caught.exception))
         self.assertEqual(caught.exception.result["status"], "failed")
 
-    def test_only_adapt_secret_env(self):
+    def test_only_streamwright_secret_env(self):
         with self.assertRaises(ValueError):
-            run([sys.executable, FAKE_ADAPT], {"PATH": "/x"}, logging.getLogger("test"), SCRATCH / "p.json")
+            run([sys.executable, FAKE_STREAMWRIGHT], {"PATH": "/x"}, logging.getLogger("test"), SCRATCH / "p.json")
 
 
 if __name__ == "__main__":

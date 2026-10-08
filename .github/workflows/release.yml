@@ -1,8 +1,8 @@
 name: Release
 
-# Publish any ADaPT package to PyPI via Trusted Publishing (no API tokens).
+# Publish any StreamWright package to PyPI via Trusted Publishing (no API tokens).
 # Two ways to trigger:
-#   • Push a tag  <dist>@<version>     e.g.  adapt-google-ads@0.1.0   -> publishes to PyPI
+#   • Push a tag  <dist>@<version>     e.g.  streamwright-google-ads@0.1.0   -> publishes to PyPI
 #   • Run manually (Actions tab)        pick a package (or "all") + target (testpypi/pypi)
 #
 # Adding a future connector needs NO change here: the package directory is
@@ -13,9 +13,9 @@ on:
   workflow_dispatch:
     inputs:
       package:
-        description: 'PyPI dist name (e.g. adapt-google-ads) or "all"'
+        description: 'PyPI dist name (e.g. streamwright-google-ads) or "all"'
         required: true
-        default: adapt-core
+        default: streamwright
       target:
         description: 'Index to publish to'
         type: choice
@@ -23,7 +23,7 @@ on:
         default: testpypi
   push:
     tags:
-      - '*@*'   # <dist>@<version>, e.g. adapt-postgres@0.1.0
+      - '*@*'   # <dist>@<version>, e.g. streamwright-postgres@0.1.0
 
 permissions:
   contents: read
@@ -45,7 +45,7 @@ jobs:
             echo "packages=[\"$dist\"]" >> "$GITHUB_OUTPUT"
           elif [ "${{ inputs.package }}" = "all" ]; then
             echo "target=${{ inputs.target }}" >> "$GITHUB_OUTPUT"
-            echo 'packages=["adapt-core","adapt-files","adapt-s3","adapt-gcs","adapt-postgres","adapt-google-ads","adapt-microsoft-ads","adapt-facebook-ads"]' >> "$GITHUB_OUTPUT"
+            echo 'packages=["streamwright","streamwright-files","streamwright-s3","streamwright-gcs","streamwright-postgres","streamwright-google-ads","streamwright-microsoft-ads","streamwright-facebook-ads"]' >> "$GITHUB_OUTPUT"
           else
             echo "target=${{ inputs.target }}" >> "$GITHUB_OUTPUT"
             echo "packages=[\"${{ inputs.package }}\"]" >> "$GITHUB_OUTPUT"
@@ -75,7 +75,7 @@ jobs:
         run: |
           DIST="${{ matrix.package }}"
           DIR=""
-          for pp in adapt-core/pyproject.toml connectors/*/*/pyproject.toml; do
+          for pp in core/pyproject.toml connectors/*/*/pyproject.toml; do
             name=$(grep -m1 '^name = ' "$pp" | sed 's/name = //; s/"//g')
             if [ "$name" = "$DIST" ]; then DIR="$(dirname "$pp")"; break; fi
           done

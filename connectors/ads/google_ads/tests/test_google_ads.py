@@ -10,7 +10,7 @@ from decimal import Decimal
 import pytest
 
 pytest.importorskip("google.ads.googleads")
-pytest.importorskip("adapt.connectors.google_ads.connector")
+pytest.importorskip("streamwright.connectors.google_ads.connector")
 
 import grpc  # noqa: E402
 import google.ads.googleads.oauth2 as oauth2  # noqa: E402
@@ -19,14 +19,14 @@ from google.ads.googleads.errors import GoogleAdsException  # noqa: E402
 from google.auth.credentials import AnonymousCredentials  # noqa: E402
 from google.auth.exceptions import RefreshError  # noqa: E402
 
-from adapt.connectors.google_ads.connector import GoogleAdsConnector, _remember_tokens, _rows  # noqa: E402
-from adapt.core import cli
-from adapt.core.runtime import components  # noqa: E402
-from adapt.core.net.http import Redactor  # noqa: E402
-from adapt.core.runtime.components import ConnectorContext  # noqa: E402
-from adapt.core.engine.runner import SourceError, SourceRunner  # noqa: E402
-from adapt.core.config.loader import load_source  # noqa: E402
-from adapt.core.runtime.testing import MemoryOutput, page_stream  # noqa: E402
+from streamwright.connectors.google_ads.connector import GoogleAdsConnector, _remember_tokens, _rows  # noqa: E402
+from streamwright.core import cli
+from streamwright.core.runtime import components  # noqa: E402
+from streamwright.core.net.http import Redactor  # noqa: E402
+from streamwright.core.runtime.components import ConnectorContext  # noqa: E402
+from streamwright.core.engine.runner import SourceError, SourceRunner  # noqa: E402
+from streamwright.core.config.loader import load_source  # noqa: E402
+from streamwright.core.runtime.testing import MemoryOutput, page_stream  # noqa: E402
 
 VERSION = "v25"  # the version in examples/sources/ads/google_ads/source.yaml
 ads_types = importlib.import_module("google.ads.googleads.%s.services.types.google_ads_service" % VERSION)
@@ -299,7 +299,7 @@ def run(source, config=None, streams=None, sleeps=None):
 
 def test_the_google_ads_example_runs_end_to_end(google, capsys, monkeypatch):
     for name, value in SECRETS.items():
-        monkeypatch.setenv("ADAPT_SECRET_" + name.upper(), value)
+        monkeypatch.setenv("STREAMWRIGHT_SECRET_" + name.upper(), value)
     today = datetime.date.today()
     ads = google.services["GoogleAdsService"]
 
@@ -543,9 +543,9 @@ def test_rows_are_plain_dicts_keyed_like_gaql_fields():
 
 
 def performance_run(capsys, monkeypatch, *arguments, source=EXAMPLE):
-    """adapt run of the campaign_performance stream (today, one customer): (exit status, stderr)."""
+    """streamwright run of the campaign_performance stream (today, one customer): (exit status, stderr)."""
     for name, value in SECRETS.items():
-        monkeypatch.setenv("ADAPT_SECRET_" + name.upper(), value)
+        monkeypatch.setenv("STREAMWRIGHT_SECRET_" + name.upper(), value)
     code = cli.main(["run", str(source), "--stream", "campaign_performance", "--set", "customer_ids=111-222-3333",
                      "--set", "start_date=today"] + list(arguments))
     return code, capsys.readouterr().err
@@ -576,21 +576,21 @@ def test_network_logs_show_the_client_logs_redacted(ads_server, tmp_path, capsys
     path.write_text(json.dumps(source, default=str))
     ads_server.replies = [[row(clicks=3, impressions=4), row(campaign=11)]]
     with fresh_google_logger() as google_logger:
-        code, err = performance_run(capsys, monkeypatch, "--log", "adapt.network=DEBUG", "--log",
+        code, err = performance_run(capsys, monkeypatch, "--log", "streamwright.network=DEBUG", "--log",
                                     "google.ads.googleads.client=DEBUG", source=path)
-        assert code == 0 and not google_logger.propagate  # its lines reached adapt's handler all the same
+        assert code == 0 and not google_logger.propagate  # its lines reached streamwright's handler all the same
     method = "/google.ads.googleads.%s.services.GoogleAdsService/Search" % VERSION
     assert "DEBUG google.ads.googleads.client: Request\n-------\nMethod: %s\n" % method in err
     assert "INFO google.ads.googleads.client: Request made: ClientCustomerId: 1112223333" in err
     assert '"developer-token": "REDACTED"' in err or '"developer-token": "***"' in err
-    (call,) = [line.split("adapt.network: ", 1)[1] for line in err.splitlines() if "search page" in line]
+    (call,) = [line.split("streamwright.network: ", 1)[1] for line in err.splitlines() if "search page" in line]
     assert call.startswith("stream 'campaign_performance', request 'raw_campaign_performance', partition "
                            '{"customer_id": "111-222-3333"}, window ')
     assert ": google_ads GoogleAdsService.search page 1: 2 record(s), " in call
     assert all(secret not in err for secret in SECRETS.values())
 
     ads_server.replies = [[[row(clicks=3, impressions=4)], [row(campaign=11)]]]
-    code, err = performance_run(capsys, monkeypatch, "--log", "adapt.network=INFO")  # the SDK's logger: not named
+    code, err = performance_run(capsys, monkeypatch, "--log", "streamwright.network=INFO")  # the SDK's logger: not named
     assert code == 0 and "google.ads.googleads.client" not in err
     calls = [line.split(": google_ads ")[1].rsplit(",", 2)[0] for line in err.splitlines() if "search_stream" in line]
     assert calls == ["GoogleAdsService.search_stream page 1: 1 record(s)",

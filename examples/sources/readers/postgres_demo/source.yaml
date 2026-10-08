@@ -1,11 +1,11 @@
 # Example source folder (see docs/design/source-format.md): this file, and one file per stream in streams/.
 # It reads a PostgreSQL shop database (tables public.customers, public.orders, public.order_lines) with the postgres
 # connector: read-only SELECT queries whose values are bound parameters. Check it with (no database needed):
-#   adapt validate examples/sources/readers/postgres_demo
-# Run it (pip install adapt-postgres; DuckDB installs its postgres extension on the first connect):
-#   ADAPT_SECRET_PG_PASSWORD='...' adapt run examples/sources/readers/postgres_demo --set pg_host=db.example.com \
+#   streamwright validate examples/sources/readers/postgres_demo
+# Run it (pip install streamwright-postgres; DuckDB installs its postgres extension on the first connect):
+#   STREAMWRIGHT_SECRET_PG_PASSWORD='...' streamwright run examples/sources/readers/postgres_demo --set pg_host=db.example.com \
 #     --allow-connector postgres --output jsonl:out
-# The connection keys are config; the password comes from secrets only (ADAPT_SECRET_<NAME> environment variables or
+# The connection keys are config; the password comes from secrets only (STREAMWRIGHT_SECRET_<NAME> environment variables or
 # --secrets FILE) and is redacted. A DSN secret works too, in their place: dsn: "{{ secrets.pg_dsn }}".
 kind: source
 name: postgres_demo
@@ -24,12 +24,12 @@ spec:
     pg_password: {type: string, description: The role's password}
 
 auth:
-  provider: postgres                       # registered by the adapt-postgres connector
+  provider: postgres                       # registered by the streamwright-postgres connector
   host: "{{ config.pg_host }}"             # the connection keys are config: literal text or references
   port: "{{ config.pg_port }}"
   database: "{{ config.pg_database }}"
   user: "{{ config.pg_user }}"
   password: "{{ secrets.pg_password }}"    # the only credential: a secret reference only
   sslmode: "{{ config.pg_sslmode }}"
-  options: {application_name: adapt-postgres-demo, connect_timeout: "10"}  # extra libpq connection parameters
+  options: {application_name: streamwright-postgres-demo, connect_timeout: "10"}  # extra libpq connection parameters
   statement_timeout: 5min                  # Postgres' statement_timeout for every statement the connector runs

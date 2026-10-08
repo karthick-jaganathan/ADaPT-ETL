@@ -7,15 +7,15 @@ import os
 import pytest
 
 pytest.importorskip("duckdb")
-pytest.importorskip("adapt.connectors.files.connector")
+pytest.importorskip("streamwright.connectors.files.connector")
 
-from adapt.connectors.files.connector import FilesConnector  # noqa: E402
-from adapt.connectors.files.reader import AccessError, ReadError, Reader, match_files  # noqa: E402
-from adapt.core.runtime import components  # noqa: E402
-from adapt.core.net.http import Redactor  # noqa: E402
-from adapt.core.runtime.components import ConnectorContext, ConnectorError  # noqa: E402
-from adapt.core.engine.runner import SourceRunner  # noqa: E402
-from adapt.core.runtime.testing import MemoryOutput, page_stream  # noqa: E402
+from streamwright.connectors.files.connector import FilesConnector  # noqa: E402
+from streamwright.connectors.files.reader import AccessError, ReadError, Reader, match_files  # noqa: E402
+from streamwright.core.runtime import components  # noqa: E402
+from streamwright.core.net.http import Redactor  # noqa: E402
+from streamwright.core.runtime.components import ConnectorContext, ConnectorError  # noqa: E402
+from streamwright.core.engine.runner import SourceRunner  # noqa: E402
+from streamwright.core.runtime.testing import MemoryOutput, page_stream  # noqa: E402
 
 DAILY = r"^orders_\d{4}-\d{2}-\d{2}\.csv$"
 

@@ -1,20 +1,20 @@
-# ADaPT s3 connector Makefile
+# StreamWright s3 connector Makefile
 
 # Package information
-PACKAGE_NAME = adapt-s3
+PACKAGE_NAME = streamwright-s3
 VERSION = 0.0.1
 
 # Installation mode (dev, prod, dist)
 MODE ?= prod
 
 # Distribution directory
-DIST_DIR = /tmp/sdist/adapt
+DIST_DIR = /tmp/sdist/streamwright
 
 .PHONY: install uninstall clean test help verify build
 
 # Default target
 help:
-	@echo "ADaPT s3 connector - Available commands:"
+	@echo "StreamWright s3 connector - Available commands:"
 	@echo ""
 	@echo "  make install [MODE=dev|prod|dist] - Install $(PACKAGE_NAME) package (default: prod)"
 	@echo "  make uninstall                    - Uninstall $(PACKAGE_NAME) package"
@@ -48,7 +48,7 @@ else
 endif
 	@echo "✅ Installation complete!"
 	@echo "Installed packages:"
-	@pip list | grep adapt
+	@pip list | grep streamwright
 
 # Build distribution packages
 build: clean
@@ -76,7 +76,7 @@ clean:
 	find . -type d -name "dist" -exec rm -rf {} + 2>/dev/null || true
 	@echo "✅ Cleanup complete!"
 
-# Run tests (offline: object storage is simulated; set ADAPT_TEST_S3 for a real bucket)
+# Run tests (offline: object storage is simulated; set STREAMWRIGHT_TEST_S3 for a real bucket)
 test:
 	@echo "Running tests for $(PACKAGE_NAME)..."
 	python -m pytest tests -q
@@ -85,5 +85,5 @@ test:
 verify:
 	@echo "Verifying $(PACKAGE_NAME) installation..."
 	@pip show $(PACKAGE_NAME) >/dev/null 2>&1 && echo "✅ $(PACKAGE_NAME) is installed!" || echo "❌ $(PACKAGE_NAME) is not installed!"
-	@python -c "import adapt.connectors.s3.connector; print('✅ adapt.connectors.s3 import works!')" 2>/dev/null || echo "❌ adapt.connectors.s3 import failed!"
-	@adapt connectors | grep -qE '^s3( |$$)' && echo "✅ s3 connector is registered!" || echo "❌ s3 connector is not registered!" 
+	@python -c "import streamwright.connectors.s3.connector; print('✅ streamwright.connectors.s3 import works!')" 2>/dev/null || echo "❌ streamwright.connectors.s3 import failed!"
+	@streamwright connectors | grep -qE '^s3( |$$)' && echo "✅ s3 connector is registered!" || echo "❌ s3 connector is not registered!" 

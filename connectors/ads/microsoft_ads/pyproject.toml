@@ -3,9 +3,9 @@ requires = ["setuptools>=61.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "adapt-microsoft-ads"
-version = "0.0.1"
-description = "Adaptive Data Pipeline Toolkit - Microsoft Advertising connector (the microsoft_ads auth provider, SOAP requests and reports)"
+name = "streamwright-microsoft-ads"
+version = "0.1.0"
+description = "StreamWright - Microsoft Advertising connector (the microsoft_ads auth provider, SOAP requests and reports)"
 readme = "README.md"
 license = "Apache-2.0"
 authors = [
@@ -23,18 +23,18 @@ classifiers = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-    "adapt-core~=0.0.1",
+    "streamwright~=0.1.0",
     "bingads~=13.0",
 ]
 
 [project.urls]
-Homepage = "https://github.com/karthick-jaganathan/ADaPT-ETL"
-Repository = "https://github.com/karthick-jaganathan/ADaPT-ETL"
+Homepage = "https://github.com/karthick-jaganathan/streamwright"
+Repository = "https://github.com/karthick-jaganathan/streamwright"
 
-[project.entry-points."adapt.connectors"]
-microsoft_ads = "adapt.connectors.microsoft_ads.connector:MicrosoftAdsConnector"
+[project.entry-points."streamwright.connectors"]
+microsoft_ads = "streamwright.connectors.microsoft_ads.connector:MicrosoftAdsConnector"
 
 [tool.setuptools]
-# src layout: adapt and adapt.connectors are namespace packages shared with the other ADaPT distributions
+# src layout: streamwright and streamwright.connectors are namespace packages shared with the other StreamWright distributions
 package-dir = {"" = "src"}
-packages = ["adapt.connectors.microsoft_ads"]
+packages = ["streamwright.connectors.microsoft_ads"]

@@ -4,7 +4,7 @@
 # secrets files, untracked notes or sample data).
 *
 
-!adapt-core
+!streamwright
 !connectors/ads/google_ads
 !connectors/ads/microsoft_ads
 !connectors/ads/facebook_ads

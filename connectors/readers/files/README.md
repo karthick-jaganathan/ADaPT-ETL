@@ -1,6 +1,6 @@
-# ADaPT files connector
+# StreamWright files connector
 
-The `files` connector for [adapt-core](../../../adapt-core/README.md): `sdk: files` requests read local csv, tsv, json,
+The `files` connector for [streamwright](../../../core/README.md): `sdk: files` requests read local csv, tsv, json,
 jsonl and parquet files with [DuckDB](https://duckdb.org/), each row one record, on a DuckDB connection of the
 connector's own (never the run's transform sandbox). Example: the source folder
 [examples/sources/readers/files_demo/](../../../examples/sources/readers/files_demo/), which reads the small files committed in its `data/`.
@@ -11,8 +11,8 @@ Object storage: see the s3 and gcs connectors (this connector reads local files 
 
 ```bash
 make install-files           # from the repository root; or: pip install ./connectors/readers/files (installs duckdb)
-adapt connectors             # lists files (it has no SDK loggers)
-adapt run examples/sources/readers/files_demo --set data_root=examples/sources/readers/files_demo/data --allow-connector files \
+streamwright connectors             # lists files (it has no SDK loggers)
+streamwright run examples/sources/readers/files_demo --set data_root=examples/sources/readers/files_demo/data --allow-connector files \
     --output jsonl:out
 ```
 
@@ -84,7 +84,7 @@ a glob apart).
 - Each selected file is checked to be inside a root once symbolic links are followed (a link leaving the roots is
   refused, before any file is read). A folder that does not exist, or one where nothing matches, follows
   `on_missing`; a `path` that names a file is a `READ_ERROR`.
-- `adapt validate` refuses an invalid regex, an empty one, a reference in `match`, a non-boolean `recursive`, and a
+- `streamwright validate` refuses an invalid regex, an empty one, a reference in `match`, a non-boolean `recursive`, and a
   glob or a list `path` with `match`.
 
 ## Records
@@ -107,7 +107,7 @@ The request's `records.explode` applies to each record; leave `records.path` uns
 - The reader's DuckDB connection can only read inside the roots too (DuckDB's `allowed_directories`, which also
   refuses symbolic links that leave them), with external access off and its configuration locked. It never turns
   external access on, loads no extension (no `httpfs`: it reads no URL) and sets no secret.
-- Files are only read, never written. Allow the connector with `adapt run --allow-connector files`.
+- Files are only read, never written. Allow the connector with `streamwright run --allow-connector files`.
 
 ## Errors
 
@@ -122,10 +122,10 @@ A file that cannot be read in its format, with its options, is a `READ_ERROR`; a
 ## Logs
 
 Each file read is a call (counted in the run summary's `requests`, with the stream's rate limit and retries) and logs
-an INFO line on `adapt.network`, with the file, its rows, bytes and time:
+an INFO line on `streamwright.network`, with the file, its rows, bytes and time:
 
 ```text
-INFO adapt.network: stream 'orders', request 'raw_orders': files read /data/orders/east.csv: 3 row(s), 126 bytes, 0.00 s
+INFO streamwright.network: stream 'orders', request 'raw_orders': files read /data/orders/east.csv: 3 row(s), 126 bytes, 0.00 s
 ```
 
-(`adapt run --log adapt.network=INFO` shows them.)
+(`streamwright run --log streamwright.network=INFO` shows them.)

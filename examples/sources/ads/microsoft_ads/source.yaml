@@ -1,8 +1,8 @@
 # Example source folder (see docs/design/source-format.md): this file, and one file per stream in streams/.
-# Check it with: adapt validate examples/sources/ads/microsoft_ads
-# Run it (pip install adapt-microsoft-ads): adapt run examples/sources/ads/microsoft_ads \
+# Check it with: streamwright validate examples/sources/ads/microsoft_ads
+# Run it (pip install streamwright-microsoft-ads): streamwright run examples/sources/ads/microsoft_ads \
 #   --set account_ids=... --set customer_id=...
-# Secrets come from ADAPT_SECRET_<NAME> environment variables or --secrets FILE.
+# Secrets come from STREAMWRIGHT_SECRET_<NAME> environment variables or --secrets FILE.
 kind: source
 name: microsoft_ads
 
@@ -18,7 +18,7 @@ spec:
     refresh_token: {type: string}
 
 auth:
-  provider: microsoft_ads              # registered by the adapt-microsoft-ads connector
+  provider: microsoft_ads              # registered by the streamwright-microsoft-ads connector
   developer_token: "{{ secrets.developer_token }}"
   client_id: "{{ secrets.client_id }}"
   client_secret: "{{ secrets.client_secret }}"

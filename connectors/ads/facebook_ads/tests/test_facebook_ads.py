@@ -6,16 +6,16 @@ import pytest
 import requests
 
 pytest.importorskip("facebook_business")
-pytest.importorskip("adapt.connectors.facebook_ads.connector")
+pytest.importorskip("streamwright.connectors.facebook_ads.connector")
 
 from facebook_business.session import FacebookSession  # noqa: E402
 
-from adapt.connectors.facebook_ads.connector import FacebookAdsConnector  # noqa: E402
-from adapt.core import cli
-from adapt.core.runtime import components  # noqa: E402
-from adapt.core.engine.runner import SourceError, SourceRunner  # noqa: E402
-from adapt.core.config.loader import load_source  # noqa: E402
-from adapt.core.runtime.testing import MemoryOutput, page_stream  # noqa: E402
+from streamwright.connectors.facebook_ads.connector import FacebookAdsConnector  # noqa: E402
+from streamwright.core import cli
+from streamwright.core.runtime import components  # noqa: E402
+from streamwright.core.engine.runner import SourceError, SourceRunner  # noqa: E402
+from streamwright.core.config.loader import load_source  # noqa: E402
+from streamwright.core.runtime.testing import MemoryOutput, page_stream  # noqa: E402
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".."))
 EXAMPLE = os.path.join(REPO_ROOT, "examples", "sources", "ads", "facebook_ads")  # a source folder
@@ -72,7 +72,7 @@ def metadata_routes(graph):
 
 def test_the_facebook_ads_example_runs_end_to_end(graph, capsys, caplog, monkeypatch):
     for name, value in SECRETS.items():
-        monkeypatch.setenv("ADAPT_SECRET_" + name.upper(), value)
+        monkeypatch.setenv("STREAMWRIGHT_SECRET_" + name.upper(), value)
     today = datetime.date.today().isoformat()
     graph.routes[("GET", INSIGHTS)] = two_pages(graph)
     metadata_routes(graph)
@@ -198,17 +198,17 @@ def test_only_reads_are_allowed_and_versions_are_checked():
 @pytest.mark.parametrize("sdk_logs", [False, True])
 def test_network_logs_show_requests_redacted(graph, capsys, monkeypatch, sdk_logs):
     for name, value in SECRETS.items():
-        monkeypatch.setenv("ADAPT_SECRET_" + name.upper(), value)
+        monkeypatch.setenv("STREAMWRIGHT_SECRET_" + name.upper(), value)
     graph.routes[("GET", INSIGHTS)] = two_pages(graph)
-    # the SDK's logger as `adapt connectors` lists it: urllib3.connectionpool
-    logging_options = ["--log", "adapt.network=INFO"] if not sdk_logs else [
-        "--log", "adapt.network=DEBUG", "--log", "urllib3.connectionpool=DEBUG"]
+    # the SDK's logger as `streamwright connectors` lists it: urllib3.connectionpool
+    logging_options = ["--log", "streamwright.network=INFO"] if not sdk_logs else [
+        "--log", "streamwright.network=DEBUG", "--log", "urllib3.connectionpool=DEBUG"]
     assert cli.main(["run", EXAMPLE, "--stream", "campaign_insights", "--set", "account_ids=123", "--set",
                      "start_date=today"] + logging_options) == 0
     err = capsys.readouterr().err
     today = datetime.date.today().isoformat()
-    # two API pages, one page of records: the SDK pages the edge, adapt counts the calls
-    assert "INFO adapt.network: stream 'campaign_insights', request 'raw_campaign_insights', partition " \
+    # two API pages, one page of records: the SDK pages the edge, streamwright counts the calls
+    assert "INFO streamwright.network: stream 'campaign_insights', request 'raw_campaign_insights', partition " \
            "{\"account_id\": \"123\"}, window %s..%s: facebook_ads AdAccount.get_insights page 1: 2 record(s), " % (
                today, today) in err
     assert "2 request(s) (raw_campaign_insights: 2)" in err
@@ -216,7 +216,7 @@ def test_network_logs_show_requests_redacted(graph, capsys, monkeypatch, sdk_log
     if sdk_logs:
         assert 'DEBUG urllib3.connectionpool: %s:%d "GET %s?access_token=***&appsecret_proof=***' % (
             "http://127.0.0.1", int(graph.url.rsplit(":", 1)[1]), INSIGHTS) in err
-        assert "DEBUG adapt.network: GET %s%s?access_token=***&appsecret_proof=***" % (graph.url, INSIGHTS) in err
+        assert "DEBUG streamwright.network: GET %s%s?access_token=***&appsecret_proof=***" % (graph.url, INSIGHTS) in err
         assert 'response body: {"data": [{"account_id": "123", "campaign_id": "1"' in err
     else:
         assert "urllib3" not in err and "response body" not in err

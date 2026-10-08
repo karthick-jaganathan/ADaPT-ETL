@@ -2,14 +2,14 @@
 Live end-to-end demo: trigger BOTH named pipelines - metadata, then performance (config/pipelines/<name>.yaml, the jobs
 ads_metadata and ads_performance) - for user u1's Google Ads account 1000000001.
 
-    ADAPT_BIN=/tmp/adapt-sdk-venv/bin/adapt .venv/bin/python demo.py 2>&1 | tee demo_run.log
+    STREAMWRIGHT_BIN=/tmp/streamwright-sdk-venv/bin/streamwright .venv/bin/python demo.py 2>&1 | tee demo_run.log
     .venv/bin/python demo.py performance              # only the named pipeline(s)
-    ADAPT_EXECUTION=docker .venv/bin/python demo.py 2>&1 | tee demo_docker_run.log   # each node in a container
-    ADAPT_EXECUTION=k8s .venv/bin/python demo.py metadata u1 1000000001 2>&1 | tee demo_k8s_run.log  # k8s Jobs
+    STREAMWRIGHT_EXECUTION=docker .venv/bin/python demo.py 2>&1 | tee demo_docker_run.log   # each node in a container
+    STREAMWRIGHT_EXECUTION=k8s .venv/bin/python demo.py metadata u1 1000000001 2>&1 | tee demo_k8s_run.log  # k8s Jobs
 
-Each pipeline runs its op graph in dependency order (each node one `adapt run --stream <node>`, locally - the default
-subprocess mode - or, with ADAPT_EXECUTION=docker, in a `docker run --rm` of the network's image, or, with
-ADAPT_EXECUTION=k8s, as a Kubernetes Job of that image writing a DuckLake on the in-cluster S3 + Postgres catalog of
+Each pipeline runs its op graph in dependency order (each node one `streamwright run --stream <node>`, locally - the default
+subprocess mode - or, with STREAMWRIGHT_EXECUTION=docker, in a `docker run --rm` of the network's image, or, with
+STREAMWRIGHT_EXECUTION=k8s, as a Kubernetes Job of that image writing a DuckLake on the in-cluster S3 + Postgres catalog of
 k8s/setup.sh); the demo prints the order the nodes ran in, each node's wrapper, command and records, and the rows in
 the warehouse (k8s: the data files in the bucket and the catalog's tables). Finally it shows -
 without running it - the command the custom campaigns wrapper builds for an account the stub campaigns DB has campaign
@@ -22,19 +22,19 @@ import sys
 
 import duckdb
 
-from adapt.orchestration import accounts, execution_mode, k8s_settings
-from adapt.orchestration.context import make_context
-from adapt.orchestration.custom_wrappers import CAMPAIGN_DB
-from adapt.orchestration.definitions import job_name, trigger
-from adapt.orchestration.runner import k8s_catalog_schema, k8s_data_path
-from adapt.orchestration.spec import load_pipeline, load_pipelines
-from adapt.orchestration.wrappers import wrapper_for
+from streamwright.orchestration import accounts, execution_mode, k8s_settings
+from streamwright.orchestration.context import make_context
+from streamwright.orchestration.custom_wrappers import CAMPAIGN_DB
+from streamwright.orchestration.definitions import job_name, trigger
+from streamwright.orchestration.runner import k8s_catalog_schema, k8s_data_path
+from streamwright.orchestration.spec import load_pipeline, load_pipelines
+from streamwright.orchestration.wrappers import wrapper_for
 
 # Resolve accounts/secrets from the committed example files unless the environment already points elsewhere
-# (ADAPT_ACCOUNTS_URL / ADAPT_SECRETS_URL for the API, or ADAPT_ACCOUNTS_FILE / ADAPT_SECRETS_FILE for ~/.adapt).
+# (STREAMWRIGHT_ACCOUNTS_URL / STREAMWRIGHT_SECRETS_URL for the API, or STREAMWRIGHT_ACCOUNTS_FILE / STREAMWRIGHT_SECRETS_FILE for ~/.streamwright).
 _EXAMPLES = os.path.join(os.path.dirname(__file__), "examples")
-os.environ.setdefault("ADAPT_ACCOUNTS_FILE", os.path.join(_EXAMPLES, "accounts.example.yaml"))
-os.environ.setdefault("ADAPT_SECRETS_FILE", os.path.join(_EXAMPLES, "secrets.example.yaml"))
+os.environ.setdefault("STREAMWRIGHT_ACCOUNTS_FILE", os.path.join(_EXAMPLES, "accounts.example.yaml"))
+os.environ.setdefault("STREAMWRIGHT_SECRETS_FILE", os.path.join(_EXAMPLES, "secrets.example.yaml"))
 
 USER_ID, ACCOUNT_ID = "u1", "1000000001"
 PIPELINES = ("metadata", "performance")
@@ -54,7 +54,7 @@ def show_ducklake(user_id):
              "JOIN %s.ducklake_schema s USING (schema_id) LEFT JOIN %s.ducklake_data_file f ON f.table_id = t.table_id "
              "AND f.end_snapshot IS NULL WHERE t.end_snapshot IS NULL GROUP BY 1 ORDER BY 1" % (schema, schema, schema))
     print("=== DuckLake catalog tables (Postgres schema %s; kubectl exec deploy/catalog-postgres -- psql):" % schema)
-    tables = subprocess.run(kubectl + ["exec", "deploy/catalog-postgres", "--", "psql", "-U", "adapt", "-d", "adaptcat",
+    tables = subprocess.run(kubectl + ["exec", "deploy/catalog-postgres", "--", "psql", "-U", "streamwright", "-d", "streamwrightcat",
                                        "-AtF", " ", "-c", query], capture_output=True, text=True)
     for line in (tables.stdout or tables.stderr).splitlines():
         name, _, rows = line.rpartition(" ")

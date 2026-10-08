@@ -5,13 +5,13 @@ import os
 import pytest
 
 pytest.importorskip("duckdb")
-pytest.importorskip("adapt.connectors.files.connector")
+pytest.importorskip("streamwright.connectors.files.connector")
 
-from adapt.connectors.files import reader  # noqa: E402
-from adapt.connectors.files.connector import FilesConnector  # noqa: E402
-from adapt.connectors.files.reader import AccessError, Reader, allowed_roots  # noqa: E402
-from adapt.core.net.http import Redactor  # noqa: E402
-from adapt.core.runtime.components import ConnectorContext, ConnectorError  # noqa: E402
+from streamwright.connectors.files import reader  # noqa: E402
+from streamwright.connectors.files.connector import FilesConnector  # noqa: E402
+from streamwright.connectors.files.reader import AccessError, Reader, allowed_roots  # noqa: E402
+from streamwright.core.net.http import Redactor  # noqa: E402
+from streamwright.core.runtime.components import ConnectorContext, ConnectorError  # noqa: E402
 
 
 class Recorder(object):

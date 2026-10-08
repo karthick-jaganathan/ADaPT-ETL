@@ -2,39 +2,39 @@
 layout: default
 title: Home
 nav_order: 1
-description: "ADaPT - Adaptive Data Pipeline Toolkit Documentation"
+description: "StreamWright Documentation"
 permalink: /
 ---
 
 <div class="hero-section">
-  <h1>🚀 ADaPT - Adaptive Data Pipeline Toolkit</h1>
+  <h1>🚀 StreamWright</h1>
   <p class="subtitle">Extract data from APIs, files and databases with YAML source configurations, shape it with SQL, and write it to files or a warehouse.</p>
 
   <div class="badges">
     <img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="License">
     <img src="https://img.shields.io/badge/python-3.10+-blue.svg" alt="Python">
-    <img src="https://img.shields.io/badge/GitHub-ADaPT--ETL-blue.svg" alt="GitHub">
+    <img src="https://img.shields.io/badge/GitHub-StreamWright--ETL-blue.svg" alt="GitHub">
   </div>
 
   <div>
     <a href="{{ site.baseurl }}/installation" class="btn btn-primary">Get Started</a>
-    <a href="https://github.com/karthick-jaganathan/ADaPT-ETL" class="btn btn-outline">View on GitHub</a>
+    <a href="https://github.com/karthick-jaganathan/streamwright" class="btn btn-outline">View on GitHub</a>
   </div>
 </div>
 
-## What is ADaPT?
+## What is StreamWright?
 
-ADaPT turns a few **YAML files** into a working data pipeline. You describe *what* to pull — from an **API, a file
-store, or a database** — and ADaPT handles the *how*: signing in, paging, retries, shaping the data with SQL, and
+StreamWright turns a few **YAML files** into a working data pipeline. You describe *what* to pull — from an **API, a file
+store, or a database** — and StreamWright handles the *how*: signing in, paging, retries, shaping the data with SQL, and
 writing it out. No per-connector code, and one command runs any source.
 
 ## How it works
 
-A **source** is a folder of YAML. `adapt run` executes it in three steps:
+A **source** is a folder of YAML. `streamwright run` executes it in three steps:
 
 ```mermaid
 flowchart LR
-    Y["Source<br/>(YAML)"] --> R["adapt run"]
+    Y["Source<br/>(YAML)"] --> R["streamwright run"]
     R --> C["Connector"] --> T["DuckDB<br/>transform"] --> O["Output"]
     P["Orchestration"] -->|per user| R
 ```
@@ -46,8 +46,8 @@ flowchart LR
 Run a source once from the command line, or let **orchestration** run it on a schedule — one pipeline across many
 accounts and networks. Two commands cover day-to-day use:
 
-- **`adapt run`** — run a source (auth, paging, async report jobs, incremental state, retries and rate limits built in).
-- **`adapt validate`** — check sources without running them, with the file, line and path of every finding.
+- **`streamwright run`** — run a source (auth, paging, async report jobs, incremental state, retries and rate limits built in).
+- **`streamwright validate`** — check sources without running them, with the file, line and path of every finding.
 
 ## Explore the docs
 
@@ -64,17 +64,17 @@ accounts and networks. Two commands cover day-to-day use:
 
   <div class="feature-card">
     <h3><a href="{{ site.baseurl }}/architecture/">🏗️ Architecture</a></h3>
-    <p>The layers and the <code>adapt run</code> + orchestration flows, with sequence diagrams.</p>
+    <p>The layers and the <code>streamwright run</code> + orchestration flows, with sequence diagrams.</p>
   </div>
 
   <div class="feature-card">
-    <h3><a href="{{ site.baseurl }}/adapt-core/">⚙️ adapt-core</a></h3>
+    <h3><a href="{{ site.baseurl }}/core/">⚙️ streamwright</a></h3>
     <p>The CLI and runtime: commands, streams, outputs, logging, connectors and the Python API.</p>
   </div>
 
   <div class="feature-card">
     <h3><a href="{{ site.baseurl }}/orchestration/">🔀 Orchestration</a></h3>
-    <p>Dagster pipelines over the <code>adapt</code> CLI, the shared-vocabulary network map, and execution modes.</p>
+    <p>Dagster pipelines over the <code>streamwright</code> CLI, the shared-vocabulary network map, and execution modes.</p>
   </div>
 
   <div class="feature-card">
@@ -84,25 +84,25 @@ accounts and networks. Two commands cover day-to-day use:
 
   <div class="feature-card">
     <h3><a href="{{ site.baseurl }}/installation/">🛠️ Installation</a></h3>
-    <p>Install adapt-core and the connectors, verify, Docker and development setup.</p>
+    <p>Install streamwright and the connectors, verify, Docker and development setup.</p>
   </div>
 
   <div class="feature-card">
     <h3><a href="{{ site.baseurl }}/api-reference/">📖 API Reference</a></h3>
-    <p>Every <code>adapt</code> command and option, and the Python entry points.</p>
+    <p>Every <code>streamwright</code> command and option, and the Python entry points.</p>
   </div>
 </div>
 
 ## Quick start
 
 ```bash
-git clone https://github.com/karthick-jaganathan/ADaPT-ETL.git
-cd ADaPT-ETL
+git clone https://github.com/karthick-jaganathan/streamwright.git
+cd streamwright
 make install && make install-connectors
 
-adapt connectors                                  # list the installed connectors
-adapt validate examples/sources                   # check every example source
-adapt run examples/sources/readers/files_demo \
+streamwright connectors                                  # list the installed connectors
+streamwright validate examples/sources                   # check every example source
+streamwright run examples/sources/readers/files_demo \
   --set data_root=examples/sources/readers/files_demo/data --allow-connector files --output jsonl:out/
 ```
 
@@ -118,4 +118,4 @@ Apache License 2.0.
 
 ## Support
 
-Report bugs and request features on [GitHub Issues](https://github.com/karthick-jaganathan/ADaPT-ETL/issues).
+Report bugs and request features on [GitHub Issues](https://github.com/karthick-jaganathan/streamwright/issues).

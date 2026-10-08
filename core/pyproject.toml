@@ -1,0 +1,61 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "streamwright"
+version = "0.1.0"
+description = "Declarative data connectors — pull from APIs, files and databases with YAML, shape with SQL, write anywhere."
+readme = "README.md"
+license = "Apache-2.0"
+authors = [
+    {name = "Karthick Jaganathan"},
+]
+keywords = ["data", "pipeline", "etl", "connector", "singer", "yaml"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+requires-python = ">=3.10"
+dependencies = [
+    "pyyaml==6.0.2",
+    "requests>=2.25,<3",
+    # `select`: the SQL that shapes each stream's records runs in an embedded DuckDB (which needs pytz for
+    # timestamps with time zones)
+    "duckdb>=1.5.2",
+    "pytz",
+]
+
+[project.optional-dependencies]
+# --output dlt:DESTINATION; also install the destination's extra, e.g. "dlt[duckdb]" or "dlt[bigquery]"
+dlt = ["dlt>=1.0"]
+
+[project.urls]
+Homepage = "https://github.com/karthick-jaganathan/streamwright"
+Repository = "https://github.com/karthick-jaganathan/streamwright"
+
+[project.scripts]
+# `streamwright run`, `streamwright validate`, `streamwright connectors` - one CLI (see streamwright.core.cli)
+streamwright = "streamwright.core.cli:main"
+
+[tool.setuptools]
+# src layout: `streamwright` is a namespace package shared with the connector distributions (streamwright.connectors.*)
+package-dir = {"" = "src"}
+packages = [
+    "streamwright.core",
+    "streamwright.core.engine",
+    "streamwright.core.outputs",
+    "streamwright.core.net",
+    "streamwright.core.config",
+    "streamwright.core.validation",
+    "streamwright.core.runtime",
+]
+
+[tool.setuptools.package-data]
+# the bundled connector catalog (default for `streamwright connectors`, refreshed from $STREAMWRIGHT_HUB_URL)
+"streamwright.core" = ["connectors.json"]

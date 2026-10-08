@@ -2,14 +2,14 @@
 layout: default
 title: Concepts
 nav_order: 3
-description: "The ADaPT vocabulary: sources, streams, connectors, pipelines, networks and execution modes"
+description: "The StreamWright vocabulary: sources, streams, connectors, pipelines, networks and execution modes"
 permalink: /concepts/
 ---
 
 # Concepts
 {: .no_toc }
 
-The vocabulary used throughout ADaPT, from a single source file to orchestrated pipelines.
+The vocabulary used throughout StreamWright, from a single source file to orchestrated pipelines.
 {: .fs-5 .fw-300 }
 
 <details open markdown="block">
@@ -45,7 +45,7 @@ One source folder is shared by every client; a client's settings (never secrets)
 ### source.yaml — spec, auth, http
 
 - **`spec`** — the inputs the source declares: `config` (plain values, filled with `--set` or `--config`) and
-  `secrets` (filled only from `--secrets` or `ADAPT_SECRET_<NAME>`).
+  `secrets` (filled only from `--secrets` or `STREAMWRIGHT_SECRET_<NAME>`).
 - **`auth`** — how to sign in: a built-in HTTP flow, or a connector `provider` that builds a vendor SDK client.
 - **`http`** — base URL, headers and defaults for HTTP requests.
 
@@ -68,25 +68,25 @@ flowchart LR
 
 A **connector** is an installable package that gives a source access to a vendor: the ad-API SDKs
 (`google_ads`, `microsoft_ads`, `facebook_ads`) and the readers (`files`, `s3`, `gcs`, `postgres`). Connectors register
-under the `adapt.connectors` entry point and are discovered at run time; `--allow-connector` restricts which may load.
+under the `streamwright.connectors` entry point and are discovered at run time; `--allow-connector` restricts which may load.
 A **query builder** (e.g. GAQL) is the sibling kind of component that writes a query language.
 
 ### Output
 
 Where a run's exports go: **Singer** messages (default, on stdout), **JSONL / CSV / TSV / Parquet** files, a **DuckDB**
 file, a **DuckLake** warehouse (Parquet data on object storage with a catalog), or a **dlt** destination. See
-[Outputs]({{ site.baseurl }}/adapt-core/outputs/).
+[Outputs]({{ site.baseurl }}/core/outputs/).
 
 ### Partitions, windows & incremental state
 
 A request can fan out over **partitions** (e.g. one per account), and an **incremental** stream reads day **windows**
-from a saved cursor forward, so each run only fetches new data. See [Streams]({{ site.baseurl }}/adapt-core/streams/).
+from a saved cursor forward, so each run only fetches new data. See [Streams]({{ site.baseurl }}/core/streams/).
 
 ---
 
 ## Orchestration
 
-Orchestration runs the `adapt` CLI for many users and networks as Dagster pipelines. See
+Orchestration runs the `streamwright` CLI for many users and networks as Dagster pipelines. See
 [Orchestration]({{ site.baseurl }}/orchestration/).
 
 ### Pipeline & node
@@ -104,7 +104,7 @@ differently.
 ### Account, wrapper & execution mode
 
 - **account** — a `(user, account, network)` row a trigger fans out over.
-- **wrapper** — builds a node's `adapt run` command from the source's declared spec and the network's inputs.
+- **wrapper** — builds a node's `streamwright run` command from the source's declared spec and the network's inputs.
 - **execution mode** — where each node runs: a local **subprocess**, a **Docker** container, or a **Kubernetes Job**
   (writing to an object-storage DuckLake warehouse).
 
@@ -114,9 +114,9 @@ differently.
 
 | Command | Does |
 |---|---|
-| `adapt run SOURCE` | runs a source's streams and writes the chosen output |
-| `adapt validate [PATH ...]` | checks sources (and the installed connectors) without running them |
-| `adapt connectors` | lists the installed connectors, grouped by category |
+| `streamwright run SOURCE` | runs a source's streams and writes the chosen output |
+| `streamwright validate [PATH ...]` | checks sources (and the installed connectors) without running them |
+| `streamwright connectors` | lists the installed connectors, grouped by category |
 
-See the [API Reference]({{ site.baseurl }}/api-reference/) and [adapt-core]({{ site.baseurl }}/adapt-core/) for the full
+See the [API Reference]({{ site.baseurl }}/api-reference/) and [streamwright]({{ site.baseurl }}/core/) for the full
 detail.

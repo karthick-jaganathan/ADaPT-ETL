@@ -1,4 +1,4 @@
-"""ADAPT_EXECUTION=docker: the `docker run` argv built from a node's logical argv, and runs through a stand-in docker."""
+"""STREAMWRIGHT_EXECUTION=docker: the `docker run` argv built from a node's logical argv, and runs through a stand-in docker."""
 
 import json
 import os
@@ -9,14 +9,14 @@ from pathlib import Path
 from unittest import mock
 
 from tests.helpers import ACCOUNTS, FAKE_APP, GOOGLE_SECRET_ENV, PROJECT_DIR, google_context
-from adapt.orchestration import REPO_ROOT, accounts, adapt_image, definitions, execution_mode
-from adapt.orchestration.runner import DockerCommandError, RunFailed, container_name, docker_command, run
-from adapt.orchestration.spec import SpecError, load_networks, parse_networks
-from adapt.orchestration.wrappers import wrapper_for
+from streamwright.orchestration import REPO_ROOT, accounts, streamwright_image, definitions, execution_mode
+from streamwright.orchestration.runner import DockerCommandError, RunFailed, container_name, docker_command, run
+from streamwright.orchestration.spec import SpecError, load_networks, parse_networks
+from streamwright.orchestration.wrappers import wrapper_for
 
 FAKE_DOCKER = str(Path(__file__).resolve().parent / "fake_docker.py")
 SCRATCH = PROJECT_DIR / "tests" / ".scratch_docker"
-IMAGE = "adapt-pipeline:local"
+IMAGE = "streamwright-pipeline:local"
 
 
 class ListLog:
@@ -47,68 +47,68 @@ class DockerCommandTest(unittest.TestCase):
     def test_campaigns_docker_run(self):
         command, secret_env, ctx = build("campaigns")
         self.assertEqual(command[:6], ["docker", "run", "--rm", "--init", "--pull", "never"])
-        self.assertEqual(pairs(command, "--name"), ["adapt-pipe-u1-1000000001-campaigns-run-1"])
+        self.assertEqual(pairs(command, "--name"), ["streamwright-pipe-u1-1000000001-campaigns-run-1"])
         self.assertEqual(pairs(command, "--add-host"), ["host.docker.internal:host-gateway"])
         self.assertEqual(pairs(command, "-v"), ["%s:/warehouse" % ctx.warehouse_path.parent.resolve(),
                                                 "%s:/runs" % (PROJECT_DIR / "runs").resolve()])
         image_at = command.index(IMAGE)
         self.assertEqual(command[image_at + 1:image_at + 3], ["run", "/app/examples/sources/ads/google_ads"])
-        adapt = command[image_at + 1:]
-        self.assertEqual(pairs(adapt, "--stream"), ["campaigns"])
-        self.assertEqual(pairs(adapt, "--output"), ["duckdb:/warehouse/u1.duckdb:google_ads_1000000001"])
-        self.assertEqual(pairs(adapt, "--summary"), ["/runs/run-1/campaigns.summary.json"])
-        self.assertEqual(pairs(adapt, "--timezone"), ["America/New_York"])
-        self.assertEqual(pairs(adapt, "--allow-connector"), ["google_ads", "gaql"])
-        self.assertIn("customer_ids=1000000001", pairs(adapt, "--set"))
-        self.assertIn("login_customer_id=2000000002", pairs(adapt, "--set"))
-        # docker options come before the image; adapt's after it
+        streamwright = command[image_at + 1:]
+        self.assertEqual(pairs(streamwright, "--stream"), ["campaigns"])
+        self.assertEqual(pairs(streamwright, "--output"), ["duckdb:/warehouse/u1.duckdb:google_ads_1000000001"])
+        self.assertEqual(pairs(streamwright, "--summary"), ["/runs/run-1/campaigns.summary.json"])
+        self.assertEqual(pairs(streamwright, "--timezone"), ["America/New_York"])
+        self.assertEqual(pairs(streamwright, "--allow-connector"), ["google_ads", "gaql"])
+        self.assertIn("customer_ids=1000000001", pairs(streamwright, "--set"))
+        self.assertIn("login_customer_id=2000000002", pairs(streamwright, "--set"))
+        # docker options come before the image; streamwright's after it
         self.assertTrue(all(command.index(flag) < image_at for flag in ("--rm", "--init", "-v", "-e", "--add-host")))
 
     def test_secrets_are_passed_by_name_only(self):
         command, secret_env, _ = build("ad_groups")
         self.assertEqual(set(secret_env), GOOGLE_SECRET_ENV)
         self.assertEqual(sorted(pairs(command, "-e")), sorted(GOOGLE_SECRET_ENV))
-        self.assertIn("ADAPT_SECRET_DEVELOPER_TOKEN", pairs(command, "-e"))
+        self.assertIn("STREAMWRIGHT_SECRET_DEVELOPER_TOKEN", pairs(command, "-e"))
         joined = " ".join(command)
         for value in FAKE_APP.values():
             self.assertNotIn(value, joined)
-        self.assertFalse([arg for arg in command if arg.startswith("ADAPT_SECRET_") and "=" in arg])
+        self.assertFalse([arg for arg in command if arg.startswith("STREAMWRIGHT_SECRET_") and "=" in arg])
 
-    def test_no_host_path_leaks_into_the_adapt_args(self):
+    def test_no_host_path_leaks_into_the_streamwright_args(self):
         command, _, _ = build("keywords")
-        adapt = command[command.index(IMAGE) + 1:]
-        self.assertFalse([arg for arg in adapt if str(REPO_ROOT) in arg], adapt)
+        streamwright = command[command.index(IMAGE) + 1:]
+        self.assertFalse([arg for arg in streamwright if str(REPO_ROOT) in arg], streamwright)
 
     def test_set_values_with_repo_paths_become_app_paths(self):
-        logical = ["adapt", "run", str(REPO_ROOT / "examples/sources/readers/files_demo"),
+        logical = ["streamwright", "run", str(REPO_ROOT / "examples/sources/readers/files_demo"),
                    "--set", "root=%s/examples/sources/readers/files_demo/data" % REPO_ROOT, "--set", "mode=full",
                    "--output", "duckdb:%s:files" % (SCRATCH / "wh" / "u9.duckdb"),
                    "--summary", str(SCRATCH / "runs" / "r" / "files.summary.json")]
         command = docker_command(logical, {}, IMAGE, SCRATCH / "wh", SCRATCH / "runs", REPO_ROOT, environ={})
-        adapt = command[command.index(IMAGE) + 1:]
-        self.assertEqual(adapt[:2], ["run", "/app/examples/sources/readers/files_demo"])
-        self.assertEqual(pairs(adapt, "--set"), ["root=/app/examples/sources/readers/files_demo/data", "mode=full"])
-        self.assertEqual(pairs(adapt, "--output"), ["duckdb:/warehouse/u9.duckdb:files"])
-        self.assertEqual(pairs(adapt, "--summary"), ["/runs/r/files.summary.json"])
+        streamwright = command[command.index(IMAGE) + 1:]
+        self.assertEqual(streamwright[:2], ["run", "/app/examples/sources/readers/files_demo"])
+        self.assertEqual(pairs(streamwright, "--set"), ["root=/app/examples/sources/readers/files_demo/data", "mode=full"])
+        self.assertEqual(pairs(streamwright, "--output"), ["duckdb:/warehouse/u9.duckdb:files"])
+        self.assertEqual(pairs(streamwright, "--summary"), ["/runs/r/files.summary.json"])
         self.assertNotIn("--name", command)
         self.assertNotIn("-e", command)
 
-    def test_adapt_docker_args_go_before_the_image(self):
-        command, _, _ = build("campaigns", environ={"ADAPT_DOCKER_ARGS": "--user 1000:1000 --network adapt"})
+    def test_streamwright_docker_args_go_before_the_image(self):
+        command, _, _ = build("campaigns", environ={"STREAMWRIGHT_DOCKER_ARGS": "--user 1000:1000 --network streamwright"})
         image_at = command.index(IMAGE)
-        self.assertEqual(command[image_at - 4:image_at], ["--user", "1000:1000", "--network", "adapt"])
+        self.assertEqual(command[image_at - 4:image_at], ["--user", "1000:1000", "--network", "streamwright"])
 
     def test_refusals(self):
         with self.assertRaises(DockerCommandError):   # no image
             build("campaigns", image=None)
         with self.assertRaises(DockerCommandError):   # the summary outside the runs mount
-            docker_command(["adapt", "run", str(REPO_ROOT / "examples/sources/ads/google_ads"),
+            docker_command(["streamwright", "run", str(REPO_ROOT / "examples/sources/ads/google_ads"),
                             "--summary", str(SCRATCH / "elsewhere" / "s.json")],
                            {}, IMAGE, SCRATCH, PROJECT_DIR / "runs", REPO_ROOT, environ={})
         ctx = google_context()
         argv, secret_env = wrapper_for("campaigns", "google_ads")("campaigns", ctx)
         with self.assertRaises(DockerCommandError):   # a source outside the repository (not in the image)
-            docker_command(["adapt", "run", "/somewhere/else"], {}, IMAGE, SCRATCH, SCRATCH, REPO_ROOT, environ={})
+            docker_command(["streamwright", "run", "/somewhere/else"], {}, IMAGE, SCRATCH, SCRATCH, REPO_ROOT, environ={})
         with self.assertRaises(DockerCommandError):   # a secret value on the command line
             docker_command(argv + ["--set", "x=%s" % FAKE_APP["client_id"], "--summary", str(SCRATCH / "s.json")],
                            secret_env, IMAGE, ctx.warehouse_path.parent, SCRATCH, REPO_ROOT, environ={})
@@ -117,7 +117,7 @@ class DockerCommandTest(unittest.TestCase):
 
     def test_container_name(self):
         self.assertEqual(container_name("u 1", "1000000001", "campaigns", "ab/cd"),
-                         "adapt-pipe-u-1-1000000001-campaigns-ab-cd")
+                         "streamwright-pipe-u-1-1000000001-campaigns-ab-cd")
 
 
 class ImageAndModeTest(unittest.TestCase):
@@ -131,17 +131,17 @@ class ImageAndModeTest(unittest.TestCase):
         with self.assertRaises(SpecError):
             parse_networks({"networks": {"g": dict(body, image=["x"])}})
 
-    def test_adapt_image_overrides_the_network_image(self):
-        self.assertEqual(adapt_image(IMAGE, {}), IMAGE)
-        self.assertEqual(adapt_image(IMAGE, {"ADAPT_IMAGE": "other:1"}), "other:1")
-        self.assertIsNone(adapt_image(None, {}))
+    def test_streamwright_image_overrides_the_network_image(self):
+        self.assertEqual(streamwright_image(IMAGE, {}), IMAGE)
+        self.assertEqual(streamwright_image(IMAGE, {"STREAMWRIGHT_IMAGE": "other:1"}), "other:1")
+        self.assertIsNone(streamwright_image(None, {}))
 
     def test_execution_mode(self):
         self.assertEqual(execution_mode({}), "subprocess")
-        self.assertEqual(execution_mode({"ADAPT_EXECUTION": "Docker"}), "docker")
-        self.assertEqual(execution_mode({"ADAPT_EXECUTION": "k8s"}), "k8s")
+        self.assertEqual(execution_mode({"STREAMWRIGHT_EXECUTION": "Docker"}), "docker")
+        self.assertEqual(execution_mode({"STREAMWRIGHT_EXECUTION": "k8s"}), "k8s")
         with self.assertRaises(ValueError):
-            execution_mode({"ADAPT_EXECUTION": "lambda"})
+            execution_mode({"STREAMWRIGHT_EXECUTION": "lambda"})
 
 
 class DockerRunTest(unittest.TestCase):
@@ -157,28 +157,28 @@ class DockerRunTest(unittest.TestCase):
     def test_secret_values_reach_the_container_through_the_docker_env_only(self):
         log = ListLog()
         source = REPO_ROOT / "examples/sources/ads/google_ads"
-        argv = ["adapt", "run", str(source), "--stream", "campaigns",
+        argv = ["streamwright", "run", str(source), "--stream", "campaigns",
                 "--output", "duckdb:%s:g" % (SCRATCH / "wh" / "u1.duckdb")]
-        secret_env = {"ADAPT_SECRET_DEVELOPER_TOKEN": FAKE_APP["developer_token"]}
-        with mock.patch.dict(os.environ, {"ADAPT_DOCKER_BIN": str(self.docker)}):
+        secret_env = {"STREAMWRIGHT_SECRET_DEVELOPER_TOKEN": FAKE_APP["developer_token"]}
+        with mock.patch.dict(os.environ, {"STREAMWRIGHT_DOCKER_BIN": str(self.docker)}):
             result = run(argv, secret_env, log, SCRATCH / "runs" / "r1" / "campaigns.summary.json", mode="docker",
                          image=IMAGE, warehouse_dir=SCRATCH / "wh", runs_dir=SCRATCH / "runs", repo_root=REPO_ROOT,
-                         name="adapt-pipe-test")
+                         name="streamwright-pipe-test")
         self.assertEqual(result["status"], "ok")
         self.assertEqual(result["execution"], "docker")
         self.assertEqual(result["image"], IMAGE)
         self.assertEqual(result["records"], {"campaigns": 3})
         messages = [message for _, message in log.lines]
         self.assertTrue(messages[0].startswith("docker: "), messages[0])
-        self.assertIn("-e ADAPT_SECRET_DEVELOPER_TOKEN ", messages[0])
-        self.assertIn("[2026-10-05 00:00:00,000] INFO adapt.source: ADAPT_SECRET_DEVELOPER_TOKEN=***", messages)
+        self.assertIn("-e STREAMWRIGHT_SECRET_DEVELOPER_TOKEN ", messages[0])
+        self.assertIn("[2026-10-05 00:00:00,000] INFO streamwright.source: STREAMWRIGHT_SECRET_DEVELOPER_TOKEN=***", messages)
         self.assertTrue(any("run /app/examples/sources/ads/google_ads --stream campaigns" in m for m in messages))
         self.assertNotIn(FAKE_APP["developer_token"], repr(log.lines) + json.dumps(result))
-        self.assertNotIn("ADAPT_SECRET_DEVELOPER_TOKEN", os.environ)
+        self.assertNotIn("STREAMWRIGHT_SECRET_DEVELOPER_TOKEN", os.environ)
 
     def test_non_zero_exit_raises(self):
-        argv = ["adapt", "run", str(REPO_ROOT / "examples/sources/ads/google_ads"), "--stream", "campaigns"]
-        env = {"ADAPT_DOCKER_BIN": str(self.docker), "FAKE_ADAPT_EXIT": "2"}
+        argv = ["streamwright", "run", str(REPO_ROOT / "examples/sources/ads/google_ads"), "--stream", "campaigns"]
+        env = {"STREAMWRIGHT_DOCKER_BIN": str(self.docker), "FAKE_STREAMWRIGHT_EXIT": "2"}
         with mock.patch.dict(os.environ, env), self.assertRaises(RunFailed) as caught:
             run(argv, {}, ListLog(), SCRATCH / "runs" / "f.json", mode="docker", image=IMAGE,
                 warehouse_dir=SCRATCH / "wh", runs_dir=SCRATCH / "runs")
@@ -186,12 +186,12 @@ class DockerRunTest(unittest.TestCase):
 
     def test_unknown_mode(self):
         with self.assertRaises(ValueError):
-            run(["adapt", "run", "x"], {}, ListLog(), SCRATCH / "u.json", mode="lambda")
+            run(["streamwright", "run", "x"], {}, ListLog(), SCRATCH / "u.json", mode="lambda")
 
     def _trigger(self, extra_env=None):
-        env = {"ADAPT_EXECUTION": "docker", "ADAPT_DOCKER_BIN": str(self.docker), "ADAPT_IMAGE": "",
-               "ADAPT_PIPELINE_WAREHOUSE_DIR": str(SCRATCH / "warehouse"),
-               "ADAPT_PIPELINE_RUNS_DIR": str(SCRATCH / "runs")}
+        env = {"STREAMWRIGHT_EXECUTION": "docker", "STREAMWRIGHT_DOCKER_BIN": str(self.docker), "STREAMWRIGHT_IMAGE": "",
+               "STREAMWRIGHT_PIPELINE_WAREHOUSE_DIR": str(SCRATCH / "warehouse"),
+               "STREAMWRIGHT_PIPELINE_RUNS_DIR": str(SCRATCH / "runs")}
         env.update(extra_env or {})
         with mock.patch.dict(os.environ, env), mock.patch.object(accounts, "app_config", lambda n, region=None: dict(FAKE_APP)), \
                 mock.patch.object(accounts, "load_accounts", lambda: [dict(row) for row in ACCOUNTS]):
@@ -214,8 +214,8 @@ class DockerRunTest(unittest.TestCase):
         for value in FAKE_APP.values():
             self.assertNotIn(value, dumped)
 
-    def test_adapt_image_env_overrides_the_network_image(self):
-        results = self._trigger({"ADAPT_IMAGE": "custom-image:7"})
+    def test_streamwright_image_env_overrides_the_network_image(self):
+        results = self._trigger({"STREAMWRIGHT_IMAGE": "custom-image:7"})
         self.assertTrue(results[0]["success"])
         self.assertEqual({out["image"] for out in results[0]["nodes"].values()}, {"custom-image:7"})
 

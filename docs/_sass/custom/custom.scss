@@ -1,8 +1,8 @@
-// Custom styles for ADaPT documentation
+// Custom styles for StreamWright documentation
 //
 // Imported by the theme AFTER the active color scheme, so the semantic variables
-// below ($surface-color, $muted-text-color, ...) resolve per scheme (adapt /
-// adapt-dark). The fallbacks only apply to schemes that don't define them (the
+// below ($surface-color, $muted-text-color, ...) resolve per scheme (streamwright /
+// streamwright-dark). The fallbacks only apply to schemes that don't define them (the
 // theme's stock light/dark bundles). Brand blue (#1976d2) and status colors are
 // left as literals because they read on both light and dark backgrounds.
 
@@ -546,7 +546,7 @@ table {
 // Theme callouts (> {: .note } etc.): in the dark scheme use the light end of
 // each palette for titles/borders so they keep contrast on dark backgrounds.
 @if $color-scheme == dark {
-  $adapt-dark-callouts: (
+  $streamwright-dark-callouts: (
     highlight: $yellow-000,
     important: $blue-000,
     new: $green-000,
@@ -554,7 +554,7 @@ table {
     warning: $red-000,
   );
   
-  @each $name, $color in $adapt-dark-callouts {
+  @each $name, $color in $streamwright-dark-callouts {
     $color: lighten($color, 12%);
     
     p.#{$name},

@@ -6,19 +6,19 @@ nav_order: 2
 permalink: /orchestration/architecture/
 ---
 
-# adapt.orchestration — architecture & design
+# streamwright.orchestration — architecture & design
 
-How the orchestration subsystem works in depth. For how it fits the whole ADaPT system (with sequence diagrams) see
+How the orchestration subsystem works in depth. For how it fits the whole StreamWright system (with sequence diagrams) see
 the [Architecture guide]({{ site.baseurl }}/architecture/); for day-to-day commands see
 [Running]({{ site.baseurl }}/orchestration/running/).
 
 - **Network-agnostic:** Google Ads is just one entry in `config/networks.yaml`.
-- **Never imports adapt:** every node shells out to the `adapt` CLI (`$ADAPT_BIN`).
-- **Package:** `adapt.orchestration` (distribution `adapt-orchestration`; `adapt` is a namespace package shared with
-  adapt-core).
+- **Never imports streamwright:** every node shells out to the `streamwright` CLI (`$STREAMWRIGHT_BIN`).
+- **Package:** `streamwright.orchestration` (distribution `streamwright-orchestration`; `streamwright` is a namespace package shared with
+  streamwright).
 
 {: .note }
-**Prototype stubs:** `config/networks.yaml` (the network registry) and `src/adapt/orchestration/accounts.py` (the
+**Prototype stubs:** `config/networks.yaml` (the network registry) and `src/streamwright/orchestration/accounts.py` (the
 account lookup) are stand-ins. In production both come from a database / registry service.
 
 ## The model
@@ -70,9 +70,9 @@ nodes:
 
 **Selecting a pipeline:**
 
-- `spec.pipeline_names()` lists the pipelines (`*.yaml` of `$ADAPT_PIPELINE_DIR`, default `config/pipelines/`).
+- `spec.pipeline_names()` lists the pipelines (`*.yaml` of `$STREAMWRIGHT_PIPELINE_DIR`, default `config/pipelines/`).
 - `spec.load_pipeline(name)` loads one.
-- `$ADAPT_PIPELINE_SPEC` — a path to one pipeline file — replaces the folder.
+- `$STREAMWRIGHT_PIPELINE_SPEC` — a path to one pipeline file — replaces the folder.
 
 **Resolving it on a network:** when a pipeline is triggered, it is resolved onto each account's network
 (`spec.resolve_pipeline`):
@@ -146,10 +146,10 @@ A wrapper is `wrapper(node, ctx) -> (argv, secret_env)`.
   - an `inputs` key the source does not declare;
   - a node whose resolved stream is not a stream of the source.
 - Config inputs become `--set name=value`.
-- Secret inputs become `secret_env["ADAPT_SECRET_<NAME>"]`.
+- Secret inputs become `secret_env["STREAMWRIGHT_SECRET_<NAME>"]`.
 
 The argv, with warehouse `warehouse/<user>.duckdb` and schema `<network>_<account>`:
-`adapt run <source> --stream <stream> --set ... --timezone <tz> --output duckdb:<warehouse>:<schema> --allow-connector ...`
+`streamwright run <source> --stream <stream> --set ... --timezone <tz> --output duckdb:<warehouse>:<schema> --allow-connector ...`
 
 #### Custom wrappers: `@node`
 
@@ -166,12 +166,12 @@ Example: `campaigns_from_db` (campaigns on google_ads) looks the account's campa
 
 Two providers, read at run time (the API first, a local file for development only):
 
-- **Accounts** — `load_accounts()` reads `ADAPT_ACCOUNTS_URL` (HTTP) or `ADAPT_ACCOUNTS_FILE`
-  (default `~/.adapt/accounts.yaml`). A `clients` map (client → `name`, `region`, `accounts[]`) is flattened to rows
+- **Accounts** — `load_accounts()` reads `STREAMWRIGHT_ACCOUNTS_URL` (HTTP) or `STREAMWRIGHT_ACCOUNTS_FILE`
+  (default `~/.streamwright/accounts.yaml`). A `clients` map (client → `name`, `region`, `accounts[]`) is flattened to rows
   `{user_id, account_id, network, region, token, …}`; a flat `accounts` list is used as-is. In production this is the
   accounts database / API with the same shape.
-- **Secrets** — `app_config(network, region)` reads `ADAPT_SECRETS_URL` (HTTP) or `ADAPT_SECRETS_FILE`
-  (default `~/.adapt/secrets.yaml`): a `secrets` map `network → {default, regions}` of app-level API credentials
+- **Secrets** — `app_config(network, region)` reads `STREAMWRIGHT_SECRETS_URL` (HTTP) or `STREAMWRIGHT_SECRETS_FILE`
+  (default `~/.streamwright/secrets.yaml`): a `secrets` map `network → {default, regions}` of app-level API credentials
   (`developer_token`, `client_id`, `client_secret`, …). The account's `region` selects which `regions[region]` values
   overlay `default`. **No tokens here.**
 - The per-user OAuth token rides on the account row ({% raw %}`refresh_token: "secret:{{ row.token }}"`{% endraw %}) —
@@ -206,35 +206,35 @@ them in its UI.
 
 ## Execution modes: mechanics
 
-`ADAPT_EXECUTION` selects where each node's `adapt run` executes. The op graph, dependency order and run config are
-identical across modes — only *where* `adapt run` runs changes.
+`STREAMWRIGHT_EXECUTION` selects where each node's `streamwright run` executes. The op graph, dependency order and run config are
+identical across modes — only *where* `streamwright run` runs changes.
 
 ### `subprocess` (default)
 
-The local adapt CLI `$ADAPT_BIN`, writing a DuckDB file under `warehouse/`.
+The local streamwright CLI `$STREAMWRIGHT_BIN`, writing a DuckDB file under `warehouse/`.
 
 ### `docker`
 
-A `docker run --rm` container of the network's `image:` (`$ADAPT_IMAGE` overrides it).
+A `docker run --rm` container of the network's `image:` (`$STREAMWRIGHT_IMAGE` overrides it).
 
 - The wrapper builds the same logical argv. The runner translates it:
   - source → `/app/examples/sources/...`;
   - `--output duckdb:/warehouse/...`;
   - `--summary /runs/...`;
   - with the warehouse and runs folders mounted.
-- Each secret is passed as `-e ADAPT_SECRET_<NAME>` **without a value**.
+- Each secret is passed as `-e STREAMWRIGHT_SECRET_<NAME>` **without a value**.
 
-See [docker/README.md](https://github.com/karthick-jaganathan/ADaPT-ETL/blob/master/orchestration/docker/README.md).
+See [docker/README.md](https://github.com/karthick-jaganathan/streamwright/blob/master/orchestration/docker/README.md).
 
 ### `k8s`
 
 A Kubernetes Job per node, created with `kubectl`.
 
 - The Job: one pod, `backoffLimit: 0`, `restartPolicy: Never`, `imagePullPolicy: Never`.
-- Context `$ADAPT_K8S_CONTEXT` (default `kind-adapt`); namespace `$ADAPT_K8S_NAMESPACE` (default `adapt`).
+- Context `$STREAMWRIGHT_K8S_CONTEXT` (default `kind-streamwright`); namespace `$STREAMWRIGHT_K8S_NAMESPACE` (default `streamwright`).
 - The pod runs
-  `adapt run /app/examples/sources/<source> --stream <stream> ... --output "ducklake:postgres:dbname=adaptcat host=catalog-postgres.adapt.svc.cluster.local port=5432 user=adapt:<network>_<account>"`.
-- The warehouse is a **DuckLake**: Parquet data on S3 under `s3://adapt-warehouse/<user>/`, the catalog in Postgres
+  `streamwright run /app/examples/sources/<source> --stream <stream> ... --output "ducklake:postgres:dbname=streamwrightcat host=catalog-postgres.streamwright.svc.cluster.local port=5432 user=streamwright:<network>_<account>"`.
+- The warehouse is a **DuckLake**: Parquet data on S3 under `s3://streamwright-warehouse/<user>/`, the catalog in Postgres
   (schema `lake_<user>`).
 
 The op:
@@ -244,30 +244,30 @@ The op:
 3. waits for the pod;
 4. streams its log into the Dagster log (redacted);
 5. waits for the Job;
-6. reads the record counts from adapt's log lines;
+6. reads the record counts from streamwright's log lines;
 7. deletes the Job, and fails the op if the Job failed.
 
 A downstream node's Job is created only after its upstream Jobs completed (the op graph is unchanged). See
-[k8s/](https://github.com/karthick-jaganathan/ADaPT-ETL/tree/master/orchestration/k8s).
+[k8s/](https://github.com/karthick-jaganathan/streamwright/tree/master/orchestration/k8s).
 
-Settings (`adapt.orchestration.K8S_SETTINGS`):
+Settings (`streamwright.orchestration.K8S_SETTINGS`):
 
 | Variable | Notes |
 |---|---|
-| `ADAPT_K8S_SECRET` | adapt-secrets |
-| `ADAPT_K8S_CATALOG` | the DSN, no password |
-| `ADAPT_K8S_DATA_ROOT` | `s3://adapt-warehouse` |
-| `ADAPT_K8S_S3_ENDPOINT` / `_URL_STYLE` / `_USE_SSL` / `_REGION` | the S3 settings |
-| `ADAPT_K8S_TIMEOUT` | the Job's `activeDeadlineSeconds`, 1800 |
-| `ADAPT_K8S_START_TIMEOUT` | 300 |
-| `ADAPT_K8S_KEEP_JOBS=1` | keep finished Jobs for inspection; their TTL removes them after an hour |
+| `STREAMWRIGHT_K8S_SECRET` | streamwright-secrets |
+| `STREAMWRIGHT_K8S_CATALOG` | the DSN, no password |
+| `STREAMWRIGHT_K8S_DATA_ROOT` | `s3://streamwright-warehouse` |
+| `STREAMWRIGHT_K8S_S3_ENDPOINT` / `_URL_STYLE` / `_USE_SSL` / `_REGION` | the S3 settings |
+| `STREAMWRIGHT_K8S_TIMEOUT` | the Job's `activeDeadlineSeconds`, 1800 |
+| `STREAMWRIGHT_K8S_START_TIMEOUT` | 300 |
+| `STREAMWRIGHT_K8S_KEEP_JOBS=1` | keep finished Jobs for inspection; their TTL removes them after an hour |
 
 The Kubernetes path is a local simulation (a `kind` cluster with in-cluster LocalStack + Postgres) of a real EKS
 deployment.
 
 ## Security: secrets
 
-Secrets are stored nowhere in the pipeline: they are resolved inside the op and reach adapt only as environment
+Secrets are stored nowhere in the pipeline: they are resolved inside the op and reach streamwright only as environment
 variables.
 
 ### Nothing stored
@@ -280,15 +280,15 @@ variables.
 ### Resolved at execution time
 
 - Secrets are resolved at execution time, inside the op (`app_config` / the account row).
-- They are passed to adapt only as `ADAPT_SECRET_<NAME>` variables in the child process' environment — never `--set`,
+- They are passed to streamwright only as `STREAMWRIGHT_SECRET_<NAME>` variables in the child process' environment — never `--set`,
   never `--secrets`, never argv.
 
 ### Per execution mode
 
-- **docker:** the child is `docker run`, given `-e ADAPT_SECRET_<NAME>` by name only, so docker copies the value from
+- **docker:** the child is `docker run`, given `-e STREAMWRIGHT_SECRET_<NAME>` by name only, so docker copies the value from
   its environment into the container. No value is in the docker argv or the image.
 - **k8s:** the pipeline sends no secret value at all.
-  - Each Job pod gets `envFrom` the Kubernetes Secret `adapt-secrets` (the source's `ADAPT_SECRET_*` plus the S3
+  - Each Job pod gets `envFrom` the Kubernetes Secret `streamwright-secrets` (the source's `STREAMWRIGHT_SECRET_*` plus the S3
     credentials and the catalog password).
   - `k8s/setup.sh` creates it at setup time through a pipe to `kubectl apply --server-side` (no argv, no file, no
     last-applied annotation).
@@ -299,6 +299,6 @@ variables.
 
 - The logged command and the op outputs are secret-free (`default_wrapper` refuses to build an argv containing a
   secret value).
-- adapt's output is redacted (`***`) for the run's secret values before it reaches the log.
+- streamwright's output is redacted (`***`) for the run's secret values before it reaches the log.
 - Error messages name the missing input, never a value.
 - `Context.app` and `Context.row` are excluded from its repr.

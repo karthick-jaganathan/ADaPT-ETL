@@ -1,6 +1,6 @@
-# ADaPT Microsoft Ads connector
+# StreamWright Microsoft Ads connector
 
-The `microsoft_ads` connector for [adapt-core](../../../adapt-core/README.md), on the
+The `microsoft_ads` connector for [streamwright](../../../core/README.md), on the
 [bingads](https://pypi.org/project/bingads/) SDK (API v13): the `microsoft_ads` auth provider signs in with OAuth,
 and `sdk: microsoft_ads` requests call SOAP operations, including reports as async jobs. Example:
 the source folder [examples/sources/ads/microsoft_ads/](../../../examples/sources/ads/microsoft_ads/).
@@ -9,7 +9,7 @@ the source folder [examples/sources/ads/microsoft_ads/](../../../examples/source
 
 ```bash
 make install-microsoft-ads   # from the repository root; or: pip install ./connectors/ads/microsoft_ads (installs bingads)
-adapt connectors             # lists microsoft_ads (with its SDK loggers)
+streamwright connectors             # lists microsoft_ads (with its SDK loggers)
 ```
 
 ## Auth
@@ -89,15 +89,15 @@ and 5xx without a SOAP fault, and connection errors. Other faults fail the windo
 ## Logs
 
 The SDK sends its SOAP messages with suds, which logs them at `DEBUG` on `suds.client` (the messages sent and
-received) and `suds.transport` (their HTTP requests and replies); `adapt connectors` lists both. adapt never turns them
+received) and `suds.transport` (their HTTP requests and replies); `streamwright connectors` lists both. streamwright never turns them
 on; name them with `--log`:
 
 ```bash
-adapt run examples/sources/ads/microsoft_ads --set account_ids=123456 --set customer_id=555 \
-  --log adapt.network=INFO --log suds.client=DEBUG --log suds.transport=DEBUG
+streamwright run examples/sources/ads/microsoft_ads --set account_ids=123456 --set customer_id=555 \
+  --log streamwright.network=INFO --log suds.client=DEBUG --log suds.transport=DEBUG
 ```
 
-Their lines are redacted like adapt's own: the developer token, the OAuth tokens (refreshed ones too) and the
-signatures of report URLs are `***`. `--log adapt.network=INFO` alone gives adapt's line per call, after its stream,
+Their lines are redacted like streamwright's own: the developer token, the OAuth tokens (refreshed ones too) and the
+signatures of report URLs are `***`. `--log streamwright.network=INFO` alone gives streamwright's line per call, after its stream,
 request, partition and window, e.g. `microsoft_ads ReportingService.PollGenerateReport: 0.41 s, attempt 1`, and one
 per report download.

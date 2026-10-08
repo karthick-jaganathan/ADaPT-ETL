@@ -2,13 +2,13 @@
 layout: default
 title: Contributing
 nav_order: 11
-description: "How to contribute to ADaPT"
+description: "How to contribute to StreamWright"
 permalink: /contributing/
 ---
 
-# Contributing to ADaPT
+# Contributing to StreamWright
 
-We welcome contributions to the ADaPT (Adaptive Data Pipeline Toolkit) project! This guide will help you get started with contributing code, documentation, bug reports, and feature requests.
+We welcome contributions to the StreamWright project! This guide will help you get started with contributing code, documentation, bug reports, and feature requests.
 
 ## 🚀 Getting Started
 
@@ -24,8 +24,8 @@ We welcome contributions to the ADaPT (Adaptive Data Pipeline Toolkit) project! 
 1. **Fork the repository** on GitHub
 2. **Clone your fork** locally:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/ADaPT-ETL.git
-   cd ADaPT-ETL
+   git clone https://github.com/YOUR_USERNAME/streamwright.git
+   cd streamwright
    ```
 
 3. **Set up development environment**:
@@ -34,14 +34,14 @@ We welcome contributions to the ADaPT (Adaptive Data Pipeline Toolkit) project! 
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    
-   # Install adapt-core and the connectors in development mode
+   # Install streamwright and the connectors in development mode
    make install MODE=dev
    make install-connectors MODE=dev
    pip install pytest jsonschema
    
    # Verify installation
-   adapt --help
-   adapt connectors
+   streamwright --help
+   streamwright connectors
    ```
 
 4. **Run the tests and check the example sources**:
@@ -82,8 +82,8 @@ What actually happens
 ## Environment
 - Python version: 
 - OS: 
-- ADaPT version: 
-- Package versions: `pip list | grep adapt`
+- StreamWright version: 
+- Package versions: `pip list | grep streamwright`
 
 ## Error Messages
 ```
@@ -161,7 +161,7 @@ def load_source(path):
 make test                      # python -m pytest tests connectors -q
 
 # Check the example sources
-make validate                  # adapt validate --strict configs
+make validate                  # streamwright validate --strict configs
 
 # Test installation
 make verify
@@ -176,8 +176,8 @@ When adding new source format options:
 - **Provide sensible defaults**
 - **Document all options** (in `docs/design/source-format.md` and the package README)
 - **Include examples** (in `examples/sources/`)
-- **Check them in `adapt validate`** (`source_spec` and `source_validator`), so mistakes are found before a run, and
-  regenerate the JSON Schemas: `adapt validate --export-schema docs/schemas`
+- **Check them in `streamwright validate`** (`source_spec` and `source_validator`), so mistakes are found before a run, and
+  regenerate the JSON Schemas: `streamwright validate --export-schema docs/schemas`
 
 **Example Configuration:**
 ```yaml
@@ -198,13 +198,13 @@ export:
 
 ### Package Structure
 
-The core is one package, `adapt-core/` (installed as `adapt-core`, modules in `adapt-core/source/`, imported
-as `adapt.source.*`), with its `pyproject.toml`, `setup.py`, `README.md`, `LICENSE` and `Makefile`.
+The core is one package, `core/` (installed as `streamwright`, modules in `core/source/`, imported
+as `streamwright.source.*`), with its `pyproject.toml`, `setup.py`, `README.md`, `LICENSE` and `Makefile`.
 
 SDK connectors for sources (an auth provider plus the read-only calls of a vendor SDK) and reader connectors (files,
 object storage, databases) are not core packages: they live in `connectors/<name>/`, one self-contained distribution
-each (`src/adapt/connectors/<name>/`, its own tests and README). See
-[connectors/README.md](https://github.com/karthick-jaganathan/ADaPT-ETL/blob/master/connectors/README.md) for the layout
+each (`src/streamwright/connectors/<name>/`, its own tests and README). See
+[connectors/README.md](https://github.com/karthick-jaganathan/streamwright/blob/master/connectors/README.md) for the layout
 and how to add one.
 
 ## 🔄 Contribution Workflow
@@ -283,11 +283,11 @@ Brief description of changes
 
 ## 📦 Package-Specific Contributions
 
-### adapt-core
+### streamwright
 
 Focus areas:
 - The source format and its checks (`source_spec`, `source_validator`; regenerate the JSON Schemas with
-  `adapt validate --export-schema docs/schemas`)
+  `streamwright validate --export-schema docs/schemas`)
 - The runtime: auth, partitions, paginators, async jobs, incremental state
 - Outputs and warehouse loading
 - Logging, progress and the run summary
@@ -363,7 +363,7 @@ bundle exec jekyll serve --livereload
 bundle exec jekyll serve --host 0.0.0.0 --port 4000
 ```
 
-The site will be available at: **http://localhost:4000/ADaPT-ETL/**
+The site will be available at: **http://localhost:4000/streamwright/**
 
 #### Common Jekyll Commands
 
@@ -428,7 +428,7 @@ bundle install
 ```
 
 **Site doesn't load correctly:**
-- Check that you're accessing `http://localhost:4000/ADaPT-ETL/`
+- Check that you're accessing `http://localhost:4000/streamwright/`
 - Verify `baseurl` in `_config.yml` is set correctly
 - Clear browser cache
 
@@ -438,13 +438,13 @@ bundle install
 
 ```bash
 # Check and run an example source
-adapt validate examples/sources
-adapt run examples/sources/readers/files_demo --set data_root=examples/sources/readers/files_demo/data --allow-connector files \
+streamwright validate examples/sources
+streamwright run examples/sources/readers/files_demo --set data_root=examples/sources/readers/files_demo/data --allow-connector files \
   --output jsonl:out
 
 # Test with Docker
 docker compose build
-docker compose run --rm adapt-etl adapt connectors
+docker compose run --rm streamwright streamwright connectors
 ```
 
 ### Integration Testing
@@ -520,4 +520,4 @@ If you need help with contributing:
 
 ---
 
-Thank you for contributing to ADaPT! Your contributions help make data pipeline development more accessible and powerful for everyone. 🚀 
+Thank you for contributing to StreamWright! Your contributions help make data pipeline development more accessible and powerful for everyone. 🚀 

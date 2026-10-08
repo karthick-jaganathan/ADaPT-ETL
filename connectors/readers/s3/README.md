@@ -1,6 +1,6 @@
-# ADaPT s3 connector
+# StreamWright s3 connector
 
-The `s3` connector for [adapt-core](../../../adapt-core/README.md): `sdk: s3` requests read csv, tsv, json, jsonl and
+The `s3` connector for [streamwright](../../../core/README.md): `sdk: s3` requests read csv, tsv, json, jsonl and
 parquet objects from Amazon S3 (or an S3-compatible store such as MinIO) through [DuckDB](https://duckdb.org/)'s
 httpfs extension, each row one record, on a DuckDB connection of the connector's own (never the run's transform
 sandbox). Example: the source folder [examples/sources/readers/s3_demo/](../../../examples/sources/readers/s3_demo/). Local files are read
@@ -10,10 +10,10 @@ by the `files` connector; Google Cloud Storage by the `gcs` connector.
 
 ```bash
 make install-s3              # from the repository root; or: pip install ./connectors/readers/s3 (installs duckdb)
-adapt connectors             # lists s3 (it has no SDK loggers)
-adapt validate examples/sources/readers/s3_demo      # static checks: no network, no bucket
-ADAPT_SECRET_S3_KEY_ID=AKIA... ADAPT_SECRET_S3_SECRET=... \
-  adapt run examples/sources/readers/s3_demo --set bucket_root=s3://my-bucket/exports/ --allow-connector s3 --output jsonl:out
+streamwright connectors             # lists s3 (it has no SDK loggers)
+streamwright validate examples/sources/readers/s3_demo      # static checks: no network, no bucket
+STREAMWRIGHT_SECRET_S3_KEY_ID=AKIA... STREAMWRIGHT_SECRET_S3_SECRET=... \
+  streamwright run examples/sources/readers/s3_demo --set bucket_root=s3://my-bucket/exports/ --allow-connector s3 --output jsonl:out
 ```
 
 DuckDB installs its httpfs extension on the first connect (a download; offline hosts: run `INSTALL httpfs` in DuckDB
@@ -37,7 +37,7 @@ auth:
 | Key | Meaning |
 |---|---|
 | `roots` | required: the URL prefixes objects can be read from, `s3://bucket/prefix/` (a list; references allowed, e.g. `["{{ config.bucket_root }}"]`; no secrets, no glob, no `?`). |
-| `key_id`, `secret` | required: the access key, each ONE `{{ secrets.* }}` reference. `adapt validate` refuses any other reference, and `adapt run` refuses to connect with a value that is not a secret of the run, so credentials are never written in the source or its config. |
+| `key_id`, `secret` | required: the access key, each ONE `{{ secrets.* }}` reference. `streamwright validate` refuses any other reference, and `streamwright run` refuses to connect with a value that is not a secret of the run, so credentials are never written in the source or its config. |
 | `session_token` | optional: a temporary credential's token, a secret reference too. |
 | `region` | optional: the bucket's region (DuckDB's default: us-east-1). Literal or a reference. |
 | `endpoint` | optional: an S3-compatible store's `host[:port]` (no scheme). Literal or a reference. |
@@ -74,7 +74,7 @@ requests:
   `"customers/{{ window.start }}.jsonl"`); a glob (`*`, `[ab]`, `**` for any folders - `?` is NOT a glob character
   here, see Security); or a list of them (e.g. a `batch_size` partition of keys). A URL naming no object is skipped or
   fails as `on_missing` says (object storage is only asked when the object is read).
-- `match`: a literal Python regex (no references; an invalid one is an `adapt validate` problem). `path` then names a
+- `match`: a literal Python regex (no references; an invalid one is an `streamwright validate` problem). `path` then names a
   folder; its objects are listed (`folder/*`, or `folder/**` with `recursive: true`) and those whose key RELATIVE to
   the folder fully matches (`re.fullmatch`, `/` between sub-folders) are read, in key order. Folder markers (keys
   ending with `/`) are skipped. `recursive` without `match` is a problem.
@@ -86,7 +86,7 @@ requests:
 Each row is one record, a JSON object, in pages of at most 1,000 records (memory stays bounded): decimals stay exact,
 dates and timestamps are text, csv values are text unless `columns` types them - steps cast, e.g.
 `(record->>'amount')::DECIMAL(12,2)`. Each object read is one call (rate limit, retries, the run's request counts) and
-logs one `adapt.network` line: `s3 read s3://...: N row(s), S s`.
+logs one `streamwright.network` line: `s3 read s3://...: N row(s), S s`.
 
 ## Security
 
@@ -111,8 +111,8 @@ logs one `adapt.network` line: `s3 read s3://...: N row(s), S s`.
 
 ```bash
 make -C connectors/readers/s3 test      # offline: a recording DuckDB stand-in serves s3:// URLs from local files
-ADAPT_TEST_S3=s3://bucket/prefix/ ADAPT_TEST_S3_KEY_ID=... ADAPT_TEST_S3_SECRET=... make -C connectors/readers/s3 test
+STREAMWRIGHT_TEST_S3=s3://bucket/prefix/ STREAMWRIGHT_TEST_S3_KEY_ID=... STREAMWRIGHT_TEST_S3_SECRET=... make -C connectors/readers/s3 test
 ```
 
 When DuckDB's httpfs is installed locally, two tests use it against `127.0.0.1` only (a closed port and a local
-listener that must never be reached by the connector); the real-bucket test runs only with `ADAPT_TEST_S3`.
+listener that must never be reached by the connector); the real-bucket test runs only with `STREAMWRIGHT_TEST_S3`.

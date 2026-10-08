@@ -16,7 +16,7 @@
 # **************************************************************************/
 
 # ***********************************
-# * ADaPT ETL
+# * StreamWright ETL
 # * Local Development Environment
 # ***********************************
 
@@ -29,8 +29,8 @@ WORKDIR /app
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    ADAPT_CONFIGS=/configs \
-    ADAPT_OUTPUT_DIR=/data/adapt_etl
+    STREAMWRIGHT_CONFIGS=/configs \
+    STREAMWRIGHT_OUTPUT_DIR=/data/streamwright_etl
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -42,20 +42,20 @@ RUN apt-get update && apt-get install -y \
 # Copy the entire project
 COPY . .
 
-# Install adapt-core (the `adapt` and `adapt-validate` commands) and the source connectors, which bring their own
+# Install streamwright (the `streamwright` and `streamwright-validate` commands) and the source connectors, which bring their own
 # dependencies (vendor SDKs, or DuckDB for files, s3, gcs and postgres)
 # Alternative 1: Using make (requires make to be installed)
 RUN make install MODE=dev && make install-connectors MODE=dev
 
 # Alternative 2: Direct pip installation (uncomment if make is not available)
-# RUN pip install -e adapt-core \
+# RUN pip install -e core \
 #     -e connectors/ads/google_ads -e connectors/ads/microsoft_ads -e connectors/ads/facebook_ads \
 #     -e connectors/readers/files -e connectors/readers/s3 -e connectors/readers/gcs -e connectors/readers/postgres
 
 # Create a non-root user
-RUN useradd --create-home --shell /bin/bash adapt && \
-    chown -R adapt:adapt /app
-USER adapt
+RUN useradd --create-home --shell /bin/bash streamwright && \
+    chown -R streamwright:streamwright /app
+USER streamwright
 
 # Default command
-CMD ["adapt", "--help"]
+CMD ["streamwright", "--help"]

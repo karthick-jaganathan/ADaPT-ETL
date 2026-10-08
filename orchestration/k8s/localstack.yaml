@@ -1,28 +1,28 @@
-# The object store of the simulation: LocalStack's S3 at localstack.adapt.svc.cluster.local:4566 (path-style, no TLS).
-# The DuckLake data files (Parquet) of user <u> go to s3://adapt-warehouse/<u>/. A ready hook makes the bucket; setup.sh
+# The object store of the simulation: LocalStack's S3 at localstack.streamwright.svc.cluster.local:4566 (path-style, no TLS).
+# The DuckLake data files (Parquet) of user <u> go to s3://streamwright-warehouse/<u>/. A ready hook makes the bucket; setup.sh
 # checks it too. LocalStack keeps its data in memory: deleting the pod empties the bucket (it is a simulation).
-# Credentials: LocalStack accepts any; the Jobs get test/test from the adapt-secrets Secret (made by setup.sh).
+# Credentials: LocalStack accepts any; the Jobs get test/test from the streamwright-secrets Secret (made by setup.sh).
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: localstack-init
-  namespace: adapt
+  namespace: streamwright
   labels:
     app.kubernetes.io/name: localstack
-    app.kubernetes.io/part-of: adapt-pipeline
+    app.kubernetes.io/part-of: streamwright-pipeline
 data:
   create-bucket.sh: |
     #!/bin/sh
-    awslocal s3api head-bucket --bucket adapt-warehouse >/dev/null 2>&1 || awslocal s3 mb s3://adapt-warehouse
+    awslocal s3api head-bucket --bucket streamwright-warehouse >/dev/null 2>&1 || awslocal s3 mb s3://streamwright-warehouse
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: localstack
-  namespace: adapt
+  namespace: streamwright
   labels:
     app.kubernetes.io/name: localstack
-    app.kubernetes.io/part-of: adapt-pipeline
+    app.kubernetes.io/part-of: streamwright-pipeline
 spec:
   replicas: 1
   selector:
@@ -32,7 +32,7 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: localstack
-        app.kubernetes.io/part-of: adapt-pipeline
+        app.kubernetes.io/part-of: streamwright-pipeline
     spec:
       containers:
         - name: localstack
@@ -48,7 +48,7 @@ spec:
               containerPort: 4566
           readinessProbe:      # ready once the ready hook made the bucket
             exec:
-              command: ["sh", "-c", "awslocal s3api head-bucket --bucket adapt-warehouse"]
+              command: ["sh", "-c", "awslocal s3api head-bucket --bucket streamwright-warehouse"]
             initialDelaySeconds: 5
             periodSeconds: 5
             timeoutSeconds: 10
@@ -77,10 +77,10 @@ apiVersion: v1
 kind: Service
 metadata:
   name: localstack
-  namespace: adapt
+  namespace: streamwright
   labels:
     app.kubernetes.io/name: localstack
-    app.kubernetes.io/part-of: adapt-pipeline
+    app.kubernetes.io/part-of: streamwright-pipeline
 spec:
   selector:
     app.kubernetes.io/name: localstack

@@ -1,6 +1,6 @@
-# The metadata pipeline: the account's entities. A node's name is an adapt stream name of the network's source; `after`
+# The metadata pipeline: the account's entities. A node's name is an streamwright stream name of the network's source; `after`
 # lists the nodes it runs after (its upstream nodes). Only the ORDER is here - nothing network specific: what each node
-# runs (its `adapt run` command) is built by its wrapper (adapt/orchestration/wrappers.py) from the network's entry in
+# runs (its `streamwright run` command) is built by its wrapper (streamwright/orchestration/wrappers.py) from the network's entry in
 # networks.yaml and the source's declared spec. Runs as the per-network Dagster jobs `ads_metadata__<network>`.
 name: metadata
 nodes:

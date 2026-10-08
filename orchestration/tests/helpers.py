@@ -7,14 +7,14 @@ from pathlib import Path
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 if str(PROJECT_DIR / "src") not in sys.path:
     sys.path.insert(0, str(PROJECT_DIR / "src"))
-os.environ.setdefault("ADAPT_BIN", "/tmp/adapt-sdk-venv/bin/adapt")
+os.environ.setdefault("STREAMWRIGHT_BIN", "/tmp/streamwright-sdk-venv/bin/streamwright")
 
-from adapt.orchestration.context import make_context  # noqa: E402
+from streamwright.orchestration.context import make_context  # noqa: E402
 
 FAKE_APP = {"developer_token": "DEV-TOKEN-S3CRET", "client_id": "CLIENT-ID-S3CRET",
             "client_secret": "CLIENT-SECRET-S3CRET", "refresh_token": "REFRESH-TOKEN-S3CRET"}
-GOOGLE_SECRET_ENV = {"ADAPT_SECRET_DEVELOPER_TOKEN", "ADAPT_SECRET_CLIENT_ID", "ADAPT_SECRET_CLIENT_SECRET",
-                     "ADAPT_SECRET_REFRESH_TOKEN"}
+GOOGLE_SECRET_ENV = {"STREAMWRIGHT_SECRET_DEVELOPER_TOKEN", "STREAMWRIGHT_SECRET_CLIENT_ID", "STREAMWRIGHT_SECRET_CLIENT_SECRET",
+                     "STREAMWRIGHT_SECRET_REFRESH_TOKEN"}
 ACCOUNTS = [
     {"user_id": "u1", "account_id": "1000000001", "network": "google_ads", "login_customer_id": "2000000002",
      "region": "us-west-2", "token": "REFRESH-TOKEN-S3CRET"},   # the account's own token -> row.token

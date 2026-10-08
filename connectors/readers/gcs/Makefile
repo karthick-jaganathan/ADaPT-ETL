@@ -1,20 +1,20 @@
-# ADaPT gcs connector Makefile
+# StreamWright gcs connector Makefile
 
 # Package information
-PACKAGE_NAME = adapt-gcs
+PACKAGE_NAME = streamwright-gcs
 VERSION = 0.0.1
 
 # Installation mode (dev, prod, dist)
 MODE ?= prod
 
 # Distribution directory
-DIST_DIR = /tmp/sdist/adapt
+DIST_DIR = /tmp/sdist/streamwright
 
 .PHONY: install uninstall clean test help verify build
 
 # Default target
 help:
-	@echo "ADaPT gcs connector - Available commands:"
+	@echo "StreamWright gcs connector - Available commands:"
 	@echo ""
 	@echo "  make install [MODE=dev|prod|dist] - Install $(PACKAGE_NAME) package (default: prod)"
 	@echo "  make uninstall                    - Uninstall $(PACKAGE_NAME) package"
@@ -48,7 +48,7 @@ else
 endif
 	@echo "✅ Installation complete!"
 	@echo "Installed packages:"
-	@pip list | grep adapt
+	@pip list | grep streamwright
 
 # Build distribution packages
 build: clean
@@ -76,7 +76,7 @@ clean:
 	find . -type d -name "dist" -exec rm -rf {} + 2>/dev/null || true
 	@echo "✅ Cleanup complete!"
 
-# Run tests (offline: object storage is simulated; set ADAPT_TEST_GCS for a real bucket)
+# Run tests (offline: object storage is simulated; set STREAMWRIGHT_TEST_GCS for a real bucket)
 test:
 	@echo "Running tests for $(PACKAGE_NAME)..."
 	python -m pytest tests -q
@@ -85,5 +85,5 @@ test:
 verify:
 	@echo "Verifying $(PACKAGE_NAME) installation..."
 	@pip show $(PACKAGE_NAME) >/dev/null 2>&1 && echo "✅ $(PACKAGE_NAME) is installed!" || echo "❌ $(PACKAGE_NAME) is not installed!"
-	@python -c "import adapt.connectors.gcs.connector; print('✅ adapt.connectors.gcs import works!')" 2>/dev/null || echo "❌ adapt.connectors.gcs import failed!"
-	@adapt connectors | grep -qE '^gcs( |$$)' && echo "✅ gcs connector is registered!" || echo "❌ gcs connector is not registered!" 
+	@python -c "import streamwright.connectors.gcs.connector; print('✅ streamwright.connectors.gcs import works!')" 2>/dev/null || echo "❌ streamwright.connectors.gcs import failed!"
+	@streamwright connectors | grep -qE '^gcs( |$$)' && echo "✅ gcs connector is registered!" || echo "❌ gcs connector is not registered!" 

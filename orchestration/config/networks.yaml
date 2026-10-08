@@ -1,19 +1,19 @@
-# Networks: a network -> its ADaPT source folder and how to fill the inputs the source declares (spec.config and
+# Networks: a network -> its StreamWright source folder and how to fill the inputs the source declares (spec.config and
 # spec.secrets in its source.yaml). The framework knows nothing about any network: everything network specific is here.
 #
 #   source:      the source folder, relative to the repository root
-#   timezone:    the default `adapt run --timezone` (an account row's `timezone` overrides it)
+#   timezone:    the default `streamwright run --timezone` (an account row's `timezone` overrides it)
 #   connectors:  the connectors the run may load (`--allow-connector`, so nothing else installed can be loaded)
-#   image:       (optional) the container image a node's `adapt run` runs in when ADAPT_EXECUTION=docker or k8s; it must
-#                have the network's connectors (adapt-pipeline:local: orchestration/docker/build.sh).
-#                $ADAPT_IMAGE overrides it for every network. Ignored in the default subprocess mode.
+#   image:       (optional) the container image a node's `streamwright run` runs in when STREAMWRIGHT_EXECUTION=docker or k8s; it must
+#                have the network's connectors (streamwright-pipeline:local: orchestration/docker/build.sh).
+#                $STREAMWRIGHT_IMAGE overrides it for every network. Ignored in the default subprocess mode.
 #   inputs:      one value per declared input, a small template over
-#                  {{ row.NAME }}  the account's lookup row (adapt/orchestration/accounts.py; a DB later)
+#                  {{ row.NAME }}  the account's lookup row (streamwright/orchestration/accounts.py; a DB later)
 #                  {{ app.NAME }}  app-level config/secrets (accounts.app_config(network))
 #                  {{ ctx.NAME }}  user_id, account_id, network, timezone, schema
 #                or a literal. A reference that is not set leaves the input unset (so the source's default applies;
 #                an input the source requires with no value is an error). A value starting with `secret:` is a secret:
-#                it is resolved at run time and passed to adapt as the ADAPT_SECRET_<NAME> environment variable -
+#                it is resolved at run time and passed to streamwright as the STREAMWRIGHT_SECRET_<NAME> environment variable -
 #                never as --set, never in the run config, never logged. Every spec.secrets input is a secret anyway.
 #   streams:     SHARED VOCABULARY. The pipelines use canonical node names; here each network maps every canonical node
 #                to its own source stream name, or to `false` when the network has no such stream. So one pipeline runs
@@ -30,7 +30,7 @@ networks:
     source: examples/sources/ads/google_ads
     timezone: America/New_York
     connectors: [google_ads, gaql]          # the SDK connector and its GAQL query builder
-    image: adapt-pipeline:local             # ADAPT_EXECUTION=docker: adapt + the ad connectors (pipeline/docker/)
+    image: streamwright-pipeline:local             # STREAMWRIGHT_EXECUTION=docker: streamwright + the ad connectors (pipeline/docker/)
     inputs:
       customer_ids:      "{{ row.account_id }}"
       login_customer_id: "{{ row.login_customer_id }}"   # the manager account, when the row has one
@@ -52,7 +52,7 @@ networks:
     source: examples/sources/ads/microsoft_ads
     timezone: America/New_York
     connectors: [microsoft_ads]
-    image: adapt-pipeline:local
+    image: streamwright-pipeline:local
     inputs:
       account_ids:     "{{ row.account_id }}"
       customer_id:     "{{ row.customer_id }}"             # the manager (customer) the accounts live under
@@ -74,7 +74,7 @@ networks:
     source: examples/sources/ads/facebook_ads
     timezone: America/New_York
     connectors: [facebook_ads]
-    image: adapt-pipeline:local
+    image: streamwright-pipeline:local
     inputs:
       account_ids:  "{{ row.account_id }}"                 # the ad account id, without the act_ prefix
       start_date:   "-7d"

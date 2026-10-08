@@ -3,9 +3,9 @@ requires = ["setuptools>=61.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "adapt-facebook-ads"
-version = "0.0.1"
-description = "Adaptive Data Pipeline Toolkit - Facebook (Meta) Ads connector (the facebook_ads auth provider and Marketing API reads)"
+name = "streamwright-facebook-ads"
+version = "0.1.0"
+description = "StreamWright - Facebook (Meta) Ads connector (the facebook_ads auth provider and Marketing API reads)"
 readme = "README.md"
 license = "Apache-2.0"
 authors = [
@@ -23,18 +23,18 @@ classifiers = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-    "adapt-core~=0.0.1",
+    "streamwright~=0.1.0",
     "facebook_business>=26.0",
 ]
 
 [project.urls]
-Homepage = "https://github.com/karthick-jaganathan/ADaPT-ETL"
-Repository = "https://github.com/karthick-jaganathan/ADaPT-ETL"
+Homepage = "https://github.com/karthick-jaganathan/streamwright"
+Repository = "https://github.com/karthick-jaganathan/streamwright"
 
-[project.entry-points."adapt.connectors"]
-facebook_ads = "adapt.connectors.facebook_ads.connector:FacebookAdsConnector"
+[project.entry-points."streamwright.connectors"]
+facebook_ads = "streamwright.connectors.facebook_ads.connector:FacebookAdsConnector"
 
 [tool.setuptools]
-# src layout: adapt and adapt.connectors are namespace packages shared with the other ADaPT distributions
+# src layout: streamwright and streamwright.connectors are namespace packages shared with the other StreamWright distributions
 package-dir = {"" = "src"}
-packages = ["adapt.connectors.facebook_ads"]
+packages = ["streamwright.connectors.facebook_ads"]

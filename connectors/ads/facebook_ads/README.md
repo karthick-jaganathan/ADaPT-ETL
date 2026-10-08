@@ -1,6 +1,6 @@
-# ADaPT Facebook Ads connector
+# StreamWright Facebook Ads connector
 
-The `facebook_ads` connector for [adapt-core](../../../adapt-core/README.md): the Meta Marketing API through the
+The `facebook_ads` connector for [streamwright](../../../core/README.md): the Meta Marketing API through the
 [facebook_business](https://pypi.org/project/facebook-business/) SDK. Example:
 the source folder [examples/sources/ads/facebook_ads/](../../../examples/sources/ads/facebook_ads/).
 
@@ -8,7 +8,7 @@ the source folder [examples/sources/ads/facebook_ads/](../../../examples/sources
 
 ```bash
 make install-facebook-ads    # from the repository root; or: pip install ./connectors/ads/facebook_ads (installs facebook_business)
-adapt connectors             # lists facebook_ads (with its SDK logger)
+streamwright connectors             # lists facebook_ads (with its SDK logger)
 ```
 
 ## Auth
@@ -53,14 +53,14 @@ fail the window with the API's message, code and fbtrace_id.
 ## Logs
 
 The SDK sends its requests with the requests library, and urllib3, under it, logs each request's method, URL and status
-at `DEBUG` on `urllib3.connectionpool`, which `adapt connectors` lists. With `--log adapt.network=DEBUG`, adapt also logs
-each request's and response's headers and body. adapt never turns the SDK's logger on; name it with `--log`:
+at `DEBUG` on `urllib3.connectionpool`, which `streamwright connectors` lists. With `--log streamwright.network=DEBUG`, streamwright also logs
+each request's and response's headers and body. streamwright never turns the SDK's logger on; name it with `--log`:
 
 ```bash
-adapt run examples/sources/ads/facebook_ads --set account_ids=123 \
-  --log adapt.network=DEBUG --log urllib3.connectionpool=DEBUG
+streamwright run examples/sources/ads/facebook_ads --set account_ids=123 \
+  --log streamwright.network=DEBUG --log urllib3.connectionpool=DEBUG
 ```
 
-The lines are redacted like adapt's own: the access token, the app secret and `appsecret_proof` are `***`.
-`--log adapt.network=INFO` alone gives adapt's line per page of records, after its stream, request, partition and
+The lines are redacted like streamwright's own: the access token, the app secret and `appsecret_proof` are `***`.
+`--log streamwright.network=INFO` alone gives streamwright's line per page of records, after its stream, request, partition and
 window, e.g. `facebook_ads AdAccount.get_insights page 1: 500 record(s), 1.32 s, attempt 1`.

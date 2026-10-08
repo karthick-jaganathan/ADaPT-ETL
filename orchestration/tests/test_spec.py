@@ -4,10 +4,10 @@ import unittest
 from unittest import mock
 
 from tests.helpers import PROJECT_DIR
-from adapt.orchestration import REPO_ROOT, pipelines_dir
-from adapt.orchestration.spec import (SpecError, load_networks, load_pipeline,
+from streamwright.orchestration import REPO_ROOT, pipelines_dir
+from streamwright.orchestration.spec import (SpecError, load_networks, load_pipeline,
                                       load_pipelines, parse_networks, parse_pipeline, pipeline_names, resolve_pipeline)
-from adapt.orchestration.sourcespec import load_source_spec
+from streamwright.orchestration.sourcespec import load_source_spec
 
 SCRATCH = PROJECT_DIR / "tests" / ".scratch"
 METADATA_NODES = {"campaigns", "ad_groups", "ad_group_hierarchy", "location_targets", "keywords", "audience_targets"}
@@ -58,7 +58,7 @@ class PipelineSpecTest(unittest.TestCase):
     def test_pipeline_dir_env(self):
         folder = self._folder({"daily.yaml": "name: daily\nnodes: {campaigns: {}, keywords: {after: [campaigns]}}\n",
                                "notes.txt": "ignored"})
-        with mock.patch.dict(os.environ, {"ADAPT_PIPELINE_DIR": str(folder)}):
+        with mock.patch.dict(os.environ, {"STREAMWRIGHT_PIPELINE_DIR": str(folder)}):
             self.assertEqual(pipeline_names(), ["daily"])
             self.assertEqual(load_pipeline("daily").edges, (("campaigns", "keywords"),))
             self.assertEqual(load_pipeline().name, "daily")     # the only one
@@ -67,19 +67,19 @@ class PipelineSpecTest(unittest.TestCase):
 
     def test_file_name_must_match_name(self):
         folder = self._folder({"daily.yaml": "name: weekly\nnodes: {campaigns: {}}\n"})
-        with mock.patch.dict(os.environ, {"ADAPT_PIPELINE_DIR": str(folder)}):
+        with mock.patch.dict(os.environ, {"STREAMWRIGHT_PIPELINE_DIR": str(folder)}):
             with self.assertRaisesRegex(SpecError, "does not match the file name"):
                 load_pipeline("daily")
 
     def test_invalid_pipeline_file_raises(self):
         folder = self._folder({"loop.yaml": "name: loop\nnodes: {a: {after: [b]}, b: {after: [a]}}\n"})
-        with mock.patch.dict(os.environ, {"ADAPT_PIPELINE_DIR": str(folder)}):
+        with mock.patch.dict(os.environ, {"STREAMWRIGHT_PIPELINE_DIR": str(folder)}):
             with self.assertRaisesRegex(SpecError, "loop.yaml: the nodes form a cycle"):
                 load_pipeline("loop")
 
     def test_pipeline_spec_env_is_a_single_file_override(self):
         folder = self._folder({"one.yaml": "name: solo\nnodes: {campaigns: {}}\n"})
-        with mock.patch.dict(os.environ, {"ADAPT_PIPELINE_SPEC": str(folder / "one.yaml")}):
+        with mock.patch.dict(os.environ, {"STREAMWRIGHT_PIPELINE_SPEC": str(folder / "one.yaml")}):
             self.assertEqual(pipeline_names(), ["solo"])
             self.assertEqual(load_pipeline().nodes, ("campaigns",))
             self.assertEqual(load_pipeline("solo").nodes, ("campaigns",))

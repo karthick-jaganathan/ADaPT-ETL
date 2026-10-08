@@ -11,19 +11,19 @@ import pytest
 import yaml
 
 pytest.importorskip("duckdb")
-pytest.importorskip("adapt.connectors.files.connector")
+pytest.importorskip("streamwright.connectors.files.connector")
 
-from adapt.connectors.files import reader  # noqa: E402
-from adapt.connectors.files.connector import FilesConnector  # noqa: E402
-from adapt.connectors.files.reader import AccessError, ReadError, Reader, allowed_roots, format_of  # noqa: E402
-from adapt.core import cli
-from adapt.core.runtime import components  # noqa: E402
-from adapt.core.net.http import Redactor  # noqa: E402
-from adapt.core.runtime.logs import RunMetrics  # noqa: E402
-from adapt.core.outputs.output import open_output  # noqa: E402
-from adapt.core.runtime.components import ConnectorContext, ConnectorError  # noqa: E402
-from adapt.core.engine.runner import SourceError, SourceRunner  # noqa: E402
-from adapt.core.runtime.testing import MemoryOutput, page_stream  # noqa: E402
+from streamwright.connectors.files import reader  # noqa: E402
+from streamwright.connectors.files.connector import FilesConnector  # noqa: E402
+from streamwright.connectors.files.reader import AccessError, ReadError, Reader, allowed_roots, format_of  # noqa: E402
+from streamwright.core import cli
+from streamwright.core.runtime import components  # noqa: E402
+from streamwright.core.net.http import Redactor  # noqa: E402
+from streamwright.core.runtime.logs import RunMetrics  # noqa: E402
+from streamwright.core.outputs.output import open_output  # noqa: E402
+from streamwright.core.runtime.components import ConnectorContext, ConnectorError  # noqa: E402
+from streamwright.core.engine.runner import SourceError, SourceRunner  # noqa: E402
+from streamwright.core.runtime.testing import MemoryOutput, page_stream  # noqa: E402
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".."))
 EXAMPLE = os.path.join(REPO_ROOT, "examples", "sources", "readers", "files_demo")
@@ -348,13 +348,13 @@ def test_a_missing_file_is_skipped_with_a_warning_or_fails_with_on_missing_error
 def test_partitions_read_a_file_each_steps_get_exact_values_and_reads_are_logged(connector, tmp_path, caplog):
     write(tmp_path / "data" / "east.csv", "id,amount\n1,%s\n2,2.50\n" % BIG)
     write(tmp_path / "data" / "west.csv", "id,amount\n3,7\n")
-    caplog.set_level(logging.INFO, logger="adapt.network")
+    caplog.set_level(logging.INFO, logger="streamwright.network")
     metrics = RunMetrics()
     output = run(file_source(orders_stream(partitions=regions("east", "west"))), tmp_path, metrics=metrics)
     assert records(output, "orders") == [{"id": 1, "amount": BIG, "region": "east"},
                                          {"id": 2, "amount": "2.50", "region": "east"},
                                          {"id": 3, "amount": "7", "region": "west"}]
-    lines = [record for record in caplog.records if record.name == "adapt.network"
+    lines = [record for record in caplog.records if record.name == "streamwright.network"
              and getattr(record, "event", None) == "file_read"]
     size = os.path.getsize(str(tmp_path / "data" / "east.csv"))
     assert lines[0].getMessage() == ("stream 'orders', request 'raw_orders', partition {\"region\": \"east\"}: files "
@@ -600,7 +600,7 @@ def test_the_files_demo_needs_the_connector_allowed_and_its_roots(tmp_path, capl
         in caplog.text
 
 
-def test_adapt_validate_and_connectors(capsys, tmp_path):
+def test_streamwright_validate_and_connectors(capsys, tmp_path):
     assert cli.main(["validate", EXAMPLE]) == 0
     assert cli.main(["connectors"]) == 0
     assert "files" in capsys.readouterr().out.split()

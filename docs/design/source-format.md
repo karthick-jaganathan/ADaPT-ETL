@@ -9,7 +9,7 @@ permalink: /design/source-format/
 
 # Source configuration format
 
-**Status:** design accepted (see [Decisions](#decisions)). `adapt validate` checks sources (`kind: source`), the JSON Schema is `docs/schemas/source.schema.json`, `adapt run` (the `adapt-core` package) runs them, and the connectors `adapt-google-ads`, `adapt-microsoft-ads` and `adapt-facebook-ads` add the SDK-backed APIs, and the reader connectors `adapt-files` (local files), `adapt-s3` and `adapt-gcs` (object storage) and `adapt-postgres` (PostgreSQL databases) read files and databases. The examples below are the source folders in `examples/sources/`. The legacy kinds (`authorization`, `connector`, `serializer`, `pipeline`) have been removed (see [Rollout](#rollout)): this is the only format.
+**Status:** design accepted (see [Decisions](#decisions)). `streamwright validate` checks sources (`kind: source`), the JSON Schema is `docs/schemas/source.schema.json`, `streamwright run` (the `streamwright` package) runs them, and the connectors `streamwright-google-ads`, `streamwright-microsoft-ads` and `streamwright-facebook-ads` add the SDK-backed APIs, and the reader connectors `streamwright-files` (local files), `streamwright-s3` and `streamwright-gcs` (object storage) and `streamwright-postgres` (PostgreSQL databases) read files and databases. The examples below are the source folders in `examples/sources/`. The legacy kinds (`authorization`, `connector`, `serializer`, `pipeline`) have been removed (see [Rollout](#rollout)): this is the only format.
 
 ## Summary
 
@@ -31,7 +31,7 @@ with a `source.yaml` and a file per stream) replaces today's authorization + con
 2. Express real ad-API needs: partitions (accounts × date windows), pagination, async report jobs, incremental sync
    with lookback, rate limits and retries.
 3. Safe to run customer YAML on a hosted platform: no arbitrary imports, secrets confined to `auth`.
-4. Fully statically checkable by `adapt validate`, including every `{{ reference }}`.
+4. Fully statically checkable by `streamwright validate`, including every `{{ reference }}`.
 5. Keep the legacy format's strengths (SDK-backed calls to gRPC/SOAP APIs, streaming), and shape records with
    standard SQL instead of a transform library.
 
@@ -46,7 +46,7 @@ file in `streams/`, named after the stream. The folder is one source: one sign-i
 reads only its own requests; another stream can be its `from_stream` parent, whose export gives its partitions.
 
 ```text
-google_ads/                         adapt run google_ads
+google_ads/                         streamwright run google_ads
 ├── source.yaml                     kind, name, spec, auth, http
 ├── streams/
 │   ├── ad_groups.yaml              the stream `ad_groups`
@@ -121,7 +121,7 @@ spec:
     refresh_token: {type: string}
 
 auth:
-  provider: google_ads                 # registered by the adapt-google-ads connector
+  provider: google_ads                 # registered by the streamwright-google-ads connector
   developer_token: "{{ secrets.developer_token }}"
   client_id: "{{ secrets.client_id }}"
   client_secret: "{{ secrets.client_secret }}"
@@ -221,7 +221,7 @@ requests:
     arguments:
       customer_id: "{{ partition.customer_id }}"
       query:
-        gaql:                      # the gaql query builder (adapt-google-ads) writes the escaped query
+        gaql:                      # the gaql query builder (streamwright-google-ads) writes the escaped query
           select: [customer.id, campaign.id, campaign.name, campaign.status, segments.date,
                    metrics.impressions, metrics.clicks, metrics.cost_micros]
           from: campaign
@@ -416,7 +416,7 @@ spec:
     refresh_token: {type: string}
 
 auth:
-  provider: microsoft_ads              # registered by the adapt-microsoft-ads connector
+  provider: microsoft_ads              # registered by the streamwright-microsoft-ads connector
   developer_token: "{{ secrets.developer_token }}"
   client_id: "{{ secrets.client_id }}"
   client_secret: "{{ secrets.client_secret }}"
@@ -596,7 +596,7 @@ spec:
     app_secret: {type: string, required: false}
 
 auth:
-  provider: facebook_ads               # registered by the adapt-facebook-ads connector
+  provider: facebook_ads               # registered by the streamwright-facebook-ads connector
   access_token: "{{ secrets.access_token }}"
   app_id: "{{ secrets.app_id }}"
   app_secret: "{{ secrets.app_secret }}"
@@ -659,7 +659,7 @@ is read, and the connector has no URLs, no `httpfs` and no credentials (its Duck
 access). This example reads the small files committed in its `data/` folder, so it runs offline:
 
 ```bash
-adapt run examples/sources/readers/files_demo --set data_root=examples/sources/readers/files_demo/data --allow-connector files
+streamwright run examples/sources/readers/files_demo --set data_root=examples/sources/readers/files_demo/data --allow-connector files
 ```
 
 ```text
@@ -684,7 +684,7 @@ spec:
     start_date: {type: date, default: "2026-10-01", description: First day of customers' daily files}
 
 auth:
-  provider: files                      # registered by the adapt-files connector
+  provider: files                      # registered by the streamwright-files connector
   roots: ["{{ config.data_root }}"]    # the only folders files can be read from
 ```
 
@@ -761,7 +761,7 @@ export:
   that relative path. `recursive` (`true` or `false`, default `false`) looks in the folder's sub-folders too, whose
   names the relative path then has (`(.*/)?orders_\d{4}-\d{2}-\d{2}\.csv` selects daily files at any depth). Each
   file it selects is checked to be inside a root, once symbolic links are followed, before any file is read.
-  `adapt validate` refuses an invalid or empty regex, a reference in `match`, and a glob or a list `path` with it.
+  `streamwright validate` refuses an invalid or empty regex, a reference in `match`, and a glob or a list `path` with it.
 - `format`: `csv`, `tsv`, `json`, `jsonl`, `parquet`, or `auto` (the default: by the file's extension, as
   `products` reads `products.parquet`); `options` are the format's reader options (`header`, `delimiter`, `columns`,
   `compression`, `filename`, ...).
@@ -791,7 +791,7 @@ key). Their requests are those of `files`, on `service: object`: `sdk: s3` or `s
 (`roots`) and the credentials, which are `{{ secrets.* }}` references only:
 
 ```bash
-ADAPT_SECRET_S3_KEY_ID=... ADAPT_SECRET_S3_SECRET=... adapt run examples/sources/readers/s3_demo \
+STREAMWRIGHT_SECRET_S3_KEY_ID=... STREAMWRIGHT_SECRET_S3_SECRET=... streamwright run examples/sources/readers/s3_demo \
     --set bucket_root=s3://my-bucket/exports/ --allow-connector s3 --output jsonl:out
 ```
 
@@ -820,7 +820,7 @@ spec:
     s3_secret: {type: string, description: The secret access key}
 
 auth:
-  provider: s3                         # registered by the adapt-s3 connector
+  provider: s3                         # registered by the streamwright-s3 connector
   roots: ["{{ config.bucket_root }}"]  # the only URL prefixes objects can be read from
   key_id: "{{ secrets.s3_key_id }}"    # credentials: secret references only, never written in the source
   secret: "{{ secrets.s3_secret }}"
@@ -876,7 +876,7 @@ spec:
     gcs_secret: {type: string, description: The HMAC key's secret}
 
 auth:
-  provider: gcs                        # registered by the adapt-gcs connector
+  provider: gcs                        # registered by the streamwright-gcs connector
   roots: ["{{ config.bucket_root }}"]  # the only URL prefixes objects can be read from
   key_id: "{{ secrets.gcs_key_id }}"   # credentials: secret references only, never written in the source
   secret: "{{ secrets.gcs_secret }}"
@@ -885,7 +885,7 @@ auth:
 - `auth`: `s3` takes `roots` (`s3://bucket/prefix/`), `key_id` and `secret`, an optional `session_token`, and the
   optional settings `region`, `endpoint` (an S3-compatible store's `host[:port]`), `url_style` (`vhost` or `path`)
   and `use_ssl`; `gcs` takes `roots` (`gs://bucket/prefix/`), `key_id` and `secret` only. `key_id`, `secret` and
-  `session_token` are each one `{{ secrets.* }}` reference: `adapt validate` refuses anything else, and `adapt run`
+  `session_token` are each one `{{ secrets.* }}` reference: `streamwright validate` refuses anything else, and `streamwright run`
   refuses a value that is not a secret of the run, so a literal credential never connects. The settings are literal
   values or references.
 - The credentials become one temporary DuckDB secret, scoped to the roots and set with bound parameters, on the
@@ -909,7 +909,7 @@ system views show no path), and each request is `sdk: postgres` with `method: qu
 (the connector writes the SELECT). The DSN is a secret only, redacted with its password:
 
 ```bash
-ADAPT_SECRET_PG_DSN=... adapt run examples/sources/readers/postgres_demo --allow-connector postgres --output jsonl:out
+STREAMWRIGHT_SECRET_PG_DSN=... streamwright run examples/sources/readers/postgres_demo --allow-connector postgres --output jsonl:out
 ```
 
 ```text
@@ -940,14 +940,14 @@ spec:
     pg_password: {type: string, description: The role's password}
 
 auth:
-  provider: postgres                       # registered by the adapt-postgres connector
+  provider: postgres                       # registered by the streamwright-postgres connector
   host: "{{ config.pg_host }}"             # the connection keys are config: literal text or references
   port: "{{ config.pg_port }}"
   database: "{{ config.pg_database }}"
   user: "{{ config.pg_user }}"
   password: "{{ secrets.pg_password }}"    # the only credential: a secret reference only
   sslmode: "{{ config.pg_sslmode }}"
-  options: {application_name: adapt-postgres-demo, connect_timeout: "10"}  # extra libpq connection parameters
+  options: {application_name: streamwright-postgres-demo, connect_timeout: "10"}  # extra libpq connection parameters
   statement_timeout: 5min                  # Postgres' statement_timeout for every statement the connector runs
 ```
 
@@ -1098,9 +1098,9 @@ campaign's settings or totals per account, are made in the warehouse after loadi
   were removed): a stream's `transform` steps shape its own requests, and joins across streams run in the warehouse.
 - The folder is read as one document: streams run in file name order (`from_stream` parents first), share `spec`,
   `auth` (one sign-in per run), the `http` rate limit and the state, and can be each other's `from_stream` parents.
-- `adapt run` and `adapt validate` take the folder, its `source.yaml` or its `streams/` folder; adapt validate also
-  takes one of its stream files (given one, `adapt run` stops with the command to run). Given a directory,
-  adapt validate checks each source folder in it as one source. Findings point to the file, line and the path inside
+- `streamwright run` and `streamwright validate` take the folder, its `source.yaml` or its `streams/` folder; streamwright validate also
+  takes one of its stream files (given one, `streamwright run` stops with the command to run). Given a directory,
+  streamwright validate checks each source folder in it as one source. Findings point to the file, line and the path inside
   that file.
 - Any other YAML file is a single-file source with a `streams` list. YAML anchors work within one file.
 - Editors: `docs/schemas/source.schema.json` for `source.yaml` and single files, `docs/schemas/stream.schema.json`
@@ -1112,7 +1112,7 @@ campaign's settings or totals per account, are made in the warehouse after loadi
 format (`1`); a new version is only introduced for a breaking change. Other top-level keys must start with `x-` (e.g.
 `x-defaults: &defaults ...` to hold YAML anchors). `spec.config` and `spec.secrets` declare every input
 with a `type` (`string`, `integer`, `number`, `boolean`, `date`, `list`), `required` (default true), `default` and
-`description`. Dates accept absolute values or offsets from today (`-30d`). The spec drives validation, `adapt check`
+`description`. Dates accept absolute values or offsets from today (`-30d`). The spec drives validation, `streamwright check`
 and platform UI forms; secrets are redacted everywhere. SQL steps read config values as `$name` parameters (see
 [`transform`](#transform-sql-steps)).
 
@@ -1124,7 +1124,7 @@ and platform UI forms; secrets are redacted everywhere. SQL steps read config va
   to a string.
 - A fixed set of filters, no arbitrary expressions: `default(x)`, `join(sep)`, `date(format)`, `int`, `lower`, `upper`.
 - Always quote: a YAML value starting with `{` is a mapping.
-- `adapt validate` resolves every reference statically: `{{ config.custmer_ids }}` is an error with a suggestion.
+- `streamwright validate` resolves every reference statically: `{{ config.custmer_ids }}` is an error with a suggestion.
 - References are not allowed in SQL steps: they read config values as `$name` parameters instead.
 
 ### `auth`
@@ -1179,7 +1179,7 @@ convention a request is named `raw_<entity>`, e.g. `raw_campaigns`.
   installed query builder's name, such as `query: {gaql: {...}}`, is replaced by the query text the builder writes
   from it, after its references are rendered with their types. The builder checks, quotes and escapes every value,
   so inputs are never concatenated into queries. Only calls written in the source are built: a value from inputs
-  or responses that looks like one stays data. `gaql` comes with adapt-google-ads (typed `where` items with
+  or responses that looks like one stays data. `gaql` comes with streamwright-google-ads (typed `where` items with
   `type`: int, string, enum, date, and `skip_if_empty: true` to drop an item without a value).
 
 A stream reads its requests for each of its partitions. A request that uses `{{ window.start }}` or
@@ -1318,7 +1318,7 @@ export:
 parameters. Its type follows `spec.config`: `VARCHAR` for a string, `BIGINT` for an integer, `DOUBLE` for a number,
 `BOOLEAN`, `DATE`, and for a list, a list of its item type (`VARCHAR[]` for strings). A value that is not given and
 has no default is null. Test a value against a list with `x = ANY($ids)`, `list_contains($ids, x)` or `x IN $ids`.
-`adapt validate` reports a `$name` that is not a config input, and a list that IN or a comparison takes as one
+`streamwright validate` reports a `$name` that is not a config input, and a list that IN or a comparison takes as one
 value (`x IN ($ids)`, `x = $ids`), which would fail on every row. With `client: {type: string}` in `spec.config`:
 
 ```yaml
@@ -1339,8 +1339,8 @@ transform:
   key is null; read text with `->>` (a JSON value cast to text keeps its quotes).
 - Inputs reach the query only as columns and `$name` parameters, never as SQL text: `{{ references }}` are not
   allowed in a step.
-- `adapt validate` checks the keys and forms, names, page-mode rules and the references of `export.step`, `from:`
-  and `from_stream`. `adapt validate` and `adapt run` also compile every step with DuckDB before anything is
+- `streamwright validate` checks the keys and forms, names, page-mode rules and the references of `export.step`, `from:`
+  and `from_stream`. `streamwright validate` and `streamwright run` also compile every step with DuckDB before anything is
   fetched, against empty request tables and earlier steps, with typed placeholders for `$name` parameters: unknown
   tables, columns or parameters, reading a later step, cycles, names that clash with DuckDB's built-in tables and
   views, and export keys, `cursor_field`, `from:` fields and `from_stream` fields that are not columns are reported
@@ -1386,7 +1386,7 @@ git tag `fields-dsl`):
 Steps see only the records their own stream read in this run. Joins across streams (daily performance with each
 campaign's settings), joins across sources and totals over full history belong in the warehouse after loading: SQL
 over the tables that `--output duckdb:`, `ducklake:` or `dlt:` loaded, or dbt models. For example, after
-`adapt run examples/sources/ads/google_ads --output duckdb:warehouse.duckdb`:
+`streamwright run examples/sources/ads/google_ads --output duckdb:warehouse.duckdb`:
 
 ```sql
 SELECT p.customer_id, p.campaign_id, p.date, p.cost, c.advertising_channel_type, c.bidding_strategy_type
@@ -1461,13 +1461,13 @@ streams: [campaigns, campaign_performance]   # optional: stream or export names;
 ```
 
 `--set NAME=VALUE` overrides a value and `--stream NAME` replaces `streams` (e.g. to run metadata streams daily and
-performance streams hourly). Secrets come from `--secrets FILE` or `ADAPT_SECRET_<NAME>` variables, which a scheduler
+performance streams hourly). Secrets come from `--secrets FILE` or `STREAMWRIGHT_SECRET_<NAME>` variables, which a scheduler
 fills from a secret store, so source folders and client settings can be kept in Git. Config values also reach SQL
 steps (`$name`) and file names (`{{ config.<name> }}`); secrets reach neither.
 
 ### Output
 
-`adapt run google_ads --config clients/acme/google_ads.yaml --secrets secrets.yaml --state state.json` writes
+`streamwright run google_ads --config clients/acme/google_ads.yaml --secrets secrets.yaml --state state.json` writes
 newline-delimited SCHEMA / RECORD / STATE messages to stdout, compatible with Singer targets: one Singer stream per
 export, with a schema from the types of its step's columns.
 
@@ -1504,30 +1504,30 @@ transaction as the data.
 For these outputs, the unkeyed exports of a full-refresh stream that skipped partitions keep their last complete
 table, with a warning.
 
-When an output is written, it logs one line per export on `adapt.output`, such as
+When an output is written, it logs one line per export on `streamwright.output`, such as
 `wrote out/acme/campaigns_2026-10-04.parquet: 29 records, 6.1 KB` or
 `loaded acme_google.campaigns: 29 rows (merge on customer_id, campaign_id)`. A failed run writes no files and loads
 no tables.
 
 ### Logging and run summary
 
-Logs go to stderr, through Python's standard logging: named loggers and standard levels. `adapt.source` logs the
+Logs go to stderr, through Python's standard logging: named loggers and standard levels. `streamwright.source` logs the
 run's progress at `INFO` (each stream's start and end, each window or partition read, reads that keep paging every 30
-seconds or 100 pages, the run's end) and warnings. `adapt.network` logs one line per HTTP request or SDK response,
-and the waits for rate limits, at `INFO`, retries at `WARNING`, and headers and bodies at `DEBUG`. `adapt.output` logs
-what the output wrote. SDKs log on their own loggers, which connectors name (`network_loggers`) and `adapt connectors`
-lists; adapt never turns them on. By default the `adapt` loggers are at `INFO`, `adapt.network` is at `WARNING`, and
+seconds or 100 pages, the run's end) and warnings. `streamwright.network` logs one line per HTTP request or SDK response,
+and the waits for rate limits, at `INFO`, retries at `WARNING`, and headers and bodies at `DEBUG`. `streamwright.output` logs
+what the output wrote. SDKs log on their own loggers, which connectors name (`network_loggers`) and `streamwright connectors`
+lists; streamwright never turns them on. By default the `streamwright` loggers are at `INFO`, `streamwright.network` is at `WARNING`, and
 every other logger is at `WARNING`.
 
-`adapt run` and `adapt validate` take `--log-level LEVEL` (the `adapt` loggers), `--log NAME=LEVEL` (any logger, e.g.
-`--log adapt.network=INFO` or `--log google.ads.googleads.client=DEBUG`; `root` for every logger), `--log-format`
+`streamwright run` and `streamwright validate` take `--log-level LEVEL` (the `streamwright` loggers), `--log NAME=LEVEL` (any logger, e.g.
+`--log streamwright.network=INFO` or `--log google.ads.googleads.client=DEBUG`; `root` for every logger), `--log-format`
 (`text`, the default, or `json`: one object per line, with each line's fields such as `stream`, `partition`,
 `window`, `request`, `records` and `duration_ms`), `--log-config FILE` (a `logging.config.dictConfig` file in YAML or
-JSON, whose handlers replace adapt's; handlers that exist stay open, and `disable_existing_loggers` never disables
-the `adapt` loggers or the ones `--log` names) and `--log-max-chars N` (longer messages are cut; default 20000).
+JSON, whose handlers replace streamwright's; handlers that exist stay open, and `disable_existing_loggers` never disables
+the `streamwright` loggers or the ones `--log` names) and `--log-max-chars N` (longer messages are cut; default 20000).
 Every line is redacted (see [Security](#security)).
 
-`adapt run --summary FILE` writes the run summary as JSON, atomically, whatever the outcome: `status` (`ok` or
+`streamwright run --summary FILE` writes the run summary as JSON, atomically, whatever the outcome: `status` (`ok` or
 `failed`), `started_at`, `finished_at`, `duration_s`, `source`, `streams` (each stream's partitions, failed
 partitions, windows, pages, requests per request, retries, records read, records written per export and duration),
 `outputs` (one entry per export: its records, and its file and size or its table), `state` (the bookmarks) and, when
@@ -1536,14 +1536,14 @@ the run failed, `error` (redacted and cut as log lines are).
 ## Security
 
 1. YAML cannot name Python modules or classes. Components are registered through Python entry points:
-   connectors (auth providers and the SDK calls they allow, group `adapt.connectors`) and query builders (group
-   `adapt.query_builders`); paginators are built in. Sdk requests name API services and methods, and each connector
+   connectors (auth providers and the SDK calls they allow, group `streamwright.connectors`) and query builders (group
+   `streamwright.query_builders`); paginators are built in. Sdk requests name API services and methods, and each connector
    allows only read-only ones. Records are shaped by SQL that runs in a locked-down DuckDB (see `transform`).
-2. Platforms allow-list components (`adapt run --allow-connector NAME` and `adapt validate --allow-connector NAME`, for
+2. Platforms allow-list components (`streamwright run --allow-connector NAME` and `streamwright validate --allow-connector NAME`, for
    connectors and query builders alike, e.g. `google_ads` and `gaql`), and each connector runs in its own environment.
 3. `{{ secrets.* }}` is only allowed inside `auth` (a validation error elsewhere), so secrets cannot leak into URLs,
    parameters or output. Secret values, and the tokens a run obtains (OAuth access, refresh and ID tokens, and the
-   tokens connectors register with `context.secret()`), are redacted from errors and from every log line: adapt's and
+   tokens connectors register with `context.secret()`), are redacted from errors and from every log line: streamwright's and
    the SDKs', through every handler, `--log-config` ones included. The values of headers, URL parameters and form
    fields named like credentials (`Authorization`, `Cookie`, `sig`, and names containing `token`, `key`, `secret`,
    `password`, `signature` or `credential`) are masked too, and the bodies of token responses are not logged. SDK
@@ -1631,13 +1631,13 @@ by hand, and custom `callable` / `instance` usage becomes a component.
 1. Done: spec (`adapt-core/source/source_spec.py`, first in the removed `adapt-utils`), `adapt validate` support
    and the JSON Schema; the
    examples above are validated in CI from `examples/sources/`.
-2. Done: the runtime for HTTP sources is the `adapt-core` package (`adapt run`, see
-   `adapt-core/README.md`): built-in auth, partitions, paginators, incremental state, retries and rate limits,
+2. Done: the runtime for HTTP sources is the `streamwright` package (`streamwright run`, see
+   `core/README.md`): built-in auth, partitions, paginators, incremental state, retries and rate limits,
    record shaping, Singer output and local writers. HTTP sources run end to end in the tests, against a
    local fake API. Incremental windows are whole days for now.
-3. Done: connectors `google_ads` (`adapt-google-ads`: sdk + gaql), `microsoft_ads` (`adapt-microsoft-ads`: sdk +
-   async reports) and `facebook_ads` (`adapt-facebook-ads`: sdk), with async jobs in the runtime. Query builders
-   became components later (decision 9): `gaql` ships with adapt-google-ads.
+3. Done: connectors `google_ads` (`streamwright-google-ads`: sdk + gaql), `microsoft_ads` (`streamwright-microsoft-ads`: sdk +
+   async reports) and `facebook_ads` (`streamwright-facebook-ads`: sdk), with async jobs in the runtime. Query builders
+   became components later (decision 9): `gaql` ships with streamwright-google-ads.
    The three ad example sources run end to end in the tests, against local fakes of the APIs and the real SDKs.
 4. In progress: run the three ad sources against the live APIs, then remove the legacy kinds. Google Ads ran against a
    live account on 2026-10-03: the `campaigns` stream matched the legacy connector + serializer on all 29 campaigns
@@ -1672,17 +1672,17 @@ by hand, and custom `callable` / `instance` usage becomes a component.
    loggers and mask the tokens their SDKs get. Tests run full network logging with known secrets and tokens and check
    that none is logged.
 10. Done (2026-10-05): file, object storage and database sources as reader connectors (decisions 21 and 22), with
-    `sdk` requests and no change to the core: `files` (`adapt-files`) reads local files, by a glob or a `match`
-    regex; `s3` (`adapt-s3`) and `gcs` (`adapt-gcs`) read object storage through `httpfs`; and `postgres`
-    (`adapt-postgres`) runs read-only queries. A first version read object storage in `files` too; it was split
+    `sdk` requests and no change to the core: `files` (`streamwright-files`) reads local files, by a glob or a `match`
+    regex; `s3` (`streamwright-s3`) and `gcs` (`streamwright-gcs`) read object storage through `httpfs`; and `postgres`
+    (`streamwright-postgres`) runs read-only queries. A first version read object storage in `files` too; it was split
     the same day, so `files` never reaches the network, and no `https` reader was kept. The examples `files_demo`
     (offline, its files committed), `s3_demo` and `gcs_demo` (against a recording DuckDB stand-in for the buckets)
     and `postgres_demo` (against a local DuckDB stand-in for Postgres) run end to end in the tests;
-    `ADAPT_TEST_PG_DSN`, `ADAPT_TEST_S3` and `ADAPT_TEST_GCS` add tests against a real database and real buckets.
+    `STREAMWRIGHT_TEST_PG_DSN`, `STREAMWRIGHT_TEST_S3` and `STREAMWRIGHT_TEST_GCS` add tests against a real database and real buckets.
 11. Done (2026-10-05): the legacy kinds were removed (decision 6), with their packages (`adapt-utils`,
     `adapt-connector`, `adapt-serializer`, `adapt-pipeline`), configs, JSON Schemas (`docs/schemas/v1`) and tests.
-    The helper modules the source format uses (YAML loading, `adapt validate`, source files, the spec, the exporter's
-    atomic files) moved into `adapt-core`, which now also installs `adapt validate`. The last legacy code is at the
+    The helper modules the source format uses (YAML loading, `streamwright validate`, source files, the spec, the exporter's
+    atomic files) moved into `streamwright`, which now also installs `streamwright validate`. The last legacy code is at the
     git tag `legacy-pipeline-v0.0.1`.
 
 ## Decisions
@@ -1698,20 +1698,20 @@ starts.
 | 4 | File layout | A source folder: `source.yaml` plus one file per stream in `streams/`, read as one source; a single file still works for small sources (decided later on 2026-10-03, replacing "one file per source") | Ad sources have dozens of entities (campaigns, ad groups, keywords, targeting, ads, performance); a file per stream keeps files short and reviews focused, while the folder keeps one sign-in, one state and `from_stream` across files, and is validated as a whole |
 | 5 | Connector packaging | One connector per vendor SDK, installed per connector environment | Isolates SDK dependency conflicts (protobuf, grpc, suds) |
 | 6 | Legacy kinds | One format: remove them once the runtime runs the four example sources (decided later on 2026-10-03, replacing "keep the v1 pipeline kind") | Nobody depends on them yet; one format halves the docs, checks and tests |
-| 7 | Loading into warehouses | dlt as an optional loader (`adapt-core[dlt]`, `--output dlt:...`), not a rebuild of the runtime on dlt (decided later on 2026-10-03) | dlt brings destinations, merges and schema evolution; its `rest_api` covers neither SDK APIs nor async reports, its Python configs are not a safe customer contract, and it needs Python 3.10+ |
+| 7 | Loading into warehouses | dlt as an optional loader (`streamwright[dlt]`, `--output dlt:...`), not a rebuild of the runtime on dlt (decided later on 2026-10-03) | dlt brings destinations, merges and schema evolution; its `rest_api` covers neither SDK APIs nor async reports, its Python configs are not a safe customer contract, and it needs Python 3.10+ |
 | 8 | Per-client settings | A `--config` file per client and source (`config` values and the `streams` to run), never secrets; secrets come from a secret store at run time (decided later on 2026-10-03) | One source folder serves every client, so clients differ only in data that a platform can store, generate and review |
-| 9 | Query builders | Components in the `adapt.query_builders` entry-point group, usable from `http` and `sdk` requests; `gaql` ships with adapt-google-ads, and `sql_where` (unused) is removed. `adapt validate` checks the references inside builder calls; `adapt validate` and `adapt run` add the builders' own checks (decided later on 2026-10-03, replacing built-in `gaql` / `sql_where`) | A query language is vendor knowledge: in the core, every change to it needed a core release, and each new vendor would add its own. As components, each builder evolves with its connector, HTTP sources can use them too (e.g. a SOQL builder), and the core keeps only what every builder shares: finding calls, rendering typed values and allow-lists |
-| 10 | SQL shaping | SQL `transform` steps, DuckDB queries over the stream's request tables, are how a stream shapes its records; the records as returned are a step `SELECT record FROM <request>`. `fields`, the YAML field list SQL replaced, is removed (its last version is the git tag `fields-dsl`), and DuckDB is a dependency of adapt-core (decided later on 2026-10-03; `fields` removed on 2026-10-04; the stream-level `select` and `raw: true` replaced by steps later on 2026-10-04) | Customers write standard SQL instead of learning a transform language, with all of DuckDB's functions. It is fast (one query per page, inputs loaded as one JSON array), typed statically (`DESCRIBE` gives the columns before any data) and safe to host (inputs are columns and bound parameters, never SQL text; DuckDB runs locked down). One way to shape records halves the docs, checks and tests |
+| 9 | Query builders | Components in the `streamwright.query_builders` entry-point group, usable from `http` and `sdk` requests; `gaql` ships with streamwright-google-ads, and `sql_where` (unused) is removed. `streamwright validate` checks the references inside builder calls; `streamwright validate` and `streamwright run` add the builders' own checks (decided later on 2026-10-03, replacing built-in `gaql` / `sql_where`) | A query language is vendor knowledge: in the core, every change to it needed a core release, and each new vendor would add its own. As components, each builder evolves with its connector, HTTP sources can use them too (e.g. a SOQL builder), and the core keeps only what every builder shares: finding calls, rendering typed values and allow-lists |
+| 10 | SQL shaping | SQL `transform` steps, DuckDB queries over the stream's request tables, are how a stream shapes its records; the records as returned are a step `SELECT record FROM <request>`. `fields`, the YAML field list SQL replaced, is removed (its last version is the git tag `fields-dsl`), and DuckDB is a dependency of streamwright (decided later on 2026-10-03; `fields` removed on 2026-10-04; the stream-level `select` and `raw: true` replaced by steps later on 2026-10-04) | Customers write standard SQL instead of learning a transform language, with all of DuckDB's functions. It is fast (one query per page, inputs loaded as one JSON array), typed statically (`DESCRIBE` gives the columns before any data) and safe to host (inputs are columns and bound parameters, never SQL text; DuckDB runs locked down). One way to shape records halves the docs, checks and tests |
 | 11 | Chained transformations | Steps within one stream: a stream has named `requests`, named SQL `transform` steps (each a table for later steps, `mode: page` or `run`) and named `export`s, and a step reads only its own stream's request tables and earlier steps. Joins across streams or sources and totals over full history run in the warehouse after loading (decided on 2026-10-04: models were replaced that day by transform streams whose steps also read other streams' exports, and those cross-stream reads, transform-only streams and internal streams were removed later that day; the git tag `transform-cross-stream` has them) | A stream's output depends only on what it read, so each stream is selected, scheduled, retried and checked on its own, with its own state; no stream waits for, holds back or skips another. Data an API gives in several calls (an account's campaigns and their ad groups) still joins in one stream with several requests. The warehouse has every run's rows, so joins and totals there are complete, where a run sees only the days it read |
-| 12 | Python and DuckDB versions | Python 3.10+ for adapt-core and the connectors, with DuckDB 1.5.2+ (decided on 2026-10-04, replacing 3.9+ and DuckDB 1.4+) | Python 3.9 is past its end of life; DuckDB 1.4, the newest for 3.9, could not spill a run's tables to disk in a test where 1.5 did; dlt and DuckLake need them anyway |
-| 13 | Loading into DuckDB and DuckLake | `--output duckdb:PATH[:SCHEMA]` loads into a DuckDB database file, and `--output ducklake:CATALOG[:SCHEMA]` loads into a DuckLake catalog file. Each export is one table in the schema (default: the source name). Records are staged locally, then all tables and `SCHEMA._adapt_state` are committed in one transaction. Tables are created on first load, new columns are added, type changes fail, file names that clash with the schema are rejected, and keyed tables merge while unkeyed full-refresh outputs replace and unkeyed incremental outputs append with a warning. Partial full-refresh outputs keep their last complete table (decided on 2026-10-04) | DuckDB and DuckLake need no dlt, so dlt stays the loader for other warehouses. The writer keeps exact DuckDB types from the export steps, saves state atomically with data, and lets DuckLake expose Parquet data plus a catalog for full-history and cross-source transforms |
+| 12 | Python and DuckDB versions | Python 3.10+ for streamwright and the connectors, with DuckDB 1.5.2+ (decided on 2026-10-04, replacing 3.9+ and DuckDB 1.4+) | Python 3.9 is past its end of life; DuckDB 1.4, the newest for 3.9, could not spill a run's tables to disk in a test where 1.5 did; dlt and DuckLake need them anyway |
+| 13 | Loading into DuckDB and DuckLake | `--output duckdb:PATH[:SCHEMA]` loads into a DuckDB database file, and `--output ducklake:CATALOG[:SCHEMA]` loads into a DuckLake catalog file. Each export is one table in the schema (default: the source name). Records are staged locally, then all tables and `SCHEMA._streamwright_state` are committed in one transaction. Tables are created on first load, new columns are added, type changes fail, file names that clash with the schema are rejected, and keyed tables merge while unkeyed full-refresh outputs replace and unkeyed incremental outputs append with a warning. Partial full-refresh outputs keep their last complete table (decided on 2026-10-04) | DuckDB and DuckLake need no dlt, so dlt stays the loader for other warehouses. The writer keeps exact DuckDB types from the export steps, saves state atomically with data, and lets DuckLake expose Parquet data plus a catalog for full-history and cross-source transforms |
 | 14 | Export side effects | Every stream that runs writes all of its exports, including `from_stream` parents that run only for their children; a stream needs at least one export, and selecting an export selects its stream (decided on 2026-10-04; `export: {}`, which made a stream internal, was removed with cross-stream reads later that day) | Output is predictable: what runs is written, and a parent's export holds the values its children were partitioned by. Without cross-stream reads, a stream that writes nothing has no use |
-| 15 | Config values in SQL | `$name` in a step is a DuckDB parameter bound to the config input `name` and typed by `spec.config`; secrets are never parameters, `{{ }}` references stay out of SQL, and `adapt validate` reports a `$name` that is not a config input (decided on 2026-10-04) | Rows often need a client's values, such as its name or currency. A bound value cannot change the query, and its type is known before any data, so steps still compile and are checked before a run. SQL needs no template syntax, and the `config` JSON column remains for other uses |
+| 15 | Config values in SQL | `$name` in a step is a DuckDB parameter bound to the config input `name` and typed by `spec.config`; secrets are never parameters, `{{ }}` references stay out of SQL, and `streamwright validate` reports a `$name` that is not a config input (decided on 2026-10-04) | Rows often need a client's values, such as its name or currency. A bound value cannot change the query, and its type is known before any data, so steps still compile and are checked before a run. SQL needs no template syntax, and the `config` JSON column remains for other uses |
 | 16 | Output file names | `--file-name TEMPLATE` for `--output jsonl:DIR` and `csv:DIR`, with `{{ export }}`, `{{ source }}`, `{{ today }}`, `{{ timestamp }}` and `{{ config.<name> }}`: a relative path inside `DIR`, subfolders allowed, different for every export and checked before any request; the default names do not change (decided on 2026-10-04) | Downstream jobs find files by client, export and date, which the unique default names do not give. The template uses the same `{{ }}` references as sources, without secrets, and the checks keep every file inside `DIR` and apart from the others |
 | 17 | TSV and Parquet files | `--output tsv:DIR` writes the values of csv files, tab-separated (the csv module's `excel-tab` dialect), and `--output parquet:DIR` one Parquet file per export, typed by its step's columns as the DuckDB writer stores them, except `HUGEINT` as `DECIMAL(38,0)` and nested values as JSON text, compressed with zstd. Both name their files like the other file outputs (`--file-name` included) and write `state.json`; Parquet records are staged on disk, and DuckDB writes the files when the run succeeds (decided on 2026-10-04) | Spreadsheets and bulk loaders read TSV, and tabs are rarer in values than commas. Parquet keeps exact types (decimals, dates, timestamps with time zones), and data lakes and warehouses load it directly; `DECIMAL(38,0)` keeps `HUGEINT` values exact where DuckDB would write a `DOUBLE`, and JSON text in a plain string column is what every Parquet reader can read. Staging keeps memory flat for large exports, a failed run writes nothing, and the DuckDB writer's types keep files and tables alike |
-| 18 | Logging | Python's standard logging model: named loggers (`adapt.source` for progress, `adapt.network` for API calls, `adapt.output` for what was written, and the SDKs' own loggers by their names) and the standard levels, set with `--log-level` and `--log NAME=LEVEL`; text or JSON lines on stderr (`--log-format`), or the handlers of a `logging.config.dictConfig` file (`--log-config`). Every line of every logger, through every handler, is redacted (secrets, the tokens a run obtains, credentials by name) and cut at `--log-max-chars`. Connectors name their SDK loggers (`network_loggers`), and adapt never turns them on (decided on 2026-10-04, replacing ad-hoc SDK logging setup such as google-ads' `basicConfig` snippet, and the fixed `[adapt] LEVEL message` lines) | Operators already know loggers and levels, and log platforms take JSON lines or a handler of their own, so there is nothing new to learn and no custom modes to keep. One setup covers every logger, so an SDK's payload logs are redacted like adapt's own lines, and they are on only when an operator asks for them |
-| 19 | Progress and run summary | `adapt.source` logs each stream's start and end, each window or partition read, reads that keep paging (every 30 seconds or 100 pages) and the run's end; `--summary FILE` writes the run summary as JSON (status, times, each stream's counts, the outputs written, the state and the error), atomically, whatever the outcome. The counts come from one metrics object per run, fed by the runner, the HTTP client and the connector context (decided on 2026-10-04) | Long runs show that they are moving, and where; schedulers get the outcome and the counts without parsing logs. One metrics object, without global state, keeps the log lines and the summary in agreement and is simple to test |
-| 20 | Batched request partitions | `batch_size: N` on a request partition (`{name, values}`, `{name, from, field}`, or `{from, fields}` with exactly one field that is not a stream partition): one request per list of up to `N` distinct values, which the name holds, e.g. GAQL `campaign.id IN (...)`; a step's values in a partitioned stream are batched only with `{from, fields}` listing the stream partition fields, so each stream partition lists only its own; not on stream partitions, and windows and state stay per stream partition. `adapt connectors` lists only the installed connectors and their SDK loggers; query builders such as `gaql` are still used and checked by `adapt validate` (decided on 2026-10-05) | APIs that filter by a list read a large account in a few calls (1000 campaigns' ad groups in 5 GAQL queries, not 1000), within the query's limits, without a new request type. Stream partitions stay single values, so bookmarks do not change. `adapt connectors` answers which connectors and SDK loggers are installed |
-| 21 | File and object storage sources | Files and objects are read by reader connectors, not a request kind of the core, one connector per kind of storage: `files` (`adapt-files`) reads local folders only (`auth: {provider: files, roots: [...]}`; no URLs, no `httpfs`, no credentials, external access always off), and `s3` (`adapt-s3`) and `gcs` (`adapt-gcs`) read `s3://` and `gs://` prefixes through DuckDB's `httpfs` (`auth: {provider: s3, roots, key_id, secret, ...}`, or `provider: gcs`; credentials from secrets only). Requests (`method: read`) read csv, tsv, json, jsonl and parquet with DuckDB's readers, each row one record, picked by a path, a glob or a list, or by a `match` regex fully matched below a folder (`recursive` for sub-folders). Every path, and every file or key a glob, a regex or a listing selects, is checked inside a root before anything is read; `s3` and `gcs` refuse any `?` or `%` in a URL and check scheme, bucket and prefix exactly. There is no `https` reader (decided on 2026-10-05, replacing a first version in which `files` also read `s3://`, `gs://` and `https://` roots with credentials blocks) | A connector keeps the core unchanged and each reader optional, allow-listed (`--allow-connector files`) and versioned like the ad APIs, and partitions, windows, `batch_size`, retries and steps work as they are. Split connectors keep local reading free of network access and credentials, and give each object store only its own scheme and settings. DuckDB already shapes records, reads every format and streams large files in bounded memory; refusing `?` and `%` closes httpfs' URL settings (`?s3_endpoint=` would send signed requests to another host), and the roots in `auth` give deployments one place to decide what can be read. A regex picks files a glob cannot (date folders, no `_SUCCESS` markers) |
-| 22 | Database sources | PostgreSQL is read by the `postgres` connector (`adapt-postgres`), not a request kind of the core: `auth: {provider: postgres, dsn: "{{ secrets.* }}"}` and `sdk: postgres` requests, `method: query` (one SELECT in DuckDB's SQL over the attached database, with `$name` values bound from `params`) or `method: table`. The database is attached `READ_ONLY` through DuckDB's postgres scanner and a temporary DuckDB secret holding the DSN; write keywords, other statements, functions that run text of their own and DuckDB's system and catalog views (`duckdb_*`, `pragma_*`, `system`, `pg_catalog`, `information_schema`, `SHOW`, `DESCRIBE`, `SUMMARIZE`) are refused before a query runs, and an unconstrained `numeric` is read as exact text (decided on 2026-10-05) | The same connector model as files and the ad APIs, with no new driver: DuckDB's scanner pushes filters down, pages large results and binds values, a list included (`= ANY($ids)` for `batch_size`). Read-only is enforced three times (the query check, the attach and a locked connection), so a write fails even when the role could write. Attaching through a secret keeps the DSN out of DuckDB's views, and refusing them keeps queries to the database's own tables; the DSN stays a redacted secret |
+| 18 | Logging | Python's standard logging model: named loggers (`streamwright.source` for progress, `streamwright.network` for API calls, `streamwright.output` for what was written, and the SDKs' own loggers by their names) and the standard levels, set with `--log-level` and `--log NAME=LEVEL`; text or JSON lines on stderr (`--log-format`), or the handlers of a `logging.config.dictConfig` file (`--log-config`). Every line of every logger, through every handler, is redacted (secrets, the tokens a run obtains, credentials by name) and cut at `--log-max-chars`. Connectors name their SDK loggers (`network_loggers`), and streamwright never turns them on (decided on 2026-10-04, replacing ad-hoc SDK logging setup such as google-ads' `basicConfig` snippet, and the fixed `[streamwright] LEVEL message` lines) | Operators already know loggers and levels, and log platforms take JSON lines or a handler of their own, so there is nothing new to learn and no custom modes to keep. One setup covers every logger, so an SDK's payload logs are redacted like streamwright's own lines, and they are on only when an operator asks for them |
+| 19 | Progress and run summary | `streamwright.source` logs each stream's start and end, each window or partition read, reads that keep paging (every 30 seconds or 100 pages) and the run's end; `--summary FILE` writes the run summary as JSON (status, times, each stream's counts, the outputs written, the state and the error), atomically, whatever the outcome. The counts come from one metrics object per run, fed by the runner, the HTTP client and the connector context (decided on 2026-10-04) | Long runs show that they are moving, and where; schedulers get the outcome and the counts without parsing logs. One metrics object, without global state, keeps the log lines and the summary in agreement and is simple to test |
+| 20 | Batched request partitions | `batch_size: N` on a request partition (`{name, values}`, `{name, from, field}`, or `{from, fields}` with exactly one field that is not a stream partition): one request per list of up to `N` distinct values, which the name holds, e.g. GAQL `campaign.id IN (...)`; a step's values in a partitioned stream are batched only with `{from, fields}` listing the stream partition fields, so each stream partition lists only its own; not on stream partitions, and windows and state stay per stream partition. `streamwright connectors` lists only the installed connectors and their SDK loggers; query builders such as `gaql` are still used and checked by `streamwright validate` (decided on 2026-10-05) | APIs that filter by a list read a large account in a few calls (1000 campaigns' ad groups in 5 GAQL queries, not 1000), within the query's limits, without a new request type. Stream partitions stay single values, so bookmarks do not change. `streamwright connectors` answers which connectors and SDK loggers are installed |
+| 21 | File and object storage sources | Files and objects are read by reader connectors, not a request kind of the core, one connector per kind of storage: `files` (`streamwright-files`) reads local folders only (`auth: {provider: files, roots: [...]}`; no URLs, no `httpfs`, no credentials, external access always off), and `s3` (`streamwright-s3`) and `gcs` (`streamwright-gcs`) read `s3://` and `gs://` prefixes through DuckDB's `httpfs` (`auth: {provider: s3, roots, key_id, secret, ...}`, or `provider: gcs`; credentials from secrets only). Requests (`method: read`) read csv, tsv, json, jsonl and parquet with DuckDB's readers, each row one record, picked by a path, a glob or a list, or by a `match` regex fully matched below a folder (`recursive` for sub-folders). Every path, and every file or key a glob, a regex or a listing selects, is checked inside a root before anything is read; `s3` and `gcs` refuse any `?` or `%` in a URL and check scheme, bucket and prefix exactly. There is no `https` reader (decided on 2026-10-05, replacing a first version in which `files` also read `s3://`, `gs://` and `https://` roots with credentials blocks) | A connector keeps the core unchanged and each reader optional, allow-listed (`--allow-connector files`) and versioned like the ad APIs, and partitions, windows, `batch_size`, retries and steps work as they are. Split connectors keep local reading free of network access and credentials, and give each object store only its own scheme and settings. DuckDB already shapes records, reads every format and streams large files in bounded memory; refusing `?` and `%` closes httpfs' URL settings (`?s3_endpoint=` would send signed requests to another host), and the roots in `auth` give deployments one place to decide what can be read. A regex picks files a glob cannot (date folders, no `_SUCCESS` markers) |
+| 22 | Database sources | PostgreSQL is read by the `postgres` connector (`streamwright-postgres`), not a request kind of the core: `auth: {provider: postgres, dsn: "{{ secrets.* }}"}` and `sdk: postgres` requests, `method: query` (one SELECT in DuckDB's SQL over the attached database, with `$name` values bound from `params`) or `method: table`. The database is attached `READ_ONLY` through DuckDB's postgres scanner and a temporary DuckDB secret holding the DSN; write keywords, other statements, functions that run text of their own and DuckDB's system and catalog views (`duckdb_*`, `pragma_*`, `system`, `pg_catalog`, `information_schema`, `SHOW`, `DESCRIBE`, `SUMMARIZE`) are refused before a query runs, and an unconstrained `numeric` is read as exact text (decided on 2026-10-05) | The same connector model as files and the ad APIs, with no new driver: DuckDB's scanner pushes filters down, pages large results and binds values, a list included (`= ANY($ids)` for `batch_size`). Read-only is enforced three times (the query check, the attach and a locked connection), so a write fails even when the role could write. Attaching through a secret keeps the DSN out of DuckDB's views, and refusing them keeps queries to the database's own tables; the DSN stays a redacted secret |
 {% endraw %}

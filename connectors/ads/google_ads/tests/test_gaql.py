@@ -3,12 +3,12 @@ from decimal import Decimal
 
 import pytest
 
-pytest.importorskip("adapt.connectors.google_ads.gaql")
+pytest.importorskip("streamwright.connectors.google_ads.gaql")
 
-from adapt.connectors.google_ads.gaql import GaqlBuilder, OPERATORS, check, gaql  # noqa: E402
-from adapt.core.runtime import components  # noqa: E402
-from adapt.core.engine.queries import QueryError  # noqa: E402
-from adapt.core.runtime.templates import render  # noqa: E402
+from streamwright.connectors.google_ads.gaql import GaqlBuilder, OPERATORS, check, gaql  # noqa: E402
+from streamwright.core.runtime import components  # noqa: E402
+from streamwright.core.engine.queries import QueryError  # noqa: E402
+from streamwright.core.runtime.templates import render  # noqa: E402
 
 TODAY = datetime.date(2026, 10, 3)
 

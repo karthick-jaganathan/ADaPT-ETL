@@ -1,6 +1,6 @@
-# ADaPT postgres connector
+# StreamWright postgres connector
 
-The `postgres` connector for [adapt-core](../../../adapt-core/README.md): `sdk: postgres` requests run read-only SELECT
+The `postgres` connector for [streamwright](../../../core/README.md): `sdk: postgres` requests run read-only SELECT
 queries on a PostgreSQL database through [DuckDB](https://duckdb.org/)'s postgres extension, each row one record, on
 a DuckDB connection of the connector's own (never the run's transform sandbox). Example: the source folder
 [examples/sources/readers/postgres_demo/](../../../examples/sources/readers/postgres_demo/).
@@ -9,8 +9,8 @@ a DuckDB connection of the connector's own (never the run's transform sandbox). 
 
 ```bash
 make install-postgres        # from the repository root; or: pip install ./connectors/readers/postgres (installs duckdb)
-adapt connectors             # lists postgres (it has no SDK loggers)
-ADAPT_SECRET_PG_PASSWORD='...' adapt run examples/sources/readers/postgres_demo --set pg_host=db.example.com \
+streamwright connectors             # lists postgres (it has no SDK loggers)
+STREAMWRIGHT_SECRET_PG_PASSWORD='...' streamwright run examples/sources/readers/postgres_demo --set pg_host=db.example.com \
   --allow-connector postgres --output jsonl:out
 ```
 
@@ -35,7 +35,7 @@ auth:
   user: reader
   password: "{{ secrets.pg_password }}"
   sslmode: require
-  options: {connect_timeout: "10", application_name: adapt}
+  options: {connect_timeout: "10", application_name: streamwright}
   statement_timeout: 5min
 ```
 
@@ -59,10 +59,10 @@ one secret (e.g. a URL a vault hands out), or needs libpq features the keys do n
 | `port` | optional, default `5432`: a whole number (or a reference). |
 | `database` | required (connection keys): the database name; `dbname` is an alias (not both). |
 | `user` | required (connection keys): the role; use one that can only read. |
-| `password` | the role's password, when the server asks for one (the connection keys' ONLY credential): ONE secret reference, e.g. `"{{ secrets.pg_password }}"`. `adapt validate` refuses any other reference (and warns of a literal), and `adapt run` refuses to connect with a password that is not a secret of the run. It is redacted (`***`) in every log line and error, as is the connection string that holds it. |
+| `password` | the role's password, when the server asks for one (the connection keys' ONLY credential): ONE secret reference, e.g. `"{{ secrets.pg_password }}"`. `streamwright validate` refuses any other reference (and warns of a literal), and `streamwright run` refuses to connect with a password that is not a secret of the run. It is redacted (`***`) in every log line and error, as is the connection string that holds it. |
 | `sslmode` | optional: `disable`, `allow`, `prefer` (libpq's default), `require`, `verify-ca` or `verify-full`. |
-| `options` | optional: extra libpq connection parameters, a mapping of name to text, e.g. `{connect_timeout: "10", application_name: adapt, target_session_attrs: read-only, sslrootcert: /etc/ssl/pg.crt}`; values may be references but not secrets. Names are libpq's (lowercase); not `password`, `passfile`, `sslpassword` or other credentials, not the keys above (`host`, `port`, `dbname`, `user`, `sslmode`), not `dsn`, `replication` or `sslkeylogfile`. Its `options` parameter (Postgres server options, e.g. `-c search_path=shop`) is kept, and `statement_timeout` added to it. |
-| `dsn` | instead of the connection keys: a libpq DSN - `postgresql://user:password@host:5432/db?sslmode=require` or `host=... dbname=... user=... password=...` - as ONE secret reference. `adapt validate` refuses any other reference, and `adapt run` refuses to connect with a DSN that is not a secret of the run, so a DSN is never written in the source or its config. The DSN, and any password inside it, is redacted (`***`) in every log line and error. |
+| `options` | optional: extra libpq connection parameters, a mapping of name to text, e.g. `{connect_timeout: "10", application_name: streamwright, target_session_attrs: read-only, sslrootcert: /etc/ssl/pg.crt}`; values may be references but not secrets. Names are libpq's (lowercase); not `password`, `passfile`, `sslpassword` or other credentials, not the keys above (`host`, `port`, `dbname`, `user`, `sslmode`), not `dsn`, `replication` or `sslkeylogfile`. Its `options` parameter (Postgres server options, e.g. `-c search_path=shop`) is kept, and `statement_timeout` added to it. |
+| `dsn` | instead of the connection keys: a libpq DSN - `postgresql://user:password@host:5432/db?sslmode=require` or `host=... dbname=... user=... password=...` - as ONE secret reference. `streamwright validate` refuses any other reference, and `streamwright run` refuses to connect with a DSN that is not a secret of the run, so a DSN is never written in the source or its config. The DSN, and any password inside it, is redacted (`***`) in every log line and error. |
 | `statement_timeout` | optional: seconds (`90`), or `500ms`, `30s`, `5min`, `1h`: Postgres' `statement_timeout` for every statement the connector runs (added to libpq's `options`; a DSN that sets `options` itself must add `-c statement_timeout=...` there instead). |
 
 The connection keys become one libpq connection string - `host='...' port='5432' dbname='...' user='...'
@@ -143,7 +143,7 @@ text (`total::VARCHAR AS total`) and cast it in the step (`(record->>'total')::D
   Postgres runs the reads in READ ONLY transactions); and the connection, once attached, has external access off and
   its configuration locked (no files, no other databases, no extensions). A write fails even when the role could
   write: `QUERY_REFUSED` before it runs, or `READ_ONLY`.
-- Values are bound parameters, never query text. Allow the connector with `adapt run --allow-connector postgres`.
+- Values are bound parameters, never query text. Allow the connector with `streamwright run --allow-connector postgres`.
 
 ## Errors
 
@@ -157,18 +157,18 @@ read.
 ## Logs
 
 Each query is a call (counted in the run summary's `requests`, with the stream's rate limit and retries) and logs an
-INFO line on `adapt.network`, with its rows and time (never the DSN or connection string):
+INFO line on `streamwright.network`, with its rows and time (never the DSN or connection string):
 
 ```text
-INFO adapt.network: stream 'orders', request 'raw_orders', window 2026-10-03..2026-10-03: postgres query: 1 row(s), 0.01 s
+INFO streamwright.network: stream 'orders', request 'raw_orders', window 2026-10-03..2026-10-03: postgres query: 1 row(s), 0.01 s
 ```
 
-(`adapt run --log adapt.network=INFO` shows them.)
+(`streamwright run --log streamwright.network=INFO` shows them.)
 
 ## Tests
 
 `make test` (in this folder) runs offline: reads go through the same connect/query/page path against a local DuckDB
-file attached READ_ONLY in place of Postgres. Set `ADAPT_TEST_PG_DSN` to a throwaway Postgres (the test creates and
-drops a table of its own) to also read a real one, and `ADAPT_TEST_PG_HOST`, `ADAPT_TEST_PG_USER` and
-`ADAPT_TEST_PG_DATABASE` (optionally `ADAPT_TEST_PG_PORT`, `ADAPT_TEST_PG_PASSWORD`, `ADAPT_TEST_PG_SSLMODE`) to
+file attached READ_ONLY in place of Postgres. Set `STREAMWRIGHT_TEST_PG_DSN` to a throwaway Postgres (the test creates and
+drops a table of its own) to also read a real one, and `STREAMWRIGHT_TEST_PG_HOST`, `STREAMWRIGHT_TEST_PG_USER` and
+`STREAMWRIGHT_TEST_PG_DATABASE` (optionally `STREAMWRIGHT_TEST_PG_PORT`, `STREAMWRIGHT_TEST_PG_PASSWORD`, `STREAMWRIGHT_TEST_PG_SSLMODE`) to
 connect to one with the connection keys (it only reads).

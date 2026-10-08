@@ -1,4 +1,4 @@
-# ADaPT Makefile for convenient installation and management
+# StreamWright Makefile for convenient installation and management
 
 # Default installation mode
 MODE ?= prod
@@ -6,8 +6,8 @@ MODE ?= prod
 # Force dependency reinstallation (useful when dependencies have code changes)
 FORCE_DEPS ?= false
 
-# The adapt-core package (the `adapt` CLI: run, validate, connectors), at adapt-core
-CORE_DIR = adapt-core
+# The streamwright package (the `streamwright` CLI: run, validate, connectors), at core
+CORE_DIR = core
 # Connectors (optional: each installs its own dependencies: a vendor SDK, or DuckDB for files, s3, gcs and
 # postgres), under connectors/{readers,ads}/<name>
 CONNECTORS = files s3 gcs postgres google_ads microsoft_ads facebook_ads
@@ -15,16 +15,16 @@ CONNECTOR_DIRS = connectors/readers/files connectors/readers/s3 connectors/reade
 	connectors/ads/google_ads connectors/ads/microsoft_ads connectors/ads/facebook_ads
 
 # Distribution base directory
-DIST_BASE = /tmp/sdist/adapt
+DIST_BASE = /tmp/sdist/streamwright
 
 .PHONY: install install-all install-connectors build build-all clean verify verify-connectors help uninstall clean-dist \
 	test validate
 
 # Default target
 help:
-	@echo "ADaPT (Adaptive Data Pipeline Toolkit) - Available commands:"
+	@echo "StreamWright - Available commands:"
 	@echo ""
-	@echo "  make install [MODE=dev|prod|dist]    - Install adapt-core (default: prod)"
+	@echo "  make install [MODE=dev|prod|dist]    - Install streamwright (default: prod)"
 	@echo "  make install FORCE_DEPS=true         - Force reinstall dependencies"
 	@echo "  make install-connectors [MODE=...]   - Install the connectors: $(CONNECTORS)"
 	@echo "  make build [TYPE=sdist|wheel|all]    - Build distributions for all packages"
@@ -34,7 +34,7 @@ help:
 	@echo "  make verify                          - Verify installation"
 	@echo "  make verify-connectors               - Verify the connectors"
 	@echo "  make test                            - Run the test suite (needs pytest; jsonschema optional)"
-	@echo "  make validate                        - Validate examples/ with adapt validate --strict"
+	@echo "  make validate                        - Validate examples/ with streamwright validate --strict"
 	@echo "  make help                            - Show this help"
 	@echo ""
 	@echo "Installation modes:"
@@ -42,24 +42,24 @@ help:
 	@echo "  MODE=dev   - Development mode (pip install -e .)"
 	@echo "  MODE=dist  - Distribution mode (build + install from $(DIST_BASE))"
 	@echo ""
-	@echo "Individual package: make install-core (or: cd adapt-core && make install)"
+	@echo "Individual package: make install-core (or: cd core && make install)"
 	@echo "Individual connectors: make install-google-ads | install-microsoft-ads | install-facebook-ads | install-files | install-s3 | install-gcs | install-postgres"
 
 # Generic install command for all packages
 install: install-all
 install-all:
-	@echo "Installing all ADaPT packages in $(MODE) mode..."
+	@echo "Installing all StreamWright packages in $(MODE) mode..."
 ifeq ($(MODE),dist)
 	@echo "Cleaning distribution directory first..."
 	@$(MAKE) clean-dist
 endif
 	cd $(CORE_DIR) && $(MAKE) install MODE=$(MODE) FORCE_DEPS=$(FORCE_DEPS)
-	@echo "✅ All ADaPT packages installed successfully!"
+	@echo "✅ All StreamWright packages installed successfully!"
 	@$(MAKE) _show-packages
 
 # Individual package installation with mode support
 install-core:
-	@echo "Installing adapt-core in $(MODE) mode..."
+	@echo "Installing streamwright in $(MODE) mode..."
 	cd $(CORE_DIR) && $(MAKE) install MODE=$(MODE) FORCE_DEPS=$(FORCE_DEPS)
 
 install-connectors:
@@ -106,9 +106,9 @@ build-all:
 
 # Utility commands
 uninstall:
-	@echo "Uninstalling all ADaPT packages..."
-	pip uninstall -y adapt-google-ads adapt-microsoft-ads adapt-facebook-ads adapt-files adapt-s3 adapt-gcs adapt-postgres \
-		adapt-core 2>/dev/null || true
+	@echo "Uninstalling all StreamWright packages..."
+	pip uninstall -y streamwright-google-ads streamwright-microsoft-ads streamwright-facebook-ads streamwright-files streamwright-s3 streamwright-gcs streamwright-postgres \
+		streamwright 2>/dev/null || true
 	@echo "✅ All packages uninstalled!"
 
 clean:
@@ -123,8 +123,8 @@ clean:
 	@echo "✅ All artifacts cleaned!"
 
 clean-dist:
-	@echo "Cleaning distribution directory /tmp/sdist/adapt..."
-	@rm -rf /tmp/sdist/adapt
+	@echo "Cleaning distribution directory /tmp/sdist/streamwright..."
+	@rm -rf /tmp/sdist/streamwright
 	@echo "✅ Distribution directory cleaned!"
 
 verify:
@@ -141,12 +141,12 @@ verify-connectors:
 	done
 
 test:
-	python -m pytest adapt-core/tests connectors -q
+	python -m pytest core/tests connectors -q
 
 validate:
-	adapt validate --strict examples
+	streamwright validate --strict examples
 
 # Internal helper commands
 _show-packages:
 	@echo "Installed packages:"
-	@pip list | grep adapt 
+	@pip list | grep streamwright 

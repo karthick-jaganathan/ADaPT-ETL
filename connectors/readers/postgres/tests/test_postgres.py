@@ -2,9 +2,9 @@
 The postgres connector: auth and request checks, the single-SELECT and read-only guards, bound parameters, pages and
 JSON records, redaction, and runs through SourceRunner and the CLI. Reads use a stand-in: a local DuckDB file attached
 READ_ONLY as the connector's `src`, through the same connect/pages/to_json path (no Postgres, no network). Set
-ADAPT_TEST_PG_DSN to a throwaway Postgres to also run test_a_real_postgres, and ADAPT_TEST_PG_HOST (with
-ADAPT_TEST_PG_USER, ADAPT_TEST_PG_DATABASE and optionally ADAPT_TEST_PG_PORT, ADAPT_TEST_PG_PASSWORD,
-ADAPT_TEST_PG_SSLMODE) to run test_a_real_postgres_with_the_structured_form.
+STREAMWRIGHT_TEST_PG_DSN to a throwaway Postgres to also run test_a_real_postgres, and STREAMWRIGHT_TEST_PG_HOST (with
+STREAMWRIGHT_TEST_PG_USER, STREAMWRIGHT_TEST_PG_DATABASE and optionally STREAMWRIGHT_TEST_PG_PORT, STREAMWRIGHT_TEST_PG_PASSWORD,
+STREAMWRIGHT_TEST_PG_SSLMODE) to run test_a_real_postgres_with_the_structured_form.
 """
 
 import datetime
@@ -17,21 +17,21 @@ import uuid
 import pytest
 
 pytest.importorskip("duckdb")
-pytest.importorskip("adapt.connectors.postgres.connector")
+pytest.importorskip("streamwright.connectors.postgres.connector")
 
-from adapt.connectors.postgres import connector as connector_module  # noqa: E402
-from adapt.connectors.postgres import reader  # noqa: E402
-from adapt.connectors.postgres.connector import PostgresConnector, connector_error  # noqa: E402
-from adapt.connectors.postgres.reader import (ConnectError, Database, QueryError, check_query, conninfo,  # noqa: E402
+from streamwright.connectors.postgres import connector as connector_module  # noqa: E402
+from streamwright.connectors.postgres import reader  # noqa: E402
+from streamwright.connectors.postgres.connector import PostgresConnector, connector_error  # noqa: E402
+from streamwright.connectors.postgres.reader import (ConnectError, Database, QueryError, check_query, conninfo,  # noqa: E402
                                               conninfo_value, dsn_secrets, structured_conninfo, table_query, timeout_ms,
                                               with_statement_timeout)
-from adapt.core import cli
-from adapt.core.runtime import components  # noqa: E402
-from adapt.core.net.http import Redactor  # noqa: E402
-from adapt.core.runtime.logs import RunMetrics  # noqa: E402
-from adapt.core.runtime.components import ConnectorContext, ConnectorError  # noqa: E402
-from adapt.core.engine.runner import SourceError, SourceRunner  # noqa: E402
-from adapt.core.runtime.testing import MemoryOutput, page_stream  # noqa: E402
+from streamwright.core import cli
+from streamwright.core.runtime import components  # noqa: E402
+from streamwright.core.net.http import Redactor  # noqa: E402
+from streamwright.core.runtime.logs import RunMetrics  # noqa: E402
+from streamwright.core.runtime.components import ConnectorContext, ConnectorError  # noqa: E402
+from streamwright.core.engine.runner import SourceError, SourceRunner  # noqa: E402
+from streamwright.core.runtime.testing import MemoryOutput, page_stream  # noqa: E402
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".."))
 EXAMPLE = os.path.join(REPO_ROOT, "examples", "sources", "readers", "postgres_demo")
@@ -394,7 +394,7 @@ def test_a_run_cannot_read_the_dsn(connector, secret_db, tmp_path, monkeypatch, 
     document["spec"]["secrets"] = {"pg_dsn": {"type": "string"}}
     source = tmp_path / "leak.yaml"
     source.write_text(yaml.safe_dump(document, sort_keys=False))
-    monkeypatch.setenv("ADAPT_SECRET_PG_DSN", secret_db)
+    monkeypatch.setenv("STREAMWRIGHT_SECRET_PG_DSN", secret_db)
     out, summary = tmp_path / "out", tmp_path / "summary.json"
     assert cli.main(["run", str(source), "--allow-connector", "postgres", "--output", "jsonl:%s" % out,
                      "--summary", str(summary)]) != 0
@@ -712,7 +712,7 @@ def test_errors_map_to_connector_errors(connector):
 
 STRUCTURED = {"host": "{{ config.pg_host }}", "port": 5432, "database": "shop", "user": "reader",
               "password": "{{ secrets.pg_password }}", "sslmode": "require",
-              "options": {"connect_timeout": "10", "application_name": "adapt"}, "statement_timeout": "30s"}
+              "options": {"connect_timeout": "10", "application_name": "streamwright"}, "statement_timeout": "30s"}
 WHAT = "auth: provider 'postgres': "
 
 
@@ -756,7 +756,7 @@ def structured(**changes):
     (structured(port=True), [WHAT + "`port` must be a port number (1-65535), e.g. 5432; not True"]),
     (structured(options="connect_timeout=10"), [
         WHAT + "`options` must be a mapping of libpq connection parameters to their values, e.g. {connect_timeout: "
-        "\"10\", application_name: adapt}"]),
+        "\"10\", application_name: streamwright}"]),
     (structured(options={"password": "x", "passfile": "/p", "sslpassword": "x"}), [
         WHAT + "`options` cannot set `password`: the only credential is `password`, a secret reference",
         WHAT + "`options` cannot set `passfile`: the only credential is `password`, a secret reference",
@@ -841,10 +841,10 @@ def test_the_structured_connection_string_quotes_and_escapes_every_value():
     assert structured_conninfo("db.example.com", "shop", "reader") == (
         "host='db.example.com' port='5432' dbname='shop' user='reader'")
     assert structured_conninfo("db", "shop", "reader", port=6543, password="pw", sslmode="require",
-                               options={"connect_timeout": 10, "application_name": "adapt"},
+                               options={"connect_timeout": 10, "application_name": "streamwright"},
                                statement_timeout=30000) == (
         "host='db' port='6543' dbname='shop' user='reader' password='pw' sslmode='require' connect_timeout='10' "
-        "application_name='adapt' options='-c statement_timeout=30000'")
+        "application_name='streamwright' options='-c statement_timeout=30000'")
     # the timeout joins the server options the source sets
     assert parse_conninfo(structured_conninfo("db", "shop", "reader", options={"options": "-c search_path=shop"},
                                               statement_timeout=1500))["options"] == (
@@ -888,7 +888,7 @@ def test_connect_builds_the_structured_connection_string_and_redacts_it(monkeypa
     assert attach_type == "postgres"
     assert parse_conninfo(target) == {"host": "x' dbname=evil", "port": "5432", "dbname": "shop", "user": "reader",
                                       "password": password, "sslmode": "require", "connect_timeout": "10",
-                                      "application_name": "adapt", "options": "-c statement_timeout=300000"}
+                                      "application_name": "streamwright", "options": "-c statement_timeout=300000"}
     text = str(caught.value)
     assert caught.value.code == "CONNECT_ERROR" and "***" in text
     assert "Sup3r" not in text and "evil" not in text  # the connection string is redacted whole, with its password
@@ -927,7 +927,7 @@ def test_the_structured_form_is_attached_through_a_secret_with_an_empty_path(mon
                                                                    for call in connection.calls)]
         [create] = [call for call in calls if call.startswith("CREATE TEMPORARY SECRET")]
         target = structured_conninfo("db.example.com", "shop", "release", password=password, sslmode="require",
-                                     options={"connect_timeout": "10", "application_name": "adapt"},
+                                     options={"connect_timeout": "10", "application_name": "streamwright"},
                                      statement_timeout=30000)
         assert create == "CREATE TEMPORARY SECRET %s (TYPE postgres, URI %s)" % (reader.SECRET,
                                                                                 reader.sql_string(target))
@@ -974,7 +974,7 @@ def orders_stream(**extra):
 
 
 def test_windows_bind_their_days_and_bookmarks_advance(connector, db, caplog):
-    caplog.set_level(logging.INFO, logger="adapt.network")
+    caplog.set_level(logging.INFO, logger="streamwright.network")
     metrics = RunMetrics()
     output = run(pg_source(orders_stream(incremental={"cursor_field": "day", "start": str(TODAY - 3 * DAY),
                                                       "window": "1d"})), db, metrics=metrics)
@@ -1037,7 +1037,7 @@ def test_the_postgres_demo_runs_against_a_stand_in(connector, tmp_path, monkeypa
     """The demo's structured auth: the stand-in attaches the file `database` (config), its password a secret."""
     today = datetime.date.today()
     dsn = standin(tmp_path / "shop.duckdb", today)
-    monkeypatch.setenv("ADAPT_SECRET_PG_PASSWORD", PASSWORD)
+    monkeypatch.setenv("STREAMWRIGHT_SECRET_PG_PASSWORD", PASSWORD)
     out, summary = tmp_path / "out", tmp_path / "summary.json"
     assert cli.main(["run", EXAMPLE, "--set", "start_date=%s" % (today - 3 * DAY), "--set", "pg_database=%s" % dsn,
                      "--allow-connector", "postgres", "--output", "jsonl:%s" % out, "--summary", str(summary)]) == 0
@@ -1062,17 +1062,17 @@ def test_the_postgres_demo_runs_against_a_stand_in(connector, tmp_path, monkeypa
 
 def test_the_postgres_demo_needs_the_connector_allowed_and_its_secret(connector, tmp_path, monkeypatch, caplog):
     out = "jsonl:%s" % (tmp_path / "out")
-    monkeypatch.setenv("ADAPT_SECRET_PG_PASSWORD", PASSWORD)
+    monkeypatch.setenv("STREAMWRIGHT_SECRET_PG_PASSWORD", PASSWORD)
     pg_database = "pg_database=%s" % standin(tmp_path / "shop.duckdb")
     assert cli.main(["run", EXAMPLE, "--set", pg_database, "--allow-connector", "files", "--output", out]) == 2
     assert "connector 'postgres' is not in the allowed list" in caplog.text
     caplog.clear()
-    monkeypatch.delenv("ADAPT_SECRET_PG_PASSWORD")
+    monkeypatch.delenv("STREAMWRIGHT_SECRET_PG_PASSWORD")
     assert cli.main(["run", EXAMPLE, "--set", pg_database, "--allow-connector", "postgres", "--output", out]) != 0
     assert "pg_password" in caplog.text
 
 
-def test_adapt_validate_and_connectors(capsys, tmp_path):
+def test_streamwright_validate_and_connectors(capsys, tmp_path):
     assert cli.main(["validate", EXAMPLE]) == 0
     assert cli.main(["connectors"]) == 0
     assert "postgres" in capsys.readouterr().out.split()
@@ -1092,14 +1092,14 @@ def test_adapt_validate_and_connectors(capsys, tmp_path):
 
 
 # * ---------------------------------------------------
-# * a real Postgres (only with ADAPT_TEST_PG_DSN set)
+# * a real Postgres (only with STREAMWRIGHT_TEST_PG_DSN set)
 # * ---------------------------------------------------
 
-@pytest.mark.skipif(not os.environ.get("ADAPT_TEST_PG_DSN"), reason="set ADAPT_TEST_PG_DSN to a throwaway Postgres")
+@pytest.mark.skipif(not os.environ.get("STREAMWRIGHT_TEST_PG_DSN"), reason="set STREAMWRIGHT_TEST_PG_DSN to a throwaway Postgres")
 def test_a_real_postgres():
     import duckdb
-    dsn = os.environ["ADAPT_TEST_PG_DSN"]
-    name = "adapt_test_%s" % uuid.uuid4().hex[:8]
+    dsn = os.environ["STREAMWRIGHT_TEST_PG_DSN"]
+    name = "streamwright_test_%s" % uuid.uuid4().hex[:8]
     setup = duckdb.connect()
     setup.execute("INSTALL postgres")
     setup.execute("LOAD postgres")
@@ -1148,16 +1148,16 @@ def test_a_real_postgres():
         setup.close()
 
 
-@pytest.mark.skipif(not os.environ.get("ADAPT_TEST_PG_HOST"), reason="set ADAPT_TEST_PG_HOST, ADAPT_TEST_PG_USER and "
-                    "ADAPT_TEST_PG_DATABASE (and ADAPT_TEST_PG_PASSWORD) to a throwaway Postgres")
+@pytest.mark.skipif(not os.environ.get("STREAMWRIGHT_TEST_PG_HOST"), reason="set STREAMWRIGHT_TEST_PG_HOST, STREAMWRIGHT_TEST_PG_USER and "
+                    "STREAMWRIGHT_TEST_PG_DATABASE (and STREAMWRIGHT_TEST_PG_PASSWORD) to a throwaway Postgres")
 def test_a_real_postgres_with_the_structured_form(caplog):
     env = os.environ
-    database, user = env["ADAPT_TEST_PG_DATABASE"], env["ADAPT_TEST_PG_USER"]
-    name = "adapt's test x=1 dbname=evil"
-    auth = {"host": env["ADAPT_TEST_PG_HOST"], "port": env.get("ADAPT_TEST_PG_PORT") or 5432, "database": database,
-            "user": user, "sslmode": env.get("ADAPT_TEST_PG_SSLMODE") or "prefer",
+    database, user = env["STREAMWRIGHT_TEST_PG_DATABASE"], env["STREAMWRIGHT_TEST_PG_USER"]
+    name = "streamwright's test x=1 dbname=evil"
+    auth = {"host": env["STREAMWRIGHT_TEST_PG_HOST"], "port": env.get("STREAMWRIGHT_TEST_PG_PORT") or 5432, "database": database,
+            "user": user, "sslmode": env.get("STREAMWRIGHT_TEST_PG_SSLMODE") or "prefer",
             "options": {"application_name": name, "connect_timeout": "10"}, "statement_timeout": "30s"}
-    password = env.get("ADAPT_TEST_PG_PASSWORD")
+    password = env.get("STREAMWRIGHT_TEST_PG_PASSWORD")
     if password:
         auth["password"] = password
     component = PostgresConnector()

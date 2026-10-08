@@ -5,7 +5,7 @@ formats, pages, globs, `match`, on_missing, and runs through SourceRunner and th
 Offline: Readers get a Recorder connection that records DuckDB's httpfs and secret statements instead of running them,
 lists URLs from Storage.objects (as DuckDB's object-storage glob does) and reads them from local files, and forces
 errors; the rest runs on a real DuckDB connection. Tests with DuckDB's real httpfs run when it is installed, against
-local addresses only (127.0.0.1); one against real object storage only with ADAPT_TEST_GCS set.
+local addresses only (127.0.0.1); one against real object storage only with STREAMWRIGHT_TEST_GCS set.
 """
 
 import datetime
@@ -22,19 +22,19 @@ import pytest
 import yaml
 
 duckdb = pytest.importorskip("duckdb")
-pytest.importorskip("adapt.connectors.gcs.connector")
+pytest.importorskip("streamwright.connectors.gcs.connector")
 
-from adapt.connectors.gcs import reader  # noqa: E402
-from adapt.connectors.gcs.connector import GcsConnector  # noqa: E402
-from adapt.connectors.gcs.reader import (AccessError, Reader, allowed_roots, match_files,  # noqa: E402
+from streamwright.connectors.gcs import reader  # noqa: E402
+from streamwright.connectors.gcs.connector import GcsConnector  # noqa: E402
+from streamwright.connectors.gcs.reader import (AccessError, Reader, allowed_roots, match_files,  # noqa: E402
                                          resolve_files)
-from adapt.core import cli
-from adapt.core.runtime import components  # noqa: E402
-from adapt.core.net.http import Redactor  # noqa: E402
-from adapt.core.runtime.logs import RunMetrics  # noqa: E402
-from adapt.core.runtime.components import ConnectorContext, ConnectorError  # noqa: E402
-from adapt.core.engine.runner import SourceError, SourceRunner  # noqa: E402
-from adapt.core.runtime.testing import MemoryOutput, page_stream  # noqa: E402
+from streamwright.core import cli
+from streamwright.core.runtime import components  # noqa: E402
+from streamwright.core.net.http import Redactor  # noqa: E402
+from streamwright.core.runtime.logs import RunMetrics  # noqa: E402
+from streamwright.core.runtime.components import ConnectorContext, ConnectorError  # noqa: E402
+from streamwright.core.engine.runner import SourceError, SourceRunner  # noqa: E402
+from streamwright.core.runtime.testing import MemoryOutput, page_stream  # noqa: E402
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".."))
 EXAMPLE = os.path.join(REPO_ROOT, "examples", "sources", "readers", "gcs_demo")
@@ -160,7 +160,7 @@ def storage(monkeypatch):
 
     def connect(*args, **kwargs):
         connection = state.connect(*args, **kwargs)
-        reader_config = "adapt-gcs-" in str((kwargs.get("config") or {}).get("temp_directory"))
+        reader_config = "streamwright-gcs-" in str((kwargs.get("config") or {}).get("temp_directory"))
         return Recorder(connection, state) if reader_config else connection
     monkeypatch.setattr(duckdb, "connect", connect)
     yield state
@@ -427,7 +427,7 @@ def test_a_query_redirecting_the_endpoint_is_refused_before_any_network_call(con
     assert caught.value.code == "ACCESS_DENIED"
     assert nothing_read(storage)
     assert not listener.connected()
-    # and before a run starts: adapt validate reports it
+    # and before a run starts: streamwright validate reports it
     assert connector.check_request(call({"path": attack})) == [
         "gcs: path %r has a `?`: object storage URLs take no query - DuckDB would read its parameters (e.g. "
         "?s3_endpoint=, ?s3_access_key_id=) as connection settings; `?` is not a glob character here" % attack]
@@ -512,7 +512,7 @@ def test_duckdb_reads_only_under_the_url_roots_with_external_access_off():
         connection = client.connection
         assert connection.execute("SELECT current_setting('enable_external_access')").fetchone()[0] is False
         assert connection.execute("SELECT name, type, scope FROM duckdb_secrets()").fetchall() == [
-            ("adapt_gcs", "gcs", ["gs://acme-data/in/"])]
+            ("streamwright_gcs", "gcs", ["gs://acme-data/in/"])]
         assert SECRET not in connection.execute("SELECT secret_string FROM duckdb_secrets()").fetchone()[0]
         # DuckDB refuses it too, whatever the connector did
         with pytest.raises(duckdb.Error, match="Permission Error"):
@@ -535,7 +535,7 @@ def test_connect_loads_httpfs_and_sets_one_secret_scoped_to_the_roots_with_bound
         ) < sql.index("SET enable_external_access = false") < sql.index("SET lock_configuration = true")
         secrets = [(statement, parameters) for statement, parameters in storage.statements if "SECRET" in statement]
         assert secrets == [(
-            "CREATE OR REPLACE TEMPORARY SECRET adapt_gcs (TYPE gcs, KEY_ID ?, SECRET ?, SCOPE ?)",
+            "CREATE OR REPLACE TEMPORARY SECRET streamwright_gcs (TYPE gcs, KEY_ID ?, SECRET ?, SCOPE ?)",
             [KEY_ID, SECRET, ["gs://acme-data/in/", "gs://lake/raw/"]])]
         assert sql.index("LOAD httpfs") < sql.index(secrets[0][0]) < sql.index("SET enable_external_access = false")
         # credentials only ever travel as bound parameters, never in a statement's text
@@ -556,7 +556,7 @@ def test_connect_loads_httpfs_and_sets_one_secret_scoped_to_the_roots_with_bound
 # * ------------------------------------
 
 def test_reads_keep_pages_records_exact_values_and_log_lines(connector, storage, tmp_path, caplog):
-    caplog.set_level(logging.INFO, logger="adapt.network")
+    caplog.set_level(logging.INFO, logger="streamwright.network")
     storage.objects = {
         "gs://acme-data/in/a.csv": write(tmp_path / "a.csv", "id,amount,day\n1,1.50,2026-10-01\n2,,2026-10-02\n"
                                                              "3,%s,2026-10-03\n" % BIG),
@@ -591,7 +591,7 @@ def test_reads_keep_pages_records_exact_values_and_log_lines(connector, storage,
             "id": 3, "amount": decimal.Decimal(BIG), "day": "2026-10-03"}
     finally:
         client.close()
-    lines = [record for record in caplog.records if record.name == "adapt.network"]
+    lines = [record for record in caplog.records if record.name == "streamwright.network"]
     assert [line.getMessage().rsplit(",", 1)[0] for line in lines[:2]] == [
         "gcs read gs://acme-data/in/a.csv: 3 row(s)", "gcs read gs://acme-data/in/b.csv: 1 row(s)"]
     assert (lines[0].connector, lines[0].path, lines[0].records, lines[0].call) == (
@@ -878,8 +878,8 @@ def test_a_forced_error_never_shows_the_credentials_in_logs_errors_or_the_summar
     write(lake / "orders" / "east.csv", "order_id,quantity,amount,ordered_on\n1,2,3.50,2026-10-01\n")
     storage.serve(lake, "gs://acme-data/exports/")
     storage.errors["READ"] = echo(KEY_ID, SECRET)
-    monkeypatch.setenv("ADAPT_SECRET_GCS_KEY_ID", KEY_ID)
-    monkeypatch.setenv("ADAPT_SECRET_GCS_SECRET", SECRET)
+    monkeypatch.setenv("STREAMWRIGHT_SECRET_GCS_KEY_ID", KEY_ID)
+    monkeypatch.setenv("STREAMWRIGHT_SECRET_GCS_SECRET", SECRET)
     summary = tmp_path / "summary.json"
     assert cli.main(["run", EXAMPLE, "--allow-connector", "gcs", "--stream", "orders", "--output",
                      "jsonl:%s" % (tmp_path / "out"), "--summary", str(summary)]) != 0
@@ -991,10 +991,10 @@ def serve_example(storage, folder):
 
 
 def test_the_gcs_demo_runs_offline_with_the_stand_in(storage, tmp_path, monkeypatch):
-    components.unregister("gcs")  # the installed entry point, as adapt run loads it
+    components.unregister("gcs")  # the installed entry point, as streamwright run loads it
     serve_example(storage, tmp_path / "lake")
-    monkeypatch.setenv("ADAPT_SECRET_GCS_KEY_ID", KEY_ID)
-    monkeypatch.setenv("ADAPT_SECRET_GCS_SECRET", SECRET)
+    monkeypatch.setenv("STREAMWRIGHT_SECRET_GCS_KEY_ID", KEY_ID)
+    monkeypatch.setenv("STREAMWRIGHT_SECRET_GCS_SECRET", SECRET)
     out = tmp_path / "out"
     assert cli.main(["run", EXAMPLE, "--allow-connector", "gcs", "--output", "jsonl:%s" % out]) == 0
     written = {}
@@ -1014,7 +1014,7 @@ def test_the_gcs_demo_runs_offline_with_the_stand_in(storage, tmp_path, monkeypa
     assert secret == [KEY_ID, SECRET, ["gs://acme-data/exports/"]]
 
 
-def test_adapt_validate_and_connectors(storage, capsys, tmp_path):
+def test_streamwright_validate_and_connectors(storage, capsys, tmp_path):
     assert cli.main(["validate", EXAMPLE]) == 0
     assert storage.statements == []  # validation never connects
     assert cli.main(["connectors"]) == 0
@@ -1033,20 +1033,20 @@ def test_adapt_validate_and_connectors(storage, capsys, tmp_path):
 
 
 # * --------------------------------------------
-# * real object storage (ADAPT_TEST_GCS only)
+# * real object storage (STREAMWRIGHT_TEST_GCS only)
 # * --------------------------------------------
 
-@pytest.mark.skipif(not os.environ.get("ADAPT_TEST_GCS"), reason="set ADAPT_TEST_GCS=gs://bucket/prefix/ with "
-                    "ADAPT_TEST_GCS_KEY_ID, ADAPT_TEST_GCS_SECRET (an HMAC key; and ADAPT_TEST_GCS_PATH) to read "
+@pytest.mark.skipif(not os.environ.get("STREAMWRIGHT_TEST_GCS"), reason="set STREAMWRIGHT_TEST_GCS=gs://bucket/prefix/ with "
+                    "STREAMWRIGHT_TEST_GCS_KEY_ID, STREAMWRIGHT_TEST_GCS_SECRET (an HMAC key; and STREAMWRIGHT_TEST_GCS_PATH) to read "
                     "real object storage")
 def test_real_object_storage(connector):
-    auth = dict((key, os.environ["ADAPT_TEST_GCS_" + key.upper()]) for key in (
-        "key_id", "secret") if os.environ.get("ADAPT_TEST_GCS_" + key.upper()))
+    auth = dict((key, os.environ["STREAMWRIGHT_TEST_GCS_" + key.upper()]) for key in (
+        "key_id", "secret") if os.environ.get("STREAMWRIGHT_TEST_GCS_" + key.upper()))
     ctx = ConnectorContext(connector, Redactor([auth.get("key_id"), auth.get("secret")]))
-    client = connector.connect(dict(auth, roots=[os.environ["ADAPT_TEST_GCS"]]), ctx)
+    client = connector.connect(dict(auth, roots=[os.environ["STREAMWRIGHT_TEST_GCS"]]), ctx)
     try:
         records_read = [record for page in connector.request(client, call({
-            "path": os.environ.get("ADAPT_TEST_GCS_PATH", "*.csv")}), ctx) for record in page]
+            "path": os.environ.get("STREAMWRIGHT_TEST_GCS_PATH", "*.csv")}), ctx) for record in page]
     finally:
         client.close()
     assert isinstance(records_read, list)

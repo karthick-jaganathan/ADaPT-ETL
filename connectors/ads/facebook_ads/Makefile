@@ -1,20 +1,20 @@
-# ADaPT Facebook Ads connector Makefile
+# StreamWright Facebook Ads connector Makefile
 
 # Package information
-PACKAGE_NAME = adapt-facebook-ads
+PACKAGE_NAME = streamwright-facebook-ads
 VERSION = 0.0.1
 
 # Installation mode (dev, prod, dist)
 MODE ?= prod
 
 # Distribution directory
-DIST_DIR = /tmp/sdist/adapt
+DIST_DIR = /tmp/sdist/streamwright
 
 .PHONY: install uninstall clean test help verify build
 
 # Default target
 help:
-	@echo "ADaPT Facebook Ads connector - Available commands:"
+	@echo "StreamWright Facebook Ads connector - Available commands:"
 	@echo ""
 	@echo "  make install [MODE=dev|prod|dist] - Install $(PACKAGE_NAME) package (default: prod)"
 	@echo "  make uninstall                    - Uninstall $(PACKAGE_NAME) package"
@@ -48,7 +48,7 @@ else
 endif
 	@echo "✅ Installation complete!"
 	@echo "Installed packages:"
-	@pip list | grep adapt
+	@pip list | grep streamwright
 
 # Build distribution packages
 build: clean
@@ -86,5 +86,5 @@ test:
 verify:
 	@echo "Verifying $(PACKAGE_NAME) installation..."
 	@pip show $(PACKAGE_NAME) >/dev/null 2>&1 && echo "✅ $(PACKAGE_NAME) is installed!" || echo "❌ $(PACKAGE_NAME) is not installed!"
-	@python -c "import adapt.connectors.facebook_ads.connector; print('✅ adapt.connectors.facebook_ads import works!')" 2>/dev/null || echo "❌ adapt.connectors.facebook_ads import failed!"
-	@adapt connectors | grep -qE '^facebook_ads( |$$)' && echo "✅ facebook_ads connector is registered!" || echo "❌ facebook_ads connector is not registered!" 
+	@python -c "import streamwright.connectors.facebook_ads.connector; print('✅ streamwright.connectors.facebook_ads import works!')" 2>/dev/null || echo "❌ streamwright.connectors.facebook_ads import failed!"
+	@streamwright connectors | grep -qE '^facebook_ads( |$$)' && echo "✅ facebook_ads connector is registered!" || echo "❌ facebook_ads connector is not registered!" 

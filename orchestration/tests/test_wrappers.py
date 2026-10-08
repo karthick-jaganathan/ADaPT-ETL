@@ -2,8 +2,8 @@ import dataclasses
 import unittest
 
 from tests.helpers import FAKE_APP, GOOGLE_SECRET_ENV, google_context
-from adapt.orchestration import custom_wrappers
-from adapt.orchestration.wrappers import WrapperError, default_wrapper, node, render, unregister, wrapper_for
+from streamwright.orchestration import custom_wrappers
+from streamwright.orchestration.wrappers import WrapperError, default_wrapper, node, render, unregister, wrapper_for
 
 
 def sets(argv):
@@ -20,7 +20,7 @@ class DefaultWrapperTest(unittest.TestCase):
     def test_ad_groups_command(self):
         ctx = google_context()
         argv, secret_env = default_wrapper("ad_groups", ctx)
-        self.assertEqual(argv[0], "/tmp/adapt-sdk-venv/bin/adapt")
+        self.assertEqual(argv[0], "/tmp/streamwright-sdk-venv/bin/streamwright")
         self.assertEqual(argv[1:3], ["run", str(ctx.source)])
         self.assertIn(["--stream", "ad_groups"], [argv[i:i + 2] for i in range(len(argv))])
         self.assertIn("customer_ids=1000000001", sets(argv))
@@ -34,8 +34,8 @@ class DefaultWrapperTest(unittest.TestCase):
         connectors = [argv[i + 1] for i, arg in enumerate(argv) if arg == "--allow-connector"]
         self.assertEqual(connectors, ["google_ads", "gaql"])
         self.assertEqual(set(secret_env), GOOGLE_SECRET_ENV)
-        self.assertEqual(secret_env["ADAPT_SECRET_DEVELOPER_TOKEN"], FAKE_APP["developer_token"])
-        self.assertEqual(secret_env["ADAPT_SECRET_REFRESH_TOKEN"], FAKE_APP["refresh_token"])
+        self.assertEqual(secret_env["STREAMWRIGHT_SECRET_DEVELOPER_TOKEN"], FAKE_APP["developer_token"])
+        self.assertEqual(secret_env["STREAMWRIGHT_SECRET_REFRESH_TOKEN"], FAKE_APP["refresh_token"])
         assert_no_secret_values(self, argv)
         self.assertNotIn("--secrets", argv)
 
@@ -75,12 +75,12 @@ class DefaultWrapperTest(unittest.TestCase):
         with self.assertRaisesRegex(WrapperError, "not a stream"):
             default_wrapper("no_such_stream", google_context())
 
-    def test_adapt_bin_env(self):
+    def test_streamwright_bin_env(self):
         import os
         from unittest import mock
-        with mock.patch.dict(os.environ, {"ADAPT_BIN": "/opt/adapt"}):
+        with mock.patch.dict(os.environ, {"STREAMWRIGHT_BIN": "/opt/streamwright"}):
             argv, _ = default_wrapper("keywords", google_context())
-        self.assertEqual(argv[0], "/opt/adapt")
+        self.assertEqual(argv[0], "/opt/streamwright")
 
     def test_render(self):
         ctx = google_context()

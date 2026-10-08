@@ -1,6 +1,6 @@
-# ADaPT connectors
+# StreamWright connectors
 
-Connectors add APIs that need a vendor SDK to [adapt-core](../adapt-core/README.md): an auth provider that builds
+Connectors add APIs that need a vendor SDK to [streamwright](../core/README.md): an auth provider that builds
 the SDK client, and the read-only calls that a stream's `requests` items (`{name, sdk: <connector>, service, method,
 arguments}`) can make. Each folder is its own distribution, installed only where it is needed, since each one pulls in
 a vendor SDK. Four reader connectors read files, object storage and databases the same way, with DuckDB instead of a
@@ -8,22 +8,22 @@ vendor SDK: `files` (local files), `s3` and `gcs` (object storage) and `postgres
 
 | Folder | Package | Connector | SDK | SDK loggers |
 |---|---|---|---|---|
-| [google_ads](ads/google_ads/README.md) | `adapt-google-ads` | `google_ads` | google-ads | `google.ads.googleads.client` |
-| [microsoft_ads](ads/microsoft_ads/README.md) | `adapt-microsoft-ads` | `microsoft_ads` | bingads | `suds.client`, `suds.transport` |
-| [facebook_ads](ads/facebook_ads/README.md) | `adapt-facebook-ads` | `facebook_ads` | facebook_business | `urllib3.connectionpool` |
-| [files](readers/files/README.md) | `adapt-files` | `files` | duckdb | - |
-| [s3](readers/s3/README.md) | `adapt-s3` | `s3` | duckdb (its httpfs extension) | - |
-| [gcs](readers/gcs/README.md) | `adapt-gcs` | `gcs` | duckdb (its httpfs extension) | - |
-| [postgres](readers/postgres/README.md) | `adapt-postgres` | `postgres` | duckdb (its postgres extension) | - |
+| [google_ads](ads/google_ads/README.md) | `streamwright-google-ads` | `google_ads` | google-ads | `google.ads.googleads.client` |
+| [microsoft_ads](ads/microsoft_ads/README.md) | `streamwright-microsoft-ads` | `microsoft_ads` | bingads | `suds.client`, `suds.transport` |
+| [facebook_ads](ads/facebook_ads/README.md) | `streamwright-facebook-ads` | `facebook_ads` | facebook_business | `urllib3.connectionpool` |
+| [files](readers/files/README.md) | `streamwright-files` | `files` | duckdb | - |
+| [s3](readers/s3/README.md) | `streamwright-s3` | `s3` | duckdb (its httpfs extension) | - |
+| [gcs](readers/gcs/README.md) | `streamwright-gcs` | `gcs` | duckdb (its httpfs extension) | - |
+| [postgres](readers/postgres/README.md) | `streamwright-postgres` | `postgres` | duckdb (its postgres extension) | - |
 
 ```bash
 make install-connectors         # all of them, from the repository root; or: pip install ./connectors/ads/google_ads
 make install-files           # one of them: install-files, install-s3, install-gcs, install-postgres, ...
-adapt connectors                # the installed connectors, with their SDK loggers
+streamwright connectors                # the installed connectors, with their SDK loggers
 ```
 
 ```text
-$ adapt connectors
+$ streamwright connectors
 advertising:
   facebook_ads — Meta / Facebook Ads (facebook-business SDK) (SDK loggers: urllib3.connectionpool)
   google_ads — Google Ads (GAQL via the google-ads SDK) (SDK loggers: google.ads.googleads.client)
@@ -37,11 +37,11 @@ object storage:
   s3 — Amazon S3 objects (DuckDB httpfs)
 ```
 
-An SDK's loggers show its own request and response logs, redacted like adapt's lines; adapt never turns them on. Name
+An SDK's loggers show its own request and response logs, redacted like streamwright's lines; streamwright never turns them on. Name
 them with `--log` (each connector's README has an example):
 
 ```bash
-adapt run examples/sources/ads/google_ads --set customer_ids=1112223333 --log google.ads.googleads.client=DEBUG
+streamwright run examples/sources/ads/google_ads --set customer_ids=1112223333 --log google.ads.googleads.client=DEBUG
 ```
 
 ## Files, object storage and databases
@@ -64,22 +64,22 @@ adapt run examples/sources/ads/google_ads --set customer_ids=1112223333 --log go
   with bound `$name` values; DuckDB's system and catalog views are refused) or `method: table`. Example:
   [examples/sources/readers/postgres_demo](../examples/sources/readers/postgres_demo/).
 
-There is no `https` reader. Allow them like the others: `adapt run --allow-connector files` (or `s3`, `gcs`,
-`postgres`). They log one line per file, object or query on `adapt.network`, and have no SDK loggers.
+There is no `https` reader. Allow them like the others: `streamwright run --allow-connector files` (or `s3`, `gcs`,
+`postgres`). They log one line per file, object or query on `streamwright.network`, and have no SDK loggers.
 
 ## Layout
 
 ```text
 connectors/<name>/
-├── pyproject.toml              distribution adapt-<name>; entry point <name> in the adapt.connectors group
-│                               (and its query builders, if any, in adapt.query_builders)
+├── pyproject.toml              distribution streamwright-<name>; entry point <name> in the streamwright.connectors group
+│                               (and its query builders, if any, in streamwright.query_builders)
 ├── README.md                   auth keys, allowed calls, records, errors and logs
 ├── Makefile, LICENSE, setup.py
-├── src/adapt/connectors/<name>/   import adapt.connectors.<name> (adapt and adapt.connectors are namespace packages)
+├── src/streamwright/connectors/<name>/   import streamwright.connectors.<name> (streamwright and streamwright.connectors are namespace packages)
 │   ├── __init__.py
 │   └── connector.py               the Connector subclass
 └── tests/                      offline tests: the real SDK against fakes
-    ├── conftest.py             the `api` fixture (adapt.core.runtime.testing.FakeApi)
+    ├── conftest.py             the `api` fixture (streamwright.core.runtime.testing.FakeApi)
     └── test_<name>.py
 ```
 
@@ -88,20 +88,20 @@ Example sources are the folders in [examples/sources/](../examples/sources/), wh
 
 ## Adding a connector
 
-1. Copy a connector folder, then rename the folder, the package (`src/adapt/connectors/<name>`), the distribution
-   (`adapt-<name>`) and the entry point:
+1. Copy a connector folder, then rename the folder, the package (`src/streamwright/connectors/<name>`), the distribution
+   (`streamwright-<name>`) and the entry point:
 
    ```toml
-   [project.entry-points."adapt.connectors"]
-   <name> = "adapt.connectors.<name>.connector:<Name>Connector"
+   [project.entry-points."streamwright.connectors"]
+   <name> = "streamwright.connectors.<name>.connector:<Name>Connector"
    ```
 
-2. Implement the connector contract ([Writing a connector](https://karthick-jaganathan.github.io/ADaPT-ETL/adapt-core/connectors-and-readers/#writing-a-connector)): allow only
+2. Implement the connector contract ([Writing a connector](https://karthick-jaganathan.github.io/streamwright/core/connectors-and-readers/#writing-a-connector)): allow only
    read-only calls, wrap every API call in `context.call(...)`, map SDK errors in `error()`, pass the tokens the
    connector obtains at run time to `context.secret(value)` (they are `***` in every log line and error), set
    `network_loggers` to the names of the loggers the SDK writes its requests and responses to, and set `category`
-   (how `adapt connectors` groups it, e.g. `"databases"`) and a one-line `summary`, both shown by `adapt connectors`.
-3. Test offline with `adapt.core.runtime.testing` (`FakeApi`, `MemoryOutput`, `FakeClock`, and `page_stream` for a stream
+   (how `streamwright connectors` groups it, e.g. `"databases"`) and a one-line `summary`, both shown by `streamwright connectors`.
+3. Test offline with `streamwright.core.runtime.testing` (`FakeApi`, `MemoryOutput`, `FakeClock`, and `page_stream` for a stream
    with one request, step and export), starting each test module with `pytest.importorskip("<sdk module>")` so the
    core CI job, which has no SDKs, skips it.
 4. Add the connector to `CONNECTORS` in the root Makefile and to the `connectors` job in `.github/workflows/ci.yml`, and add an

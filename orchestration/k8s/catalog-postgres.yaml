@@ -1,16 +1,16 @@
-# The DuckLake catalog of the simulation: Postgres at catalog-postgres.adapt.svc.cluster.local:5432, database adaptcat,
-# user adapt. Each user's catalog tables are in a schema of their own (lake_<user>, ADAPT_DUCKLAKE_CATALOG_SCHEMA).
+# The DuckLake catalog of the simulation: Postgres at catalog-postgres.streamwright.svc.cluster.local:5432, database streamwrightcat,
+# user streamwright. Each user's catalog tables are in a schema of their own (lake_<user>, STREAMWRIGHT_DUCKLAKE_CATALOG_SCHEMA).
 # The password is NOT here: setup.sh generates it into the Secret catalog-postgres-auth (POSTGRES_PASSWORD) and the
-# same value into adapt-secrets (ADAPT_DUCKLAKE_CATALOG_PASSWORD) for the Jobs. The data is on an emptyDir (a
+# same value into streamwright-secrets (STREAMWRIGHT_DUCKLAKE_CATALOG_PASSWORD) for the Jobs. The data is on an emptyDir (a
 # simulation): deleting the pod drops the catalog.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: catalog-postgres
-  namespace: adapt
+  namespace: streamwright
   labels:
     app.kubernetes.io/name: catalog-postgres
-    app.kubernetes.io/part-of: adapt-pipeline
+    app.kubernetes.io/part-of: streamwright-pipeline
 spec:
   replicas: 1
   strategy:
@@ -22,7 +22,7 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: catalog-postgres
-        app.kubernetes.io/part-of: adapt-pipeline
+        app.kubernetes.io/part-of: streamwright-pipeline
     spec:
       containers:
         - name: postgres
@@ -30,9 +30,9 @@ spec:
           imagePullPolicy: IfNotPresent
           env:
             - name: POSTGRES_DB
-              value: adaptcat
+              value: streamwrightcat
             - name: POSTGRES_USER
-              value: adapt
+              value: streamwright
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -45,7 +45,7 @@ spec:
               containerPort: 5432
           readinessProbe:
             exec:
-              command: ["pg_isready", "-h", "127.0.0.1", "-U", "adapt", "-d", "adaptcat"]
+              command: ["pg_isready", "-h", "127.0.0.1", "-U", "streamwright", "-d", "streamwrightcat"]
             initialDelaySeconds: 3
             periodSeconds: 3
           resources:
@@ -65,10 +65,10 @@ apiVersion: v1
 kind: Service
 metadata:
   name: catalog-postgres
-  namespace: adapt
+  namespace: streamwright
   labels:
     app.kubernetes.io/name: catalog-postgres
-    app.kubernetes.io/part-of: adapt-pipeline
+    app.kubernetes.io/part-of: streamwright-pipeline
 spec:
   selector:
     app.kubernetes.io/name: catalog-postgres

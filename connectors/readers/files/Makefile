@@ -1,20 +1,20 @@
-# ADaPT files connector Makefile
+# StreamWright files connector Makefile
 
 # Package information
-PACKAGE_NAME = adapt-files
+PACKAGE_NAME = streamwright-files
 VERSION = 0.0.1
 
 # Installation mode (dev, prod, dist)
 MODE ?= prod
 
 # Distribution directory
-DIST_DIR = /tmp/sdist/adapt
+DIST_DIR = /tmp/sdist/streamwright
 
 .PHONY: install uninstall clean test help verify build
 
 # Default target
 help:
-	@echo "ADaPT files connector - Available commands:"
+	@echo "StreamWright files connector - Available commands:"
 	@echo ""
 	@echo "  make install [MODE=dev|prod|dist] - Install $(PACKAGE_NAME) package (default: prod)"
 	@echo "  make uninstall                    - Uninstall $(PACKAGE_NAME) package"
@@ -48,7 +48,7 @@ else
 endif
 	@echo "✅ Installation complete!"
 	@echo "Installed packages:"
-	@pip list | grep adapt
+	@pip list | grep streamwright
 
 # Build distribution packages
 build: clean
@@ -85,5 +85,5 @@ test:
 verify:
 	@echo "Verifying $(PACKAGE_NAME) installation..."
 	@pip show $(PACKAGE_NAME) >/dev/null 2>&1 && echo "✅ $(PACKAGE_NAME) is installed!" || echo "❌ $(PACKAGE_NAME) is not installed!"
-	@python -c "import adapt.connectors.files.connector; print('✅ adapt.connectors.files import works!')" 2>/dev/null || echo "❌ adapt.connectors.files import failed!"
-	@adapt connectors | grep -qE '^files( |$$)' && echo "✅ files connector is registered!" || echo "❌ files connector is not registered!" 
+	@python -c "import streamwright.connectors.files.connector; print('✅ streamwright.connectors.files import works!')" 2>/dev/null || echo "❌ streamwright.connectors.files import failed!"
+	@streamwright connectors | grep -qE '^files( |$$)' && echo "✅ files connector is registered!" || echo "❌ files connector is not registered!" 

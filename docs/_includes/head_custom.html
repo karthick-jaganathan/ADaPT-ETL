@@ -1,20 +1,20 @@
-<link rel="icon" type="image/png" href="{{ '/assets/images/adapt-icon.png' | relative_url }}">
+<link rel="icon" type="image/png" href="{{ '/assets/images/streamwright-icon.png' | relative_url }}">
 <link rel="icon" type="image/x-icon" href="{{ '/favicon.ico' | relative_url }}">
 <link rel="shortcut icon" type="image/x-icon" href="{{ '/favicon.ico' | relative_url }}">
 
 <style>
   /* Dark mode: swap the sidebar logo for the light-wordmark variant. */
-  html[data-adapt-theme="adapt-dark"] .site-logo {
-    background-image: url("{{ '/assets/images/adapt-logo-dark.png' | relative_url }}") !important;
+  html[data-streamwright-theme="streamwright-dark"] .site-logo {
+    background-image: url("{{ '/assets/images/streamwright-logo-dark.png' | relative_url }}") !important;
   }
 </style>
 
 <script>
-  /* ADaPT light/dark theme toggle. Applies the saved theme (or the OS preference) before first paint, then injects a 🌙/☀️ button into the header. */
+  /* StreamWright light/dark theme toggle. Applies the saved theme (or the OS preference) before first paint, then injects a 🌙/☀️ button into the header. */
   (function () {
-    var STORAGE_KEY = 'adapt-theme';
-    var LIGHT = 'adapt';
-    var DARK = 'adapt-dark';
+    var STORAGE_KEY = 'streamwright-theme';
+    var LIGHT = 'streamwright';
+    var DARK = 'streamwright-dark';
     var mermaidSettings = {{ site.mermaid | jsonify }} || {};
 
     function savedTheme() {
@@ -31,28 +31,28 @@
 
     function applyTheme(theme) {
       current = theme;
-      document.documentElement.setAttribute('data-adapt-theme', theme);
+      document.documentElement.setAttribute('data-streamwright-theme', theme);
       if (window.jtd && typeof jtd.setTheme === 'function') {
         jtd.setTheme(theme);
       }
     }
 
     /* Mermaid config for the current theme; read by _includes/mermaid_config.js. */
-    window.adaptMermaidConfig = function () {
+    window.streamwrightMermaidConfig = function () {
       var vars = Object.assign({}, mermaidSettings.themeVariables || {});
       if (current === DARK) Object.assign(vars, mermaidSettings.darkThemeVariables || {});
       return { theme: mermaidSettings.theme || 'default', themeVariables: vars };
     };
 
     function rerenderMermaid() {
-      var mermaid = window.adaptMermaid;
-      var nodes = document.querySelectorAll('[data-adapt-mermaid-src]');
+      var mermaid = window.streamwrightMermaid;
+      var nodes = document.querySelectorAll('[data-streamwright-mermaid-src]');
       if (!mermaid || !nodes.length) return;
       Array.prototype.forEach.call(nodes, function (el) {
         el.removeAttribute('data-processed');
-        el.textContent = el.getAttribute('data-adapt-mermaid-src');
+        el.textContent = el.getAttribute('data-streamwright-mermaid-src');
       });
-      mermaid.initialize(window.adaptMermaidConfig());
+      mermaid.initialize(window.streamwrightMermaidConfig());
       mermaid.run({ nodes: Array.prototype.slice.call(nodes) });
     }
 
@@ -90,11 +90,11 @@
       if (header) header.appendChild(button);
     }
 
-    /* The default stylesheet is the light "adapt" scheme; only swap when needed. */
+    /* The default stylesheet is the light "streamwright" scheme; only swap when needed. */
     if (current !== LIGHT) {
       applyTheme(current);
     } else {
-      document.documentElement.setAttribute('data-adapt-theme', LIGHT);
+      document.documentElement.setAttribute('data-streamwright-theme', LIGHT);
     }
 
     if (document.readyState === 'loading') {

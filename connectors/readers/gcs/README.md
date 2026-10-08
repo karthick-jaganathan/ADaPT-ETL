@@ -1,6 +1,6 @@
-# ADaPT gcs connector
+# StreamWright gcs connector
 
-The `gcs` connector for [adapt-core](../../../adapt-core/README.md): `sdk: gcs` requests read csv, tsv, json, jsonl
+The `gcs` connector for [streamwright](../../../core/README.md): `sdk: gcs` requests read csv, tsv, json, jsonl
 and parquet objects from Google Cloud Storage through [DuckDB](https://duckdb.org/)'s httpfs extension (GCS's
 S3-compatible access, with an HMAC key), each row one record, on a DuckDB connection of the connector's own (never the
 run's transform sandbox). Example: the source folder [examples/sources/readers/gcs_demo/](../../../examples/sources/readers/gcs_demo/).
@@ -10,10 +10,10 @@ Local files are read by the `files` connector; Amazon S3 by the `s3` connector.
 
 ```bash
 make install-gcs             # from the repository root; or: pip install ./connectors/readers/gcs (installs duckdb)
-adapt connectors             # lists gcs (it has no SDK loggers)
-adapt validate examples/sources/readers/gcs_demo     # static checks: no network, no bucket
-ADAPT_SECRET_GCS_KEY_ID=GOOG1E... ADAPT_SECRET_GCS_SECRET=... \
-  adapt run examples/sources/readers/gcs_demo --set bucket_root=gs://my-bucket/exports/ --allow-connector gcs --output jsonl:out
+streamwright connectors             # lists gcs (it has no SDK loggers)
+streamwright validate examples/sources/readers/gcs_demo     # static checks: no network, no bucket
+STREAMWRIGHT_SECRET_GCS_KEY_ID=GOOG1E... STREAMWRIGHT_SECRET_GCS_SECRET=... \
+  streamwright run examples/sources/readers/gcs_demo --set bucket_root=gs://my-bucket/exports/ --allow-connector gcs --output jsonl:out
 ```
 
 DuckDB installs its httpfs extension on the first connect (a download; offline hosts: run `INSTALL httpfs` in DuckDB
@@ -36,7 +36,7 @@ auth:
 | Key | Meaning |
 |---|---|
 | `roots` | required: the URL prefixes objects can be read from, `gs://bucket/prefix/` (a list; references allowed, e.g. `["{{ config.bucket_root }}"]`; no secrets, no glob, no `?`). |
-| `key_id`, `secret` | required: an HMAC key (Cloud Storage > Settings > Interoperability), each ONE `{{ secrets.* }}` reference. `adapt validate` refuses any other reference, and `adapt run` refuses to connect with a value that is not a secret of the run, so credentials are never written in the source or its config. |
+| `key_id`, `secret` | required: an HMAC key (Cloud Storage > Settings > Interoperability), each ONE `{{ secrets.* }}` reference. `streamwright validate` refuses any other reference, and `streamwright run` refuses to connect with a value that is not a secret of the run, so credentials are never written in the source or its config. |
 
 connect() loads httpfs and sets the key as ONE temporary DuckDB secret (`TYPE gcs`) scoped to the roots, as bound
 parameters. Both values are registered as secrets of the run: `***` in every log line, error, `--summary` and message
@@ -68,7 +68,7 @@ The arguments are those of the `s3` connector (see [its README](../s3/README.md#
 key relative to the first root; a glob with `*`, `[ab]`, `**` - never `?`; a list), `format`, `options`,
 `on_missing`, and `match` (a literal Python regex fully matching each object's key relative to the `path` folder,
 in key order) with `recursive` (default false). Each row is one record, a JSON object, in pages of at most 1,000
-records; each object read is one call and logs one `adapt.network` line: `gcs read gs://...: N row(s), S s`.
+records; each object read is one call and logs one `streamwright.network` line: `gcs read gs://...: N row(s), S s`.
 
 ## Security
 
@@ -91,8 +91,8 @@ records; each object read is one call and logs one `adapt.network` line: `gcs re
 
 ```bash
 make -C connectors/readers/gcs test     # offline: a recording DuckDB stand-in serves gs:// URLs from local files
-ADAPT_TEST_GCS=gs://bucket/prefix/ ADAPT_TEST_GCS_KEY_ID=... ADAPT_TEST_GCS_SECRET=... make -C connectors/readers/gcs test
+STREAMWRIGHT_TEST_GCS=gs://bucket/prefix/ STREAMWRIGHT_TEST_GCS_KEY_ID=... STREAMWRIGHT_TEST_GCS_SECRET=... make -C connectors/readers/gcs test
 ```
 
 When DuckDB's httpfs is installed locally, two tests use it with refused URLs and a `127.0.0.1` listener only (never
-reached by the connector); the real-bucket test runs only with `ADAPT_TEST_GCS`.
+reached by the connector); the real-bucket test runs only with `STREAMWRIGHT_TEST_GCS`.

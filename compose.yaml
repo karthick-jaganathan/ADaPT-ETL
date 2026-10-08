@@ -15,26 +15,26 @@
 # **************************************************************************/
 
 # ***********************************
-# * ADaPT ETL
+# * StreamWright ETL
 # * Local Development Environment
 # ***********************************
 
 services:
-  adapt-etl:
+  streamwright:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: adapt-etl
+    container_name: streamwright
     volumes:
       # Mount code directory for easy code updates
       - ./:/app
       # Mount configs directory for easy configuration updates
       - ./configs:/configs:ro
       # Mount output directory for data exports
-      - /data/adapt_etl:/data/adapt_etl
+      - /data/streamwright_etl:/data/streamwright_etl
     environment:
-      - ADAPT_CONFIGS=/configs
-      - ADAPT_OUTPUT_DIR=/data/adapt_etl
+      - STREAMWRIGHT_CONFIGS=/configs
+      - STREAMWRIGHT_OUTPUT_DIR=/data/streamwright_etl
     # Override the default command to keep container running
     command: tail -f /dev/null
     restart: unless-stopped

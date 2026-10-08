@@ -1,6 +1,6 @@
-# ADaPT Google Ads connector
+# StreamWright Google Ads connector
 
-The `google_ads` connector for [adapt-core](../../../adapt-core/README.md): the `google_ads` auth provider builds a
+The `google_ads` connector for [streamwright](../../../core/README.md): the `google_ads` auth provider builds a
 [google-ads](https://pypi.org/project/google-ads/) client, and `sdk: google_ads` requests run Google Ads Query
 Language (GAQL) queries. Example: the source folder [examples/sources/ads/google_ads/](../../../examples/sources/ads/google_ads/).
 
@@ -8,7 +8,7 @@ Language (GAQL) queries. Example: the source folder [examples/sources/ads/google
 
 ```bash
 make install-google-ads      # from the repository root; or: pip install ./connectors/ads/google_ads (installs google-ads)
-adapt connectors             # lists google_ads with its SDK logger (gaql is still checked by adapt validate)
+streamwright connectors             # lists google_ads with its SDK logger (gaql is still checked by streamwright validate)
 ```
 
 ## Auth
@@ -37,7 +37,7 @@ adapt connectors             # lists google_ads with its SDK logger (gaql is sti
 
 ## GAQL queries
 
-The `gaql` query builder (a component of this package, in the `adapt.query_builders` group) writes Google Ads Query
+The `gaql` query builder (a component of this package, in the `streamwright.query_builders` group) writes Google Ads Query
 Language text from a mapping, checking, quoting and escaping every value:
 
 ```yaml
@@ -60,7 +60,7 @@ arguments:
 - `type` says how values are written: `int` (whole numbers only), `string` (quoted, escaped), `enum` (bare names:
   letters, digits and `_`) and `date` (`YYYY-MM-DD`, `today` or offsets such as `-7d`).
 - `skip_if_empty: true` drops an item whose value (or a `BETWEEN` bound) is missing, for optional filters.
-- `adapt validate` and `adapt run` check the mapping before anything is fetched; platforms that allow-list
+- `streamwright validate` and `streamwright run` check the mapping before anything is fetched; platforms that allow-list
   components allow `gaql` as well as `google_ads`.
 
 ## Errors
@@ -72,17 +72,17 @@ and the next run resumes it. Other errors fail the window with their Google Ads 
 
 ## Logs
 
-The client logs its calls on the logger `google.ads.googleads.client`, which `adapt connectors` lists: one line per call
-at `INFO`, and each request and response at `DEBUG`. adapt never turns it on; name it with `--log`:
+The client logs its calls on the logger `google.ads.googleads.client`, which `streamwright connectors` lists: one line per call
+at `INFO`, and each request and response at `DEBUG`. streamwright never turns it on; name it with `--log`:
 
 ```bash
-adapt run examples/sources/ads/google_ads --set customer_ids=1112223333 \
-  --log adapt.network=DEBUG --log google.ads.googleads.client=DEBUG
+streamwright run examples/sources/ads/google_ads --set customer_ids=1112223333 \
+  --log streamwright.network=DEBUG --log google.ads.googleads.client=DEBUG
 ```
 
 This replaces google-ads' logging snippet (`logging.basicConfig()`, then the logger `google.ads.googleads.client` at
-`DEBUG`). The client's lines are redacted like adapt's own: the developer token, the client secret, the refresh token
-and the access tokens the credentials get, refreshed ones too, are `***`. `--log adapt.network=INFO` alone gives
-adapt's line per response, after its stream, request, partition and window, e.g.
+`DEBUG`). The client's lines are redacted like streamwright's own: the developer token, the client secret, the refresh token
+and the access tokens the credentials get, refreshed ones too, are `***`. `--log streamwright.network=INFO` alone gives
+streamwright's line per response, after its stream, request, partition and window, e.g.
 `google_ads GoogleAdsService.search_stream page 1: 10,000 record(s), 2.10 s, attempt 1`; a `search_stream` call gives
 a page per streamed batch.

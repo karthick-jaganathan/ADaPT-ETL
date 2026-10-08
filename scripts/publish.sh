@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 #
-# Build and publish one ADaPT distribution by its PyPI name — works for any
+# Build and publish one StreamWright distribution by its PyPI name — works for any
 # current or future package (the package directory is resolved from pyproject
 # `name`, so new connectors need no change here).
 #
 # Usage:
-#   scripts/publish.sh adapt-google-ads            # upload to PyPI
-#   scripts/publish.sh adapt-postgres --test       # upload to TestPyPI (dry run)
+#   scripts/publish.sh streamwright-google-ads            # upload to PyPI
+#   scripts/publish.sh streamwright-postgres --test       # upload to TestPyPI (dry run)
 set -euo pipefail
 
 DIST="${1:?usage: scripts/publish.sh <dist-name> [--test]}"
@@ -15,7 +15,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 # Resolve the package directory whose pyproject `name` matches DIST.
 DIR=""
-for pp in "$ROOT/adapt-core/pyproject.toml" "$ROOT"/connectors/*/*/pyproject.toml; do
+for pp in "$ROOT/core/pyproject.toml" "$ROOT"/connectors/*/*/pyproject.toml; do
   name=$(grep -m1 '^name = ' "$pp" | sed 's/name = //; s/"//g')
   if [ "$name" = "$DIST" ]; then DIR="$(dirname "$pp")"; break; fi
 done

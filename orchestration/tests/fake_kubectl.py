@@ -1,7 +1,7 @@
 """
 A stand-in for kubectl (tests only), with its state in $FAKE_KUBECTL_STATE: `create -f -` stores the Job manifest it
-reads on stdin; `get pods -l job-name=J` shows one pod whose container ended with $FAKE_ADAPT_EXIT; `logs -f pod/P`
-prints adapt-like lines for the Job's --stream (the pod's command, the envFrom Secret's name, the records); `get job J`
+reads on stdin; `get pods -l job-name=J` shows one pod whose container ended with $FAKE_STREAMWRIGHT_EXIT; `logs -f pod/P`
+prints streamwright-like lines for the Job's --stream (the pod's command, the envFrom Secret's name, the records); `get job J`
 shows the Complete or Failed condition; `get secret` prints the keys of $FAKE_KUBECTL_SECRET_KEYS (comma separated);
 `delete job J` marks it deleted. Every call is appended to calls.jsonl (argv only, never stdin), every create and
 delete to events.jsonl.
@@ -13,10 +13,10 @@ import sys
 import time
 
 STATE = os.environ["FAKE_KUBECTL_STATE"]
-DEFAULT_KEYS = ("ADAPT_SECRET_DEVELOPER_TOKEN,ADAPT_SECRET_CLIENT_ID,ADAPT_SECRET_CLIENT_SECRET,"
-                "ADAPT_SECRET_REFRESH_TOKEN,ADAPT_DUCKLAKE_S3_KEY_ID,ADAPT_DUCKLAKE_S3_SECRET,"
-                "ADAPT_DUCKLAKE_CATALOG_PASSWORD")
-EXIT = int(os.environ.get("FAKE_ADAPT_EXIT", "0"))
+DEFAULT_KEYS = ("STREAMWRIGHT_SECRET_DEVELOPER_TOKEN,STREAMWRIGHT_SECRET_CLIENT_ID,STREAMWRIGHT_SECRET_CLIENT_SECRET,"
+                "STREAMWRIGHT_SECRET_REFRESH_TOKEN,STREAMWRIGHT_DUCKLAKE_S3_KEY_ID,STREAMWRIGHT_DUCKLAKE_S3_SECRET,"
+                "STREAMWRIGHT_DUCKLAKE_CATALOG_PASSWORD")
+EXIT = int(os.environ.get("FAKE_STREAMWRIGHT_EXIT", "0"))
 
 argv = sys.argv[1:]
 assert argv[0] == "--context" and argv[2] == "--namespace", argv
@@ -64,12 +64,12 @@ elif args[0] == "logs":
     print("[2026-10-05 00:00:00,000] INFO fake-pod: $ %s" % " ".join(command))
     print("[2026-10-05 00:00:00,000] INFO fake-pod: envFrom %s" % container["envFrom"][0]["secretRef"]["name"])
     if EXIT == 0:
-        print("[2026-10-05 00:00:01,000] INFO adapt.source: stream '%s': 1,234 record(s) written (%s: 1,234), "
+        print("[2026-10-05 00:00:01,000] INFO streamwright.source: stream '%s': 1,234 record(s) written (%s: 1,234), "
               "1 request(s) (raw: 1), 0 retries, 0 failed partition(s), 0.1 s" % (stream, stream))
-        print("[2026-10-05 00:00:01,000] INFO adapt.source: run finished in 0.2 s: 1 stream(s), 1,234 record(s) "
+        print("[2026-10-05 00:00:01,000] INFO streamwright.source: run finished in 0.2 s: 1 stream(s), 1,234 record(s) "
               "written (%s: 1,234), 1 request(s), 0 retries, 0 failed partition(s), 1 output(s) written" % stream)
     else:
-        print("[2026-10-05 00:00:01,000] ERROR adapt.source: boom")
+        print("[2026-10-05 00:00:01,000] ERROR streamwright.source: boom")
 elif args[:2] == ["get", "job"]:
     condition = {"type": "Complete", "status": "True"} if EXIT == 0 else \
         {"type": "Failed", "status": "True", "reason": "BackoffLimitExceeded", "message": "Job has reached the limit"}

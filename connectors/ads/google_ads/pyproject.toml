@@ -3,9 +3,9 @@ requires = ["setuptools>=61.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "adapt-google-ads"
-version = "0.0.1"
-description = "Adaptive Data Pipeline Toolkit - Google Ads connector (google_ads auth provider, gaql query builder)"
+name = "streamwright-google-ads"
+version = "0.1.0"
+description = "StreamWright - Google Ads connector (google_ads auth provider, gaql query builder)"
 readme = "README.md"
 license = "Apache-2.0"
 authors = [
@@ -23,21 +23,21 @@ classifiers = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-    "adapt-core~=0.0.1",
+    "streamwright~=0.1.0",
     "google-ads>=33.0",
 ]
 
 [project.urls]
-Homepage = "https://github.com/karthick-jaganathan/ADaPT-ETL"
-Repository = "https://github.com/karthick-jaganathan/ADaPT-ETL"
+Homepage = "https://github.com/karthick-jaganathan/streamwright"
+Repository = "https://github.com/karthick-jaganathan/streamwright"
 
-[project.entry-points."adapt.connectors"]
-google_ads = "adapt.connectors.google_ads.connector:GoogleAdsConnector"
+[project.entry-points."streamwright.connectors"]
+google_ads = "streamwright.connectors.google_ads.connector:GoogleAdsConnector"
 
-[project.entry-points."adapt.query_builders"]
-gaql = "adapt.connectors.google_ads.gaql:GaqlBuilder"
+[project.entry-points."streamwright.query_builders"]
+gaql = "streamwright.connectors.google_ads.gaql:GaqlBuilder"
 
 [tool.setuptools]
-# src layout: adapt and adapt.connectors are namespace packages shared with the other ADaPT distributions
+# src layout: streamwright and streamwright.connectors are namespace packages shared with the other StreamWright distributions
 package-dir = {"" = "src"}
-packages = ["adapt.connectors.google_ads"]
+packages = ["streamwright.connectors.google_ads"]
