@@ -116,7 +116,7 @@ Connectors name the loggers their SDK writes its requests and responses to, and 
 |---|---|---|
 | `google_ads` | `google.ads.googleads.client` | `INFO`: one line per call; `DEBUG`: each request and response |
 | `microsoft_ads` | `suds.client`, `suds.transport` | `DEBUG`: the SOAP messages sent and received (`suds.client`), and their HTTP requests and replies (`suds.transport`) |
-| `facebook_ads` | `urllib3.connectionpool` | `DEBUG`: each request's method, URL and status (`--log streamwright.network=DEBUG` adds the headers and bodies) |
+| `meta_ads` | `urllib3.connectionpool` | `DEBUG`: each request's method, URL and status (`--log streamwright.network=DEBUG` adds the headers and bodies) |
 
 Name them with `--log`. For example, google-ads' logging snippet (`logging.basicConfig()`, then the logger
 `google.ads.googleads.client` at `DEBUG`) becomes:

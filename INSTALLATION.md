@@ -33,7 +33,7 @@ Without make:
 
 ```bash
 pip install ./core
-pip install ./connectors/ads/google_ads ./connectors/ads/microsoft_ads ./connectors/ads/facebook_ads \
+pip install ./connectors/ads/google_ads ./connectors/ads/microsoft_ads ./connectors/ads/meta_ads \
             ./connectors/readers/files ./connectors/readers/s3 ./connectors/readers/gcs ./connectors/readers/postgres
 ```
 
@@ -45,7 +45,7 @@ Install only the connectors your sources use:
 |---|---|---|
 | `google_ads` | `make install-google-ads` | `streamwright-google-ads` (google-ads) |
 | `microsoft_ads` | `make install-microsoft-ads` | `streamwright-microsoft-ads` (bingads) |
-| `facebook_ads` | `make install-facebook-ads` | `streamwright-facebook-ads` (facebook_business) |
+| `meta_ads` | `make install-meta-ads` | `streamwright-meta-ads` (facebook_business) |
 | `files` | `make install-files` | `streamwright-files` (DuckDB) |
 | `s3` | `make install-s3` | `streamwright-s3` (DuckDB httpfs) |
 | `gcs` | `make install-gcs` | `streamwright-gcs` (DuckDB httpfs) |

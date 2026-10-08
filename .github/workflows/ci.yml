@@ -55,12 +55,12 @@ jobs:
       # still never call external APIs (s3 and gcs read a local stand-in for object storage, postgres a local DuckDB
       # stand-in).
       - name: Install StreamWright, connectors and dlt
-        run: python -m pip install ./core ./connectors/ads/google_ads ./connectors/ads/microsoft_ads ./connectors/ads/facebook_ads ./connectors/readers/files ./connectors/readers/s3 ./connectors/readers/gcs ./connectors/readers/postgres pytest jsonschema "dlt[duckdb]>=1.0"
+        run: python -m pip install ./core ./connectors/ads/google_ads ./connectors/ads/microsoft_ads ./connectors/ads/meta_ads ./connectors/readers/files ./connectors/readers/s3 ./connectors/readers/gcs ./connectors/readers/postgres pytest jsonschema "dlt[duckdb]>=1.0"
 
       - name: Check the connectors are registered
         run: |
           out="$(streamwright connectors)"; echo "$out"
-          for c in files s3 gcs postgres google_ads microsoft_ads facebook_ads; do
+          for c in files s3 gcs postgres google_ads microsoft_ads meta_ads; do
             echo "$out" | grep -qE "^  $c( |\$)" || { echo "missing connector: $c"; exit 1; }
           done
 

@@ -70,10 +70,10 @@ networks:
       audience_targets:    audience_targets
       campaign_performance: campaign_performance
 
-  facebook_ads:
-    source: examples/sources/ads/facebook_ads
+  meta_ads:
+    source: examples/sources/ads/meta_ads
     timezone: America/New_York
-    connectors: [facebook_ads]
+    connectors: [meta_ads]
     image: streamwright-pipeline:local
     inputs:
       account_ids:  "{{ row.account_id }}"                 # the ad account id, without the act_ prefix
@@ -81,13 +81,13 @@ networks:
       access_token: "secret:{{ row.token }}"               # the user's access token, from the account row
       app_id:       "secret:{{ app.app_id }}"              # optional
       app_secret:   "secret:{{ app.app_secret }}"          # optional
-    streams:                                # facebook aliases two streams and has none for the targeting nodes
+    streams:                                # meta aliases two streams and has none for the targeting nodes
       campaigns:           campaigns
-      ad_groups:           ad_sets          # facebook's ad sets are the ad-group tier
-      ad_group_hierarchy:  false            # facebook has no such stream
+      ad_groups:           ad_sets          # meta's ad sets are the ad-group tier
+      ad_group_hierarchy:  false            # meta has no such stream
       location_targets:    false
       keywords:            false
       audience_targets:    false
       campaign_performance: campaign_insights
-    after:                                  # facebook ad sets are fetched per account, independently of campaigns
+    after:                                  # meta ad sets are fetched per account, independently of campaigns
       ad_groups: []

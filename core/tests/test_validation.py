@@ -387,7 +387,7 @@ def test_auth_checks():
 
 def test_connectors_and_sdk_requests():
     assert check(sdk_source) == []
-    assert codes(check(sdk_source, allowed_connectors=["facebook"])) == [(ERROR, "connector-not-allowed")] * 2
+    assert codes(check(sdk_source, allowed_connectors=["meta"])) == [(ERROR, "connector-not-allowed")] * 2
 
     def mismatch(d):
         sdk_source(d)
@@ -1221,7 +1221,7 @@ def test_control_characters_are_yaml_errors(tmp_path):
 def test_cli_allow_connector(capsys):
     path = os.path.join(SOURCES, "ads", "google_ads")
     assert main([path]) == 0
-    assert main(["--allow-connector", "facebook", path]) == 1
+    assert main(["--allow-connector", "meta", path]) == 1
     assert "connector 'google_ads' is not in the allowed list" in capsys.readouterr().out
 
 

@@ -9,7 +9,7 @@ permalink: /design/source-format/
 
 # Source configuration format
 
-**Status:** design accepted (see [Decisions](#decisions)). `streamwright validate` checks sources (`kind: source`), the JSON Schema is `docs/schemas/source.schema.json`, `streamwright run` (the `streamwright` package) runs them, and the connectors `streamwright-google-ads`, `streamwright-microsoft-ads` and `streamwright-facebook-ads` add the SDK-backed APIs, and the reader connectors `streamwright-files` (local files), `streamwright-s3` and `streamwright-gcs` (object storage) and `streamwright-postgres` (PostgreSQL databases) read files and databases. The examples below are the source folders in `examples/sources/`. The legacy kinds (`authorization`, `connector`, `serializer`, `pipeline`) have been removed (see [Rollout](#rollout)): this is the only format.
+**Status:** design accepted (see [Decisions](#decisions)). `streamwright validate` checks sources (`kind: source`), the JSON Schema is `docs/schemas/source.schema.json`, `streamwright run` (the `streamwright` package) runs them, and the connectors `streamwright-google-ads`, `streamwright-microsoft-ads` and `streamwright-meta-ads` add the SDK-backed APIs, and the reader connectors `streamwright-files` (local files), `streamwright-s3` and `streamwright-gcs` (object storage) and `streamwright-postgres` (PostgreSQL databases) read files and databases. The examples below are the source folders in `examples/sources/`. The legacy kinds (`authorization`, `connector`, `serializer`, `pipeline`) have been removed (see [Rollout](#rollout)): this is the only format.
 
 ## Summary
 
@@ -578,12 +578,12 @@ export:
     primary_key: [account_id, ad_group_id]
 ```
 
-### 4. Facebook Ads — Marketing API edge, daily insights shaped with SQL
+### 4. Meta Ads — Marketing API edge, daily insights shaped with SQL
 
 ```yaml
-# facebook_ads/source.yaml
+# meta_ads/source.yaml
 kind: source
-name: facebook_ads
+name: meta_ads
 description: Campaign insights, one row per campaign per day.
 
 spec:
@@ -596,7 +596,7 @@ spec:
     app_secret: {type: string, required: false}
 
 auth:
-  provider: facebook_ads               # registered by the streamwright-facebook-ads connector
+  provider: meta_ads               # registered by the streamwright-meta-ads connector
   access_token: "{{ secrets.access_token }}"
   app_id: "{{ secrets.app_id }}"
   app_secret: "{{ secrets.app_secret }}"
@@ -604,7 +604,7 @@ auth:
 ```
 
 ```yaml
-# facebook_ads/streams/campaign_insights.yaml
+# meta_ads/streams/campaign_insights.yaml
 partitions:
   - {name: account_id, values: "{{ config.account_ids }}"}
 incremental:
@@ -615,7 +615,7 @@ incremental:
 retry: {max_attempts: 5, max_delay: 5m}   # throttling can last minutes
 requests:
   - name: raw_campaign_insights
-    sdk: facebook_ads
+    sdk: meta_ads
     service: AdAccount
     method: get_insights           # an edge: paged by the connector
     arguments:
@@ -1071,7 +1071,7 @@ from the performance streams (e.g. entities daily, performance hourly):
 |---|---|
 | `google_ads` | `campaigns`, `ad_groups`, `keywords`, `location_targets`, `audience_targets`, `campaign_performance`, `ad_group_hierarchy` (two requests, run mode, batched ad group queries) |
 | `microsoft_ads` | `campaigns`, `ad_groups` (from `campaigns`), `keywords` (from `ad_groups`), `location_targets` (from `campaigns`), `audience_targets` (from `ad_groups`), `campaign_performance`, `ad_group_tree` (two requests, run mode) |
-| `facebook_ads` | `campaigns`, `ad_sets` (with their targeting), `campaign_insights` |
+| `meta_ads` | `campaigns`, `ad_sets` (with their targeting), `campaign_insights` |
 | `files_demo` | `customers` (a JSON lines file per day), `orders` (a glob of CSV files), `products` (a Parquet file) |
 | `s3_demo` | `customers` (a JSON lines object per day), `orders` (a glob of CSV objects), `events` (Parquet parts picked by a regex) |
 | `gcs_demo` | `orders` (a glob of CSV objects), `events` (Parquet parts picked by a regex) |
@@ -1081,7 +1081,7 @@ Google reads each entity with one GAQL query per customer (`ad_group`, `ad_group
 and `ad_group_hierarchy` reads campaigns and their ad groups in one stream, the ad groups of up to 200 campaigns per
 query (`batch_size`). Microsoft has no query language: its entities follow the hierarchy with `from_stream`
 partitions, one call per campaign or ad group (the Bulk API would read a large account in one file), and
-`ad_group_tree` reads campaigns and their ad groups in one stream and exports them as one table. Facebook reads the
+`ad_group_tree` reads campaigns and their ad groups in one stream and exports them as one table. Meta reads the
 ad account's edges. The file, object storage and PostgreSQL examples have no account hierarchy: each stream reads
 one entity from its files, objects or tables. Tables that combine streams, such as daily performance with each
 campaign's settings or totals per account, are made in the warehouse after loading (see
@@ -1636,28 +1636,28 @@ by hand, and custom `callable` / `instance` usage becomes a component.
    record shaping, Singer output and local writers. HTTP sources run end to end in the tests, against a
    local fake API. Incremental windows are whole days for now.
 3. Done: connectors `google_ads` (`streamwright-google-ads`: sdk + gaql), `microsoft_ads` (`streamwright-microsoft-ads`: sdk +
-   async reports) and `facebook_ads` (`streamwright-facebook-ads`: sdk), with async jobs in the runtime. Query builders
+   async reports) and `meta_ads` (`streamwright-meta-ads`: sdk), with async jobs in the runtime. Query builders
    became components later (decision 9): `gaql` ships with streamwright-google-ads.
    The three ad example sources run end to end in the tests, against local fakes of the APIs and the real SDKs.
 4. In progress: run the three ad sources against the live APIs, then remove the legacy kinds. Google Ads ran against a
    live account on 2026-10-03: the `campaigns` stream matched the legacy connector + serializer on all 29 campaigns
    (the account had no ad traffic, so `campaign_performance` returned no rows). Microsoft Ads ran against a live account
    the same day: web-app sign-in, `GetCampaignsByAccountId` (3 campaigns) and the report job (submit, poll) work; the
-   account had no traffic in the past year, so the reports had no file to download. Facebook Ads ran against a live
+   account had no traffic in the past year, so the reports had no file to download. Meta Ads ran against a live
    account the same day: its daily campaign insights since 2023-09-03 (36 rows, 9 campaigns) add up exactly to the
    account's lifetime impressions, clicks and spend. The metadata streams
    ran against the same accounts: Google 25 ad groups, 86 keywords, 18 location and 10 audience targets; Microsoft 3
-   campaigns, 14 ad groups, 1 keyword and 2 location targets through the account hierarchy (no audiences); Facebook
+   campaigns, 14 ad groups, 1 keyword and 2 location targets through the account hierarchy (no audiences); Meta
    105 campaigns and 107 ad sets with their targeting.
 5. Done (2026-10-04): SQL shaping (decision 10). Every example stream had a `select` (replaced by `transform` steps
-   in item 8). On the live Google, Microsoft and Facebook accounts their records were the same as with `fields`
-   (Facebook's times are now in UTC), and Facebook's daily insights for December 2024 matched the API's own totals.
+   in item 8). On the live Google, Microsoft and Meta accounts their records were the same as with `fields`
+   (Meta's times are now in UTC), and Meta's daily insights for December 2024 matched the API's own totals.
    Two changes by design: money from micros is exact decimal arithmetic (`fields` rounded binary values: 2,675,000
    micros gave 2.67, now 2.68), and a status outside an example's mapping is null instead of failing the run.
 6. Done (2026-10-04): transform streams replaced the removed SQL chain files (decision 11), and Python 3.10+ with
-   DuckDB 1.5.2+ (decision 12). The examples showed each form: Google's and Facebook's `daily_report` (no request;
+   DuckDB 1.5.2+ (decision 12). The examples showed each form: Google's and Meta's `daily_report` (no request;
    three and two steps over two streams' exports, removed in item 8) and Microsoft's `ad_group_tree` (named requests,
-   request partitions from a step). On the live accounts, Facebook's December 2024 totals matched its insights, and
+   request partitions from a step). On the live accounts, Meta's December 2024 totals matched its insights, and
    Microsoft's tree had the same 14 ad groups as `ad_groups`.
 7. Done (2026-10-04): the DuckDB and DuckLake writer (decision 13), with table loading, schema evolution and state in
    one transaction. Transform exports use the same table shape.

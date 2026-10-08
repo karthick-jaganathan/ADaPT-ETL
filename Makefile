@@ -10,9 +10,9 @@ FORCE_DEPS ?= false
 CORE_DIR = core
 # Connectors (optional: each installs its own dependencies: a vendor SDK, or DuckDB for files, s3, gcs and
 # postgres), under connectors/{readers,ads}/<name>
-CONNECTORS = files s3 gcs postgres google_ads microsoft_ads facebook_ads
+CONNECTORS = files s3 gcs postgres google_ads microsoft_ads meta_ads
 CONNECTOR_DIRS = connectors/readers/files connectors/readers/s3 connectors/readers/gcs connectors/readers/postgres \
-	connectors/ads/google_ads connectors/ads/microsoft_ads connectors/ads/facebook_ads
+	connectors/ads/google_ads connectors/ads/microsoft_ads connectors/ads/meta_ads
 
 # Distribution base directory
 DIST_BASE = /tmp/sdist/streamwright
@@ -43,7 +43,7 @@ help:
 	@echo "  MODE=dist  - Distribution mode (build + install from $(DIST_BASE))"
 	@echo ""
 	@echo "Individual package: make install-core (or: cd core && make install)"
-	@echo "Individual connectors: make install-google-ads | install-microsoft-ads | install-facebook-ads | install-files | install-s3 | install-gcs | install-postgres"
+	@echo "Individual connectors: make install-google-ads | install-microsoft-ads | install-meta-ads | install-files | install-s3 | install-gcs | install-postgres"
 
 # Generic install command for all packages
 install: install-all
@@ -75,8 +75,8 @@ install-google-ads:
 install-microsoft-ads:
 	cd connectors/ads/microsoft_ads && $(MAKE) install MODE=$(MODE) FORCE_DEPS=$(FORCE_DEPS)
 
-install-facebook-ads:
-	cd connectors/ads/facebook_ads && $(MAKE) install MODE=$(MODE) FORCE_DEPS=$(FORCE_DEPS)
+install-meta-ads:
+	cd connectors/ads/meta_ads && $(MAKE) install MODE=$(MODE) FORCE_DEPS=$(FORCE_DEPS)
 
 install-files:
 	cd connectors/readers/files && $(MAKE) install MODE=$(MODE) FORCE_DEPS=$(FORCE_DEPS)
@@ -107,7 +107,7 @@ build-all:
 # Utility commands
 uninstall:
 	@echo "Uninstalling all StreamWright packages..."
-	pip uninstall -y streamwright-google-ads streamwright-microsoft-ads streamwright-facebook-ads streamwright-files streamwright-s3 streamwright-gcs streamwright-postgres \
+	pip uninstall -y streamwright-google-ads streamwright-microsoft-ads streamwright-meta-ads streamwright-files streamwright-s3 streamwright-gcs streamwright-postgres \
 		streamwright 2>/dev/null || true
 	@echo "✅ All packages uninstalled!"
 

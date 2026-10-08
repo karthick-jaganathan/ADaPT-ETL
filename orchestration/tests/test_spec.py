@@ -99,10 +99,10 @@ class PipelineSpecTest(unittest.TestCase):
         networks = load_networks()
         micro = resolve_pipeline(load_pipeline("metadata"), networks["microsoft_ads"])
         self.assertEqual(set(micro.nodes), METADATA_NODES)                 # all supported (ad_group_hierarchy aliased)
-        facebook = resolve_pipeline(load_pipeline("metadata"), networks["facebook_ads"])
-        self.assertEqual(set(facebook.nodes), {"campaigns", "ad_groups"})  # the rest are mapped false -> skipped
-        self.assertEqual(facebook.upstream("ad_groups"), ())              # facebook `after: {ad_groups: []}` override
-        self.assertEqual(networks["facebook_ads"].stream_of("ad_groups"), "ad_sets")
+        meta = resolve_pipeline(load_pipeline("metadata"), networks["meta_ads"])
+        self.assertEqual(set(meta.nodes), {"campaigns", "ad_groups"})  # the rest are mapped false -> skipped
+        self.assertEqual(meta.upstream("ad_groups"), ())              # meta `after: {ad_groups: []}` override
+        self.assertEqual(networks["meta_ads"].stream_of("ad_groups"), "ad_sets")
         self.assertEqual(networks["microsoft_ads"].stream_of("ad_group_hierarchy"), "ad_group_tree")
 
     def test_cycle_raises(self):

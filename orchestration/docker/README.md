@@ -13,7 +13,7 @@ orchestration/docker/
 ## The image
 
 `python:3.13-slim` + `streamwright` (the `streamwright` CLI) + the **ad connectors** (`connectors/ads/google_ads` with its
-`gaql` query builder, `microsoft_ads`, `facebook_ads`) + the **reader connectors** (`connectors/readers/files`, `s3`,
+`gaql` query builder, `microsoft_ads`, `meta_ads`) + the **reader connectors** (`connectors/readers/files`, `s3`,
 `gcs`, `postgres`), so one image runs any network in `config/networks.yaml`. The ad SDKs (google-ads, bingads,
 facebook_business) are heavy: the build takes a few minutes and the image is ~480 MB.
 
@@ -29,7 +29,7 @@ facebook_business) are heavy: the build takes a few minutes and the image is ~48
 
 ```bash
 bash orchestration/docker/build.sh                        # from anywhere; extra args go to docker build
-docker run --rm streamwright-pipeline:local connectors           # google_ads, microsoft_ads, facebook_ads, files, s3, gcs, postgres
+docker run --rm streamwright-pipeline:local connectors           # google_ads, microsoft_ads, meta_ads, files, s3, gcs, postgres
 ```
 
 ## Running the pipeline in containers

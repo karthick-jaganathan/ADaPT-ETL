@@ -21,7 +21,7 @@ tests (against local fakes of the APIs, buckets and databases).
 | `postgres_demo` | `postgres` | customers, orders, order_lines |
 | `google_ads` | `google_ads` | campaigns, ad groups, keywords, targets, campaign performance, ad group hierarchy |
 | `microsoft_ads` | `microsoft_ads` | campaigns, ad groups, keywords, targets, campaign performance (async report), ad group tree |
-| `facebook_ads` | `facebook_ads` | campaigns, ad sets, campaign insights |
+| `meta_ads` | `meta_ads` | campaigns, ad sets, campaign insights |
 
 ## Validate
 
@@ -71,7 +71,7 @@ SDK connectors handle auth, partitions, pagination and async report jobs:
 ```bash
 streamwright run examples/sources/ads/google_ads   --set customer_ids=...                    --secrets ~/.streamwright/google-secrets.yaml
 streamwright run examples/sources/ads/microsoft_ads --set account_ids=... --set customer_id=... --secrets ~/.streamwright/microsoft.yaml
-streamwright run examples/sources/ads/facebook_ads --set account_ids=...                     --secrets ~/.streamwright/facebook-secrets.yaml
+streamwright run examples/sources/ads/meta_ads --set account_ids=...                     --secrets ~/.streamwright/meta-secrets.yaml
 ```
 
 ## Recipe: load into a warehouse
@@ -86,7 +86,7 @@ See [Outputs]({{ site.baseurl }}/core/outputs/) for DuckDB, DuckLake (object sto
 
 ## Recipe: run one pipeline across networks
 
-Orchestration runs the same `metadata` pipeline against Google, Microsoft and Facebook — the
+Orchestration runs the same `metadata` pipeline against Google, Microsoft and Meta — the
 [shared vocabulary]({{ site.baseurl }}/concepts/#network--shared-vocabulary) maps each network's stream names:
 
 ```bash

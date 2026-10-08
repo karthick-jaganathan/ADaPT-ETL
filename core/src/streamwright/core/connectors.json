@@ -1,15 +1,15 @@
 {
   "connectors": {
-    "facebook_ads": {
+    "meta_ads": {
       "family": "ads",
       "homepage": "https://github.com/karthick-jaganathan/streamwright",
       "install": {
-        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@e1822c585ea8654f0db6f70b856c79b7005c2e1e#subdirectory=connectors/ads/facebook_ads"
+        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@e1822c585ea8654f0db6f70b856c79b7005c2e1e#subdirectory=connectors/ads/meta_ads"
       },
-      "key": "facebook_ads",
+      "key": "meta_ads",
       "maintainer": "karthick-jaganathan",
-      "summary": "Facebook Marketing insights & objects",
-      "title": "Facebook Ads",
+      "summary": "Meta Marketing insights & objects",
+      "title": "Meta Ads",
       "trust": "official"
     },
     "files": {

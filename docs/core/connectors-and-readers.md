@@ -28,7 +28,7 @@ APIs that need a vendor SDK (gRPC, SOAP, paged SDK objects) run through connecto
 ```text
 $ streamwright connectors
 advertising:
-  facebook_ads — Meta / Facebook Ads (facebook-business SDK) (SDK loggers: urllib3.connectionpool)
+  meta_ads — Meta Ads (facebook-business SDK) (SDK loggers: urllib3.connectionpool)
   google_ads — Google Ads (GAQL via the google-ads SDK) (SDK loggers: google.ads.googleads.client)
   microsoft_ads — Microsoft Advertising (Bing Ads SDK) (SDK loggers: suds.client, suds.transport)
 databases:
@@ -44,7 +44,7 @@ object storage:
 |---|---|---|
 | `google_ads` | [streamwright-google-ads](https://github.com/karthick-jaganathan/streamwright/blob/master/connectors/ads/google_ads/README.md) | `GoogleAdsService.search_stream` / `search` (GAQL), `CustomerService.list_accessible_customers` |
 | `microsoft_ads` | [streamwright-microsoft-ads](https://github.com/karthick-jaganathan/streamwright/blob/master/connectors/ads/microsoft_ads/README.md) | read operations of the v13 SOAP services; reports as async jobs |
-| `facebook_ads` | [streamwright-facebook-ads](https://github.com/karthick-jaganathan/streamwright/blob/master/connectors/ads/facebook_ads/README.md) | `api_get` and `get_*` edges of Marketing API objects |
+| `meta_ads` | [streamwright-meta-ads](https://github.com/karthick-jaganathan/streamwright/blob/master/connectors/ads/meta_ads/README.md) | `api_get` and `get_*` edges of Marketing API objects |
 | `files` | [streamwright-files](https://github.com/karthick-jaganathan/streamwright/blob/master/connectors/readers/files/README.md) | `file.read`: local csv, tsv, json, jsonl and parquet files |
 | `s3` | [streamwright-s3](https://github.com/karthick-jaganathan/streamwright/blob/master/connectors/readers/s3/README.md) | `object.read`: the same formats from `s3://` buckets (or an S3-compatible store), through DuckDB's httpfs |
 | `gcs` | [streamwright-gcs](https://github.com/karthick-jaganathan/streamwright/blob/master/connectors/readers/gcs/README.md) | `object.read`: the same formats from `gs://` buckets (an HMAC key), through DuckDB's httpfs |
@@ -177,7 +177,7 @@ Set `name` and implement:
   - `streamwright connectors` lists them for `streamwright run --log NAME=DEBUG`.
   - streamwright never turns them on by itself.
 - An SDK that sends its requests with the requests library can also pass each response to
-  `streamwright.core.runtime.logs.http_details(response, context.redact)` (a response hook, as facebook_ads does) for the
+  `streamwright.core.runtime.logs.http_details(response, context.redact)` (a response hook, as meta_ads does) for the
   headers and bodies on `streamwright.network` at `DEBUG`.
 
 #### Examples and tests

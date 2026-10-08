@@ -7,7 +7,7 @@
 !streamwright
 !connectors/ads/google_ads
 !connectors/ads/microsoft_ads
-!connectors/ads/facebook_ads
+!connectors/ads/meta_ads
 !connectors/readers/files
 !connectors/readers/s3
 !connectors/readers/gcs

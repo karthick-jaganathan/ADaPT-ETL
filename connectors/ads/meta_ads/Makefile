@@ -1,7 +1,7 @@
-# StreamWright Facebook Ads connector Makefile
+# StreamWright Meta Ads connector Makefile
 
 # Package information
-PACKAGE_NAME = streamwright-facebook-ads
+PACKAGE_NAME = streamwright-meta-ads
 VERSION = 0.0.1
 
 # Installation mode (dev, prod, dist)
@@ -14,7 +14,7 @@ DIST_DIR = /tmp/sdist/streamwright
 
 # Default target
 help:
-	@echo "StreamWright Facebook Ads connector - Available commands:"
+	@echo "StreamWright Meta Ads connector - Available commands:"
 	@echo ""
 	@echo "  make install [MODE=dev|prod|dist] - Install $(PACKAGE_NAME) package (default: prod)"
 	@echo "  make uninstall                    - Uninstall $(PACKAGE_NAME) package"
@@ -86,5 +86,5 @@ test:
 verify:
 	@echo "Verifying $(PACKAGE_NAME) installation..."
 	@pip show $(PACKAGE_NAME) >/dev/null 2>&1 && echo "✅ $(PACKAGE_NAME) is installed!" || echo "❌ $(PACKAGE_NAME) is not installed!"
-	@python -c "import streamwright.connectors.facebook_ads.connector; print('✅ streamwright.connectors.facebook_ads import works!')" 2>/dev/null || echo "❌ streamwright.connectors.facebook_ads import failed!"
-	@streamwright connectors | grep -qE '^facebook_ads( |$$)' && echo "✅ facebook_ads connector is registered!" || echo "❌ facebook_ads connector is not registered!" 
+	@python -c "import streamwright.connectors.meta_ads.connector; print('✅ streamwright.connectors.meta_ads import works!')" 2>/dev/null || echo "❌ streamwright.connectors.meta_ads import failed!"
+	@streamwright connectors | grep -qE '^meta_ads( |$$)' && echo "✅ meta_ads connector is registered!" || echo "❌ meta_ads connector is not registered!" 

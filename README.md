@@ -25,7 +25,7 @@ described in [the source format design](docs/design/source-format.md); the examp
 |---|---|---|
 | `google_ads` | [streamwright-google-ads](connectors/ads/google_ads/README.md) | Google Ads (SDK, GAQL query builder) |
 | `microsoft_ads` | [streamwright-microsoft-ads](connectors/ads/microsoft_ads/README.md) | Microsoft Advertising (SDK, async reports) |
-| `facebook_ads` | [streamwright-facebook-ads](connectors/ads/facebook_ads/README.md) | Facebook Marketing API (SDK) |
+| `meta_ads` | [streamwright-meta-ads](connectors/ads/meta_ads/README.md) | Meta Marketing API (SDK) |
 | `files` | [streamwright-files](connectors/readers/files/README.md) | local CSV, TSV, JSON, JSONL and Parquet files |
 | `s3` | [streamwright-s3](connectors/readers/s3/README.md) | Amazon S3 and S3-compatible object storage |
 | `gcs` | [streamwright-gcs](connectors/readers/gcs/README.md) | Google Cloud Storage |

@@ -67,7 +67,7 @@ flowchart LR
 ### Connector
 
 A **connector** is an installable package that gives a source access to a vendor: the ad-API SDKs
-(`google_ads`, `microsoft_ads`, `facebook_ads`) and the readers (`files`, `s3`, `gcs`, `postgres`). Connectors register
+(`google_ads`, `microsoft_ads`, `meta_ads`) and the readers (`files`, `s3`, `gcs`, `postgres`). Connectors register
 under the `streamwright.connectors` entry point and are discovered at run time; `--allow-connector` restricts which may load.
 A **query builder** (e.g. GAQL) is the sibling kind of component that writes a query language.
 
@@ -98,7 +98,7 @@ only. A **node** maps to a source stream.
 
 A **network** (`config/networks.yaml`) maps a pipeline's canonical nodes to *its own* source and stream names. Its
 `streams:` map **aliases** a node to a differently-named stream or marks it **`false`** (unsupported → skipped). This
-**shared vocabulary** lets one pipeline run across Google, Microsoft and Facebook even though they name streams
+**shared vocabulary** lets one pipeline run across Google, Microsoft and Meta even though they name streams
 differently.
 
 ### Account, wrapper & execution mode

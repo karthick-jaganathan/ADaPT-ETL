@@ -49,7 +49,7 @@ RUN make install MODE=dev && make install-connectors MODE=dev
 
 # Alternative 2: Direct pip installation (uncomment if make is not available)
 # RUN pip install -e core \
-#     -e connectors/ads/google_ads -e connectors/ads/microsoft_ads -e connectors/ads/facebook_ads \
+#     -e connectors/ads/google_ads -e connectors/ads/microsoft_ads -e connectors/ads/meta_ads \
 #     -e connectors/readers/files -e connectors/readers/s3 -e connectors/readers/gcs -e connectors/readers/postgres
 
 # Create a non-root user

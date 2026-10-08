@@ -45,10 +45,10 @@ class OpGraphTest(unittest.TestCase):
                          set(definitions.PIPELINES["metadata"].nodes))     # node names are the step keys
 
     def test_per_network_jobs_alias_and_skip(self):
-        facebook = definitions.JOBS[("metadata", "facebook_ads")]
-        self.assertEqual(facebook.name, "ads_metadata__facebook_ads")
-        self.assertEqual(set(job_deps(facebook)), {"campaigns", "ad_groups"})   # the rest skipped (streams: false)
-        self.assertEqual(job_deps(facebook)["ad_groups"], {})                   # facebook `after: {ad_groups: []}`
+        meta = definitions.JOBS[("metadata", "meta_ads")]
+        self.assertEqual(meta.name, "ads_metadata__meta_ads")
+        self.assertEqual(set(job_deps(meta)), {"campaigns", "ad_groups"})   # the rest skipped (streams: false)
+        self.assertEqual(job_deps(meta)["ad_groups"], {})                   # meta `after: {ad_groups: []}`
         micro = definitions.JOBS[("metadata", "microsoft_ads")]
         self.assertEqual(set(job_deps(micro)), set(definitions.PIPELINES["metadata"].nodes))  # all supported (aliased)
 

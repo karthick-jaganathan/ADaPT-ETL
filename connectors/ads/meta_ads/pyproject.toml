@@ -3,15 +3,15 @@ requires = ["setuptools>=61.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "streamwright-facebook-ads"
+name = "streamwright-meta-ads"
 version = "0.1.0"
-description = "StreamWright - Facebook (Meta) Ads connector (the facebook_ads auth provider and Marketing API reads)"
+description = "StreamWright - Meta Ads connector (the meta_ads auth provider and Marketing API reads)"
 readme = "README.md"
 license = "Apache-2.0"
 authors = [
     {name = "Karthick Jaganathan"},
 ]
-keywords = ["data", "pipeline", "etl", "connector", "facebook-ads", "meta-ads"]
+keywords = ["data", "pipeline", "etl", "connector", "meta-ads", "facebook-ads"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -32,9 +32,9 @@ Homepage = "https://github.com/karthick-jaganathan/streamwright"
 Repository = "https://github.com/karthick-jaganathan/streamwright"
 
 [project.entry-points."streamwright.connectors"]
-facebook_ads = "streamwright.connectors.facebook_ads.connector:FacebookAdsConnector"
+meta_ads = "streamwright.connectors.meta_ads.connector:MetaAdsConnector"
 
 [tool.setuptools]
 # src layout: streamwright and streamwright.connectors are namespace packages shared with the other StreamWright distributions
 package-dir = {"" = "src"}
-packages = ["streamwright.connectors.facebook_ads"]
+packages = ["streamwright.connectors.meta_ads"]

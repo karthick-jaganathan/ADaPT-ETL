@@ -23,15 +23,15 @@ Loading a run into DuckDB or DuckLake (local, or on object storage with a Postgr
 - `~` is expanded in `PATH`, `CATALOG` and `STREAMWRIGHT_DUCKLAKE_DATA_PATH`.
 
 ```bash
-streamwright run examples/sources/ads/facebook_ads --set account_ids=... --output duckdb:warehouse.duckdb
+streamwright run examples/sources/ads/meta_ads --set account_ids=... --output duckdb:warehouse.duckdb
 export STREAMWRIGHT_DUCKLAKE_DATA_PATH=warehouse-data
-streamwright run examples/sources/ads/facebook_ads --set account_ids=... --output ducklake:warehouse.ducklake:facebook_ads
+streamwright run examples/sources/ads/meta_ads --set account_ids=... --output ducklake:warehouse.ducklake:meta_ads
 ```
 
 Query the result:
 
 ```bash
-duckdb warehouse.duckdb "SELECT * FROM facebook_ads.campaign_insights"
+duckdb warehouse.duckdb "SELECT * FROM meta_ads.campaign_insights"
 ```
 
 ### All or nothing

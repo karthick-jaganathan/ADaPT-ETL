@@ -31,7 +31,7 @@ HTTP sources run end to end, with built-in:
 
 Vendor access comes from [connectors]({{ site.baseurl }}/core/connectors-and-readers/):
 
-- the ad-API SDKs (Google, Microsoft, Facebook)
+- the ad-API SDKs (Google, Microsoft, Meta)
 - the readers (files, S3, GCS, PostgreSQL)
 
 ## Install

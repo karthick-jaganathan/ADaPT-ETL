@@ -40,7 +40,7 @@ Its modules (`streamwright.core.*`) include:
 |---|---|---|
 | `google_ads` | streamwright-google-ads | Google Ads (SDK, GAQL query builder) |
 | `microsoft_ads` | streamwright-microsoft-ads | Microsoft Advertising (SDK, async reports) |
-| `facebook_ads` | streamwright-facebook-ads | Facebook Marketing API (SDK) |
+| `meta_ads` | streamwright-meta-ads | Meta Marketing API (SDK) |
 | `files` | streamwright-files | local CSV, TSV, JSON, JSONL and Parquet files |
 | `s3` | streamwright-s3 | Amazon S3 and S3-compatible object storage |
 | `gcs` | streamwright-gcs | Google Cloud Storage |

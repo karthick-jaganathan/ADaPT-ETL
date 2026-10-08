@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 #
 # streamwright-pipeline:local - the streamwright CLI with the AD connectors (google_ads + its gaql query builder, microsoft_ads,
-# facebook_ads) and the READER connectors (files, s3, gcs, postgres), so one image can run any network of the
+# meta_ads) and the READER connectors (files, s3, gcs, postgres), so one image can run any network of the
 # pipeline (orchestration/config/networks.yaml `image:`). With STREAMWRIGHT_EXECUTION=docker each pipeline node runs
 #   docker run --rm streamwright-pipeline:local run /app/examples/sources/<source> --stream <node> ...
 #
@@ -24,7 +24,7 @@ RUN --mount=type=bind,target=/build,rw \
     cd /build \
  && pip install \
       ./core \
-      ./connectors/ads/google_ads ./connectors/ads/microsoft_ads ./connectors/ads/facebook_ads \
+      ./connectors/ads/google_ads ./connectors/ads/microsoft_ads ./connectors/ads/meta_ads \
       ./connectors/readers/files ./connectors/readers/s3 ./connectors/readers/gcs ./connectors/readers/postgres \
  && streamwright --help > /dev/null
 

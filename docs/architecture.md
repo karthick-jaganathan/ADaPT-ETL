@@ -144,7 +144,7 @@ flowchart TB
     agh["ad_group_hierarchy<br/>(a canonical pipeline node)"]
     agh -->|google_ads| G["ad_group_hierarchy<br/>same name"]
     agh -->|microsoft_ads| M["ad_group_tree<br/>alias"]
-    agh -->|facebook_ads| F["— skipped —<br/>false"]
+    agh -->|meta_ads| F["— skipped —<br/>false"]
 ```
 
 A node mapped to a name runs under that stream (an alias); a node mapped `false` is skipped (and drops out of its

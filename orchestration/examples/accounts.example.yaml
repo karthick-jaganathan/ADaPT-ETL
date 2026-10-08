@@ -22,7 +22,7 @@ clients:
         customer_id_manager: "2000000004"
         token: REPLACE_ME_MICROSOFT_REFRESH_TOKEN
         timezone: America/New_York
-      - network: facebook_ads
+      - network: meta_ads
         customer_id: "1000000005"            # the ad account id, without the act_ prefix
-        token: REPLACE_ME_FACEBOOK_ACCESS_TOKEN
+        token: REPLACE_ME_META_ACCESS_TOKEN
         timezone: America/New_York

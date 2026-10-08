@@ -45,7 +45,7 @@ jobs:
             echo "packages=[\"$dist\"]" >> "$GITHUB_OUTPUT"
           elif [ "${{ inputs.package }}" = "all" ]; then
             echo "target=${{ inputs.target }}" >> "$GITHUB_OUTPUT"
-            echo 'packages=["streamwright","streamwright-files","streamwright-s3","streamwright-gcs","streamwright-postgres","streamwright-google-ads","streamwright-microsoft-ads","streamwright-facebook-ads"]' >> "$GITHUB_OUTPUT"
+            echo 'packages=["streamwright","streamwright-files","streamwright-s3","streamwright-gcs","streamwright-postgres","streamwright-google-ads","streamwright-microsoft-ads","streamwright-meta-ads"]' >> "$GITHUB_OUTPUT"
           else
             echo "target=${{ inputs.target }}" >> "$GITHUB_OUTPUT"
             echo "packages=[\"${{ inputs.package }}\"]" >> "$GITHUB_OUTPUT"

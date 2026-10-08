@@ -6,11 +6,11 @@ import pytest
 import requests
 
 pytest.importorskip("facebook_business")
-pytest.importorskip("streamwright.connectors.facebook_ads.connector")
+pytest.importorskip("streamwright.connectors.meta_ads.connector")
 
 from facebook_business.session import FacebookSession  # noqa: E402
 
-from streamwright.connectors.facebook_ads.connector import FacebookAdsConnector  # noqa: E402
+from streamwright.connectors.meta_ads.connector import MetaAdsConnector  # noqa: E402
 from streamwright.core import cli
 from streamwright.core.runtime import components  # noqa: E402
 from streamwright.core.engine.runner import SourceError, SourceRunner  # noqa: E402
@@ -18,7 +18,7 @@ from streamwright.core.config.loader import load_source  # noqa: E402
 from streamwright.core.runtime.testing import MemoryOutput, page_stream  # noqa: E402
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".."))
-EXAMPLE = os.path.join(REPO_ROOT, "examples", "sources", "ads", "facebook_ads")  # a source folder
+EXAMPLE = os.path.join(REPO_ROOT, "examples", "sources", "ads", "meta_ads")  # a source folder
 TODAY = datetime.date(2026, 10, 3)
 SECRETS = {"access_token": "token-123", "app_secret": "app-secret-1"}
 INSIGHTS = "/v26.0/act_123/insights"
@@ -70,7 +70,7 @@ def metadata_routes(graph):
                        "custom_audiences": [{"id": "6001", "name": "Buyers"}]}}]})
 
 
-def test_the_facebook_ads_example_runs_end_to_end(graph, capsys, caplog, monkeypatch):
+def test_the_meta_ads_example_runs_end_to_end(graph, capsys, caplog, monkeypatch):
     for name, value in SECRETS.items():
         monkeypatch.setenv("STREAMWRIGHT_SECRET_" + name.upper(), value)
     today = datetime.date.today().isoformat()
@@ -167,7 +167,7 @@ def test_objects_are_read_with_api_get(graph):
     graph.routes[("GET", "/v26.0/c1/")] = lambda request: (200, {"id": "c1", "name": "Brand", "status": "ACTIVE"})
     source = load_source(EXAMPLE)
     source["streams"] = [page_stream("campaign", {
-        "name": "raw_campaign", "sdk": "facebook_ads", "service": "Campaign", "method": "api_get",
+        "name": "raw_campaign", "sdk": "meta_ads", "service": "Campaign", "method": "api_get",
         "arguments": {"id": "c1", "fields": ["id", "name", "status"]}},
         "SELECT record->>'id' AS id, record->>'status' AS status FROM raw_campaign")]
     assert [r for _, r in run(source, streams=None).records] == [{"id": "c1", "status": "ACTIVE"}]
@@ -176,19 +176,19 @@ def test_objects_are_read_with_api_get(graph):
 
 def test_only_reads_are_allowed_and_versions_are_checked():
     assert components.check_source(load_source(EXAMPLE)) == []
-    connector = FacebookAdsConnector()
+    connector = MetaAdsConnector()
     assert connector.check_request({"service": "AdAccount", "method": "create_campaign",
                                     "arguments": {"id": "act_1"}}) \
-        == ["facebook_ads: AdAccount.create_campaign is not a read (supported: api_get and get_* edges)"]
+        == ["meta_ads: AdAccount.create_campaign is not a read (supported: api_get and get_* edges)"]
     assert connector.check_request({"service": "AdAccount", "method": "get_insights_async",
                                     "arguments": {"id": "act_1"}})[0].endswith("is not a read (supported: api_get and "
                                                                              "get_* edges)")
     assert connector.check_request({"service": "Page", "method": "api_get", "arguments": {"id": "1"}})[0].startswith(
-        "facebook_ads: service 'Page' is not supported")
+        "meta_ads: service 'Page' is not supported")
     assert connector.check_request({"service": "AdAccount", "method": "get_nothing", "arguments": {"limit": 1}}) == [
-        "facebook_ads: AdAccount.get_nothing needs `id` (e.g. act_<account id> for an ad account)",
-        "facebook_ads: AdAccount.get_nothing does not take `limit` (arguments: id, fields, params)",
-        "facebook_ads: AdAccount has no method 'get_nothing'"]
+        "meta_ads: AdAccount.get_nothing needs `id` (e.g. act_<account id> for an ad account)",
+        "meta_ads: AdAccount.get_nothing does not take `limit` (arguments: id, fields, params)",
+        "meta_ads: AdAccount has no method 'get_nothing'"]
     source = load_source(EXAMPLE)
     source["auth"]["api_version"] = "26"
     with pytest.raises(SourceError, match="api_version '26' is not a Graph API version such as v26.0"):
@@ -209,7 +209,7 @@ def test_network_logs_show_requests_redacted(graph, capsys, monkeypatch, sdk_log
     today = datetime.date.today().isoformat()
     # two API pages, one page of records: the SDK pages the edge, streamwright counts the calls
     assert "INFO streamwright.network: stream 'campaign_insights', request 'raw_campaign_insights', partition " \
-           "{\"account_id\": \"123\"}, window %s..%s: facebook_ads AdAccount.get_insights page 1: 2 record(s), " % (
+           "{\"account_id\": \"123\"}, window %s..%s: meta_ads AdAccount.get_insights page 1: 2 record(s), " % (
                today, today) in err
     assert "2 request(s) (raw_campaign_insights: 2)" in err
     proof = graph.calls(INSIGHTS)[0]["params"]["appsecret_proof"]

@@ -1,14 +1,14 @@
-# StreamWright Facebook Ads connector
+# StreamWright Meta Ads connector
 
-The `facebook_ads` connector for [streamwright](../../../core/README.md): the Meta Marketing API through the
+The `meta_ads` connector for [streamwright](../../../core/README.md): the Meta Marketing API through the
 [facebook_business](https://pypi.org/project/facebook-business/) SDK. Example:
-the source folder [examples/sources/ads/facebook_ads/](../../../examples/sources/ads/facebook_ads/).
+the source folder [examples/sources/ads/meta_ads/](../../../examples/sources/ads/meta_ads/).
 
 ## Install
 
 ```bash
-make install-facebook-ads    # from the repository root; or: pip install ./connectors/ads/facebook_ads (installs facebook_business)
-streamwright connectors             # lists facebook_ads (with its SDK logger)
+make install-meta-ads    # from the repository root; or: pip install ./connectors/ads/meta_ads (installs facebook_business)
+streamwright connectors             # lists meta_ads (with its SDK logger)
 ```
 
 ## Auth
@@ -25,7 +25,7 @@ streamwright connectors             # lists facebook_ads (with its SDK logger)
 ```yaml
 requests:
   - name: raw_campaign_insights
-    sdk: facebook_ads
+    sdk: meta_ads
     service: AdAccount            # AdAccount, Campaign, AdSet, Ad, AdCreative, Business, User, CustomAudience, AdsPixel
     method: get_insights          # api_get (the object itself) or a get_* edge
     arguments:
@@ -57,10 +57,10 @@ at `DEBUG` on `urllib3.connectionpool`, which `streamwright connectors` lists. W
 each request's and response's headers and body. streamwright never turns the SDK's logger on; name it with `--log`:
 
 ```bash
-streamwright run examples/sources/ads/facebook_ads --set account_ids=123 \
+streamwright run examples/sources/ads/meta_ads --set account_ids=123 \
   --log streamwright.network=DEBUG --log urllib3.connectionpool=DEBUG
 ```
 
 The lines are redacted like streamwright's own: the access token, the app secret and `appsecret_proof` are `***`.
 `--log streamwright.network=INFO` alone gives streamwright's line per page of records, after its stream, request, partition and
-window, e.g. `facebook_ads AdAccount.get_insights page 1: 500 record(s), 1.32 s, attempt 1`.
+window, e.g. `meta_ads AdAccount.get_insights page 1: 500 record(s), 1.32 s, attempt 1`.

@@ -3,7 +3,7 @@ partitions:
   - {name: account_id, values: "{{ config.account_ids }}"}
 requests:
   - name: raw_ad_sets
-    sdk: facebook_ads
+    sdk: meta_ads
     service: AdAccount
     method: get_ad_sets
     arguments:

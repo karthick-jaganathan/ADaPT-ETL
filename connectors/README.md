@@ -10,7 +10,7 @@ vendor SDK: `files` (local files), `s3` and `gcs` (object storage) and `postgres
 |---|---|---|---|---|
 | [google_ads](ads/google_ads/README.md) | `streamwright-google-ads` | `google_ads` | google-ads | `google.ads.googleads.client` |
 | [microsoft_ads](ads/microsoft_ads/README.md) | `streamwright-microsoft-ads` | `microsoft_ads` | bingads | `suds.client`, `suds.transport` |
-| [facebook_ads](ads/facebook_ads/README.md) | `streamwright-facebook-ads` | `facebook_ads` | facebook_business | `urllib3.connectionpool` |
+| [meta_ads](ads/meta_ads/README.md) | `streamwright-meta-ads` | `meta_ads` | facebook_business | `urllib3.connectionpool` |
 | [files](readers/files/README.md) | `streamwright-files` | `files` | duckdb | - |
 | [s3](readers/s3/README.md) | `streamwright-s3` | `s3` | duckdb (its httpfs extension) | - |
 | [gcs](readers/gcs/README.md) | `streamwright-gcs` | `gcs` | duckdb (its httpfs extension) | - |
@@ -25,7 +25,7 @@ streamwright connectors                # the installed connectors, with their SD
 ```text
 $ streamwright connectors
 advertising:
-  facebook_ads — Meta / Facebook Ads (facebook-business SDK) (SDK loggers: urllib3.connectionpool)
+  meta_ads — Meta Ads (facebook-business SDK) (SDK loggers: urllib3.connectionpool)
   google_ads — Google Ads (GAQL via the google-ads SDK) (SDK loggers: google.ads.googleads.client)
   microsoft_ads — Microsoft Advertising (Bing Ads SDK) (SDK loggers: suds.client, suds.transport)
 databases:

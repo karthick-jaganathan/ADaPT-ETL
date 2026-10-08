@@ -90,10 +90,10 @@ node to:
 - **its own source stream name** (an alias), or
 - **`false`**: the network has no such stream, so the node is skipped for it.
 
-So the single `metadata` pipeline runs on all of google_ads, microsoft_ads and facebook_ads, even though they name (or
+So the single `metadata` pipeline runs on all of google_ads, microsoft_ads and meta_ads, even though they name (or
 lack) streams differently:
 
-| canonical node | google_ads | microsoft_ads | facebook_ads |
+| canonical node | google_ads | microsoft_ads | meta_ads |
 |---|---|---|---|
 | campaigns | campaigns | campaigns | campaigns |
 | ad_groups | ad_groups | ad_groups | `ad_sets` (alias) |
@@ -103,8 +103,8 @@ lack) streams differently:
 
 - **Explicit false:** only a `false` skips a node. An *unmapped* node is an error, so a typo is caught.
 - **Edge overrides:** a network may override the dependency edges with `after:` (node → upstream nodes) when its
-  parentage differs. E.g. facebook's `ad_groups` (ad sets) are fetched per account independently of campaigns, so
-  facebook sets `after: {ad_groups: []}`.
+  parentage differs. E.g. meta's `ad_groups` (ad sets) are fetched per account independently of campaigns, so
+  meta sets `after: {ad_groups: []}`.
 - **Skipped nodes:** a skipped node drops out of other nodes' dependencies automatically.
 - **One job per network:** each (pipeline, network) becomes its own Dagster job `ads_<pipeline>__<network>`;
   `trigger` picks the job for each account's network.

@@ -9,7 +9,7 @@ incremental:
 retry: {max_attempts: 5, max_delay: 5m}   # throttling can last minutes
 requests:
   - name: raw_campaign_insights
-    sdk: facebook_ads
+    sdk: meta_ads
     service: AdAccount
     method: get_insights           # an edge: paged by the connector
     arguments:

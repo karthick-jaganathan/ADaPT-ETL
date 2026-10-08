@@ -16,4 +16,4 @@
 # **************************************************************************/
 
 
-"""StreamWright connector for the Meta (Facebook) Marketing API (see streamwright.connectors.facebook_ads.connector)."""
+"""StreamWright connector for the Meta Marketing API (see streamwright.connectors.meta_ads.connector)."""
