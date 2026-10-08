@@ -1,7 +1,7 @@
 # LocalStack S3 for testing the streamwright-s3 connector locally (and as the S3 backend for STREAMWRIGHT_EXECUTION=docker runs).
 # Community image (no license needed); only the S3 service.
-#   docker compose -f orchestration/localstack/docker-compose.yml up -d
-# then populate the bucket with orchestration/localstack/up.sh (or ./up.sh).
+#   docker compose -f scripts/localstack/docker-compose.yml up -d
+# then populate the bucket with scripts/localstack/up.sh (or ./up.sh).
 services:
   localstack:
     image: localstack/localstack:3

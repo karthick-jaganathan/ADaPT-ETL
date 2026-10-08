@@ -88,7 +88,7 @@ for DuckDB, DuckLake and dlt.
 ## 5. Orchestrate it (optional)
 
 To run a source for many users and networks on a schedule, use the Dagster-based
-[orchestration]({{ site.baseurl }}/orchestration/): one shared pipeline runs across Google, Microsoft and Meta,
+[orchestration](https://github.com/karthick-jaganathan/streamwright-orchestration): one shared pipeline runs across Google, Microsoft and Meta,
 locally, in Docker, or as Kubernetes Jobs.
 
 ## Where to next

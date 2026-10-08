@@ -46,7 +46,7 @@ flowchart TB
 | **Source** | A customer's declarative extraction: inputs (`spec`), sign-in (`auth`), requests, SQL `transform` steps, `export`s. No code. | [source format design]({{ site.baseurl }}/design/source-format) · [`examples/sources/`](https://github.com/karthick-jaganathan/streamwright/tree/master/examples/sources) |
 | **streamwright** | The `streamwright` CLI, validation, the run engine, the embedded DuckDB transform, and the outputs. Knows nothing about any specific vendor. | [streamwright docs]({{ site.baseurl }}/core/) |
 | **Connectors** | Vendor access: the ad-API SDKs (with their query builders) and the file/object/db readers. Each is its own distribution under the `streamwright.connectors` entry point. | [Packages]({{ site.baseurl }}/packages/) · [connectors/README](https://github.com/karthick-jaganathan/streamwright/blob/master/connectors/README.md) |
-| **Orchestration** | Running `streamwright` per user and network: named pipelines, the shared-vocabulary network map, Dagster op graphs, and the subprocess/Docker/Kubernetes execution modes. | [orchestration docs]({{ site.baseurl }}/orchestration/) |
+| **Orchestration** | Running `streamwright` per user and network: named pipelines, the shared-vocabulary network map, Dagster op graphs, and the subprocess/Docker/Kubernetes execution modes. | [orchestration docs](https://github.com/karthick-jaganathan/streamwright-orchestration) |
 
 The CLI never imports a connector directly: connectors register themselves under the `streamwright.connectors` entry point and
 are discovered at run time (and gated by `--allow-connector`). Orchestration never imports streamwright: every node shells
@@ -130,7 +130,7 @@ Three declarative files drive it, and no code knows anything network-specific:
 Each node's **wrapper** turns `(node, context)` into the `streamwright run` argv and the secret environment. The default
 wrapper derives the `--set` flags from the *source's own declared spec* filled by the network's `inputs`; a custom
 `@node` wrapper can override a node (e.g. look campaign ids up in a database). See the
-[orchestration architecture]({{ site.baseurl }}/orchestration/architecture/) for the
+[orchestration architecture](https://github.com/karthick-jaganathan/streamwright-orchestration/blob/main/docs/architecture.md) for the
 full model.
 
 ### Shared vocabulary: one pipeline, many networks
@@ -180,7 +180,7 @@ the Dagster run config, or in a log. In `docker` the value is copied from the or
 container by name (`-e STREAMWRIGHT_SECRET_<NAME>`); in `k8s` the pod gets the values from a Kubernetes `Secret` via `envFrom`,
 so the pipeline sends no secret value at all. The Kubernetes path is a local simulation (a `kind` cluster with in-cluster
 LocalStack + Postgres) of a real EKS deployment — see the
-[orchestration k8s README](https://github.com/karthick-jaganathan/streamwright/tree/master/orchestration/k8s).
+[orchestration k8s README](https://github.com/karthick-jaganathan/streamwright-orchestration/tree/main/k8s).
 
 ---
 

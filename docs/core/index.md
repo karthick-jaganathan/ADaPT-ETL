@@ -17,7 +17,7 @@ streamwright is the `streamwright` command and the runtime behind it for `kind: 
 A source is a folder (`source.yaml` with `spec`, `auth` and `http`, and one file per stream in `streams/`) or a single
 YAML file, as described in [the source format design]({{ site.baseurl }}/design/source-format/). `streamwright validate`
 checks it before every run. The [architecture guide]({{ site.baseurl }}/architecture/) shows how it fits with the
-connectors and [orchestration]({{ site.baseurl }}/orchestration/).
+connectors and [orchestration](https://github.com/karthick-jaganathan/streamwright-orchestration).
 
 ## What it does
 
@@ -118,7 +118,7 @@ See [Streams]({{ site.baseurl }}/core/streams/) and the [source format design]({
 - [Source format design]({{ site.baseurl }}/design/source-format/) — the full `source.yaml` + `streams/` reference.
 - [Connectors](https://github.com/karthick-jaganathan/streamwright/blob/master/connectors/README.md) — the installed
   connectors (ad APIs, file/object/db readers) and how to write one.
-- [Orchestration]({{ site.baseurl }}/orchestration/) — running `streamwright` as Dagster pipelines per user and network.
+- [Orchestration](https://github.com/karthick-jaganathan/streamwright-orchestration) — running `streamwright` as Dagster pipelines per user and network.
 - [Examples](https://github.com/karthick-jaganathan/streamwright/tree/master/examples/sources) — the example sources:
   [ads](https://github.com/karthick-jaganathan/streamwright/tree/master/examples/sources/ads) and
   [readers](https://github.com/karthick-jaganathan/streamwright/tree/master/examples/sources/readers).

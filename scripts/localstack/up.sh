@@ -2,7 +2,7 @@
 # Start LocalStack S3 and upload the files_demo fixtures to s3://streamwright-demo/, so the streamwright-s3 connector (and the
 # examples/sources/readers/s3_demo source) have a bucket to read. Idempotent: safe to run again. Requires docker and the aws CLI.
 #
-#   orchestration/localstack/up.sh
+#   scripts/localstack/up.sh
 #   # then, with the dummy LocalStack credentials in the environment:
 #   STREAMWRIGHT_SECRET_S3_KEY_ID=test STREAMWRIGHT_SECRET_S3_SECRET=test \
 #     streamwright run examples/sources/readers/s3_demo --set bucket_root=s3://streamwright-demo/ \

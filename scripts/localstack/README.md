@@ -2,7 +2,7 @@
 
 Test the `streamwright-s3` connector against a real S3 API locally, with no AWS account. LocalStack also backs
 `STREAMWRIGHT_EXECUTION=docker` runs that write a DuckLake warehouse to S3 (the `k8s` mode deploys its own in-cluster
-LocalStack under [../k8s](../k8s)).
+LocalStack under [k8s/](https://github.com/karthick-jaganathan/streamwright-orchestration/tree/main/k8s) in streamwright-orchestration).
 
 ## Why
 The `streamwright-s3` connector reads objects over DuckDB's `httpfs`. LocalStack serves an S3-compatible endpoint, so the same
@@ -12,7 +12,7 @@ so a path cannot redirect the read or leak credentials).
 
 ## Start it and fill the bucket
 ```bash
-orchestration/localstack/up.sh      # starts LocalStack, makes s3://streamwright-demo/, uploads the files_demo fixtures
+scripts/localstack/up.sh      # starts LocalStack, makes s3://streamwright-demo/, uploads the files_demo fixtures
 ```
 This uses the community image `localstack/localstack:3` (no license needed) and only the S3 service. The dummy
 credentials are `test` / `test`.
@@ -38,7 +38,7 @@ point `bucket_root` at your own bucket to read it.
 
 ## Stop it
 ```bash
-docker compose -f orchestration/localstack/docker-compose.yml down
+docker compose -f scripts/localstack/docker-compose.yml down
 ```
 
 ## MinIO / real AWS

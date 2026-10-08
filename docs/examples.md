@@ -90,12 +90,12 @@ Orchestration runs the same `metadata` pipeline against Google, Microsoft and Me
 [shared vocabulary]({{ site.baseurl }}/concepts/#network--shared-vocabulary) maps each network's stream names:
 
 ```bash
-cd orchestration
+# in a clone of https://github.com/karthick-jaganathan/streamwright-orchestration
 python -m streamwright.orchestration.definitions metadata u1    # google_ads account
 python -m streamwright.orchestration.definitions metadata u2    # microsoft_ads account
 ```
 
-See [Orchestration → Running]({{ site.baseurl }}/orchestration/running/).
+See [Orchestration → Running](https://github.com/karthick-jaganathan/streamwright-orchestration/blob/main/docs/running.md).
 
 ## A source folder
 

@@ -87,7 +87,7 @@ from a saved cursor forward, so each run only fetches new data. See [Streams]({{
 ## Orchestration
 
 Orchestration runs the `streamwright` CLI for many users and networks as Dagster pipelines. See
-[Orchestration]({{ site.baseurl }}/orchestration/).
+[Orchestration](https://github.com/karthick-jaganathan/streamwright-orchestration).
 
 ### Pipeline & node
 

@@ -1,6 +1,0 @@
-# The performance pipeline: the account's reports. Only campaign_performance is a stream of the google_ads source today;
-# add a node here as each performance stream is added to the source (e.g. ad_group_performance: {}). A node may run
-# `after` another node of this pipeline only. Runs as the per-network Dagster jobs `ads_performance__<network>`.
-name: performance
-nodes:
-  campaign_performance: {}

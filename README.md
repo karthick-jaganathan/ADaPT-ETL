@@ -75,7 +75,7 @@ StreamWright is layered so that **what to extract** (a customer's YAML source), 
 
 The layers, the `streamwright run` flow and the orchestration flow — with sequence diagrams — are in
 [docs/architecture.md](docs/architecture.md). Orchestration details are in the
-[orchestration documentation](https://karthick-jaganathan.github.io/streamwright/orchestration/).
+[orchestration documentation](https://github.com/karthick-jaganathan/streamwright-orchestration).
 
 ## Repository layout
 
@@ -84,9 +84,11 @@ core/          streamwright: the `streamwright` CLI, the runtime and streamwrigh
 connectors/<name>/        one distribution per connector, with its own tests and README
 examples/sources/        example source folders, validated in CI
 docs/                  documentation site, the source format design and the JSON Schemas
-orchestration/         Dagster orchestration of `streamwright run` (subprocess, Docker or Kubernetes)
 tests/                 the core test suite
 ```
+
+The Dagster orchestration of `streamwright run` (per user and network; subprocess, Docker or Kubernetes) is its own
+repository: [streamwright-orchestration](https://github.com/karthick-jaganathan/streamwright-orchestration).
 
 ## Docker
 
@@ -96,9 +98,9 @@ docker compose run --rm streamwright streamwright validate examples/sources
 docker compose run --rm streamwright streamwright run examples/sources/readers/files_demo --set data_root=examples/sources/readers/files_demo/data
 ```
 
-The orchestration image `streamwright-pipeline:local` (streamwright with the ad and reader connectors, one container per pipeline
-node) is built by `bash orchestration/docker/build.sh`; see [orchestration/docker](orchestration/docker/README.md) and,
-for the Dagster orchestration itself, [orchestration/README.md](orchestration/README.md).
+The orchestration image `streamwright-pipeline:local` (streamwright with the ad and reader connectors, one container per
+pipeline node) is built in [streamwright-orchestration](https://github.com/karthick-jaganathan/streamwright-orchestration) — see its
+[docker/README.md](https://github.com/karthick-jaganathan/streamwright-orchestration/blob/main/docker/README.md).
 
 ## Development
 

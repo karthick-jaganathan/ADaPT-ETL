@@ -87,8 +87,8 @@ docker compose run --rm streamwright streamwright validate examples/sources
 
 or `docker build -t streamwright .` and `docker run --rm streamwright streamwright --help`. The image used by the Dagster
 orchestration, `streamwright-pipeline:local` (streamwright with the ad and reader connectors), is built by
-`bash orchestration/docker/build.sh`; see [orchestration/docker/README.md](orchestration/docker/README.md), and
-[orchestration/README.md](orchestration/README.md) for the orchestration itself.
+`bash docker/build.sh` in [streamwright-orchestration](https://github.com/karthick-jaganathan/streamwright-orchestration); see [docker/README.md](https://github.com/karthick-jaganathan/streamwright-orchestration/blob/main/docker/README.md), and
+[streamwright-orchestration](https://github.com/karthick-jaganathan/streamwright-orchestration) for the orchestration itself.
 
 ## Development setup
 

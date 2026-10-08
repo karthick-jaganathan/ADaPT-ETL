@@ -73,7 +73,7 @@ accounts and networks. Two commands cover day-to-day use:
   </div>
 
   <div class="feature-card">
-    <h3><a href="{{ site.baseurl }}/orchestration/">🔀 Orchestration</a></h3>
+    <h3><a href="https://github.com/karthick-jaganathan/streamwright-orchestration">🔀 Orchestration</a></h3>
     <p>Dagster pipelines over the <code>streamwright</code> CLI, the shared-vocabulary network map, and execution modes.</p>
   </div>
 
