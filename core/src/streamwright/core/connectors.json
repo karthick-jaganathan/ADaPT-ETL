@@ -1,22 +1,10 @@
 {
   "connectors": {
-    "meta_ads": {
-      "family": "ads",
-      "homepage": "https://github.com/karthick-jaganathan/streamwright",
-      "install": {
-        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@e1822c585ea8654f0db6f70b856c79b7005c2e1e#subdirectory=connectors/ads/meta_ads"
-      },
-      "key": "meta_ads",
-      "maintainer": "karthick-jaganathan",
-      "summary": "Meta Marketing insights & objects",
-      "title": "Meta Ads",
-      "trust": "official"
-    },
     "files": {
       "family": "readers",
       "homepage": "https://github.com/karthick-jaganathan/streamwright",
       "install": {
-        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@e1822c585ea8654f0db6f70b856c79b7005c2e1e#subdirectory=connectors/readers/files"
+        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@26a58d8b9c6a0549a184a3939a8c57490ba03f90#subdirectory=connectors/readers/files"
       },
       "key": "files",
       "maintainer": "karthick-jaganathan",
@@ -28,7 +16,7 @@
       "family": "readers",
       "homepage": "https://github.com/karthick-jaganathan/streamwright",
       "install": {
-        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@e1822c585ea8654f0db6f70b856c79b7005c2e1e#subdirectory=connectors/readers/gcs"
+        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@26a58d8b9c6a0549a184a3939a8c57490ba03f90#subdirectory=connectors/readers/gcs"
       },
       "key": "gcs",
       "maintainer": "karthick-jaganathan",
@@ -40,7 +28,7 @@
       "family": "ads",
       "homepage": "https://github.com/karthick-jaganathan/streamwright",
       "install": {
-        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@e1822c585ea8654f0db6f70b856c79b7005c2e1e#subdirectory=connectors/ads/google_ads"
+        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@26a58d8b9c6a0549a184a3939a8c57490ba03f90#subdirectory=connectors/ads/google_ads"
       },
       "key": "google_ads",
       "maintainer": "karthick-jaganathan",
@@ -48,11 +36,23 @@
       "title": "Google Ads",
       "trust": "official"
     },
+    "meta_ads": {
+      "family": "ads",
+      "homepage": "https://github.com/karthick-jaganathan/streamwright",
+      "install": {
+        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@26a58d8b9c6a0549a184a3939a8c57490ba03f90#subdirectory=connectors/ads/meta_ads"
+      },
+      "key": "meta_ads",
+      "maintainer": "karthick-jaganathan",
+      "summary": "Meta Marketing insights & objects",
+      "title": "Meta Ads",
+      "trust": "official"
+    },
     "microsoft_ads": {
       "family": "ads",
       "homepage": "https://github.com/karthick-jaganathan/streamwright",
       "install": {
-        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@e1822c585ea8654f0db6f70b856c79b7005c2e1e#subdirectory=connectors/ads/microsoft_ads"
+        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@26a58d8b9c6a0549a184a3939a8c57490ba03f90#subdirectory=connectors/ads/microsoft_ads"
       },
       "key": "microsoft_ads",
       "maintainer": "karthick-jaganathan",
@@ -64,7 +64,7 @@
       "family": "readers",
       "homepage": "https://github.com/karthick-jaganathan/streamwright",
       "install": {
-        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@e1822c585ea8654f0db6f70b856c79b7005c2e1e#subdirectory=connectors/readers/postgres"
+        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@26a58d8b9c6a0549a184a3939a8c57490ba03f90#subdirectory=connectors/readers/postgres"
       },
       "key": "postgres",
       "maintainer": "karthick-jaganathan",
@@ -76,7 +76,7 @@
       "family": "readers",
       "homepage": "https://github.com/karthick-jaganathan/streamwright",
       "install": {
-        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@e1822c585ea8654f0db6f70b856c79b7005c2e1e#subdirectory=connectors/readers/s3"
+        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@26a58d8b9c6a0549a184a3939a8c57490ba03f90#subdirectory=connectors/readers/s3"
       },
       "key": "s3",
       "maintainer": "karthick-jaganathan",
@@ -86,6 +86,6 @@
     }
   },
   "count": 7,
-  "generated_at": "2026-10-08T09:04:30.593297+00:00",
+  "generated_at": "2026-10-08T11:05:52.036167+00:00",
   "schema_version": 1
 }
