@@ -1,0 +1,26 @@
+# Ad accounts available to the authenticated advertiser.
+retry: {max_attempts: 3, max_delay: 2m}
+requests:
+  - name: ad_accounts_list
+    sdk: openai_ads
+    service: ad_accounts
+    method: list
+    arguments:
+      params:
+        limit: 500
+transform:
+  mode: page
+  steps:
+    - name: ad_accounts
+      select: |
+        SELECT record->>'id'                                            AS account_id,
+               record->>'name'                                          AS account_name,
+               record->>'status'                                        AS status,
+               record->>'currency_code'                                 AS currency_code,
+               record->>'timezone'                                      AS timezone,
+               record->>'url'                                           AS website_url
+        FROM ad_accounts_list
+export:
+  ad_accounts:
+    step: ad_accounts
+    primary_key: [account_id]

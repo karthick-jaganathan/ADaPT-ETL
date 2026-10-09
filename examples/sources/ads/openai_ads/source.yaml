@@ -1,0 +1,18 @@
+# Example source folder: this file, and one file per stream in streams/.
+# Check it with: streamwright validate examples/sources/ads/openai_ads
+# Run it (pip install streamwright-openai-ads): streamwright run examples/sources/ads/openai_ads --set account_ids=...
+# Secrets come from STREAMWRIGHT_SECRET_<NAME> environment variables or --secrets FILE.
+kind: source
+name: openai_ads_demo
+description: OpenAI Ads performance and metadata streams.
+
+spec:
+  config:
+    account_ids: {type: list, items: string, description: Ad account IDs}
+    start_date: {type: date, required: false, description: "The start date for performance metrics, e.g. 2026-01-01"}
+  secrets:
+    openai_ads_key: {type: string}
+
+auth:
+  provider: openai_ads               # registered by the streamwright-openai-ads connector
+  advertiser_api_key: "{{ secrets.openai_ads_key }}"

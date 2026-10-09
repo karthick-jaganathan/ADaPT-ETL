@@ -11,6 +11,8 @@ vendor SDK: `files` (local files), `s3` and `gcs` (object storage) and `postgres
 | [google_ads](ads/google_ads/README.md) | `streamwright-google-ads` | `google_ads` | google-ads | `google.ads.googleads.client` |
 | [microsoft_ads](ads/microsoft_ads/README.md) | `streamwright-microsoft-ads` | `microsoft_ads` | bingads | `suds.client`, `suds.transport` |
 | [meta_ads](ads/meta_ads/README.md) | `streamwright-meta-ads` | `meta_ads` | facebook_business | `urllib3.connectionpool` |
+| [openai_ads](ads/openai_ads/README.md) | `streamwright-openai-ads` | `openai_ads` | requests | `urllib3.connectionpool` |
+| [linkedin_ads](ads/linkedin_ads/README.md) | `streamwright-linkedin-ads` | `linkedin_ads` | requests | `urllib3.connectionpool` |
 | [files](readers/files/README.md) | `streamwright-files` | `files` | duckdb | - |
 | [s3](readers/s3/README.md) | `streamwright-s3` | `s3` | duckdb (its httpfs extension) | - |
 | [gcs](readers/gcs/README.md) | `streamwright-gcs` | `gcs` | duckdb (its httpfs extension) | - |

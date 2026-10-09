@@ -1,0 +1,64 @@
+# Ad groups partitioned by campaign, linking child ad groups with parent campaigns.
+# Reads each campaign first, then queries the ad groups under that campaign_id.
+partitions:
+  - {name: account_id, values: "{{ config.account_ids }}"}
+retry: {max_attempts: 3, max_delay: 2m}
+requests:
+  - name: raw_campaigns
+    sdk: openai_ads
+    service: campaigns
+    method: list
+    arguments:
+      params:
+        ad_account_id: "{{ partition.account_id }}"
+        limit: 500
+  - name: raw_ad_groups
+    partitions:
+      - {from: campaign_rows, fields: [account_id, campaign_id]}
+    sdk: openai_ads
+    service: ad_groups
+    method: list
+    arguments:
+      params:
+        ad_account_id: "{{ partition.account_id }}"
+        campaign_id: "{{ partition.campaign_id }}"
+        limit: 500
+transform:
+  mode: run
+  steps:
+    - name: campaign_rows
+      select: |
+        SELECT partition->>'account_id'                                 AS account_id,
+               record->>'id'                                            AS campaign_id,
+               record->>'name'                                          AS campaign_name,
+               record->>'status'                                        AS campaign_status
+        FROM raw_campaigns
+    - name: ad_group_rows
+      select: |
+        SELECT partition->>'account_id'                                 AS account_id,
+               partition->>'campaign_id'                                AS campaign_id,
+               record->>'id'                                            AS ad_group_id,
+               record->>'name'                                          AS ad_group_name,
+               record->>'status'                                        AS ad_group_status,
+               record->>'$.bidding_config.strategy'                     AS bid_strategy,
+               (record->>'$.bidding_config.max_bid_micros')::BIGINT     AS max_bid_micros,
+               to_timestamp((record->>'created_at')::BIGINT)            AS created_at
+        FROM raw_ad_groups
+    - name: ad_group_tree
+      select: |
+        SELECT a.account_id,
+               a.campaign_id,
+               c.campaign_name,
+               c.campaign_status,
+               a.ad_group_id,
+               a.ad_group_name,
+               a.ad_group_status,
+               a.bid_strategy,
+               a.max_bid_micros,
+               a.created_at
+        FROM ad_group_rows a
+        LEFT JOIN campaign_rows c USING (account_id, campaign_id)
+export:
+  ad_group_tree:
+    step: ad_group_tree
+    primary_key: [account_id, campaign_id, ad_group_id]

@@ -149,6 +149,7 @@ dmypy.json
 # IDE settings
 .idea
 .vscode
+.claude/
 
 # Local account/secret configs (dev/testing) — never commit real credentials.
 # Use the committed *.example.yaml templates; real files live in ~/.streamwright/ or are served by the accounts API.

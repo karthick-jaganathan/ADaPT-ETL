@@ -1,0 +1,29 @@
+# Ad accounts available to the authenticated advertiser.
+retry: {max_attempts: 3, max_delay: 2m}
+requests:
+  - name: ad_accounts_list
+    sdk: linkedin_ads
+    service: ad_accounts
+    method: list
+    arguments:
+      params:
+        q: search
+        count: 100
+transform:
+  mode: page
+  steps:
+    - name: ad_accounts
+      select: |
+        SELECT (record->>'id')::BIGINT                                  AS account_id,
+               record->>'name'                                          AS account_name,
+               record->>'status'                                        AS status,
+               record->>'type'                                          AS account_type,
+               record->>'currency'                                      AS currency_code,
+               record->>'reference'                                     AS organization_urn,
+               to_timestamp(nullif(record->>'$.changeAuditStamps.created.time', '')::BIGINT / 1000) AS created_at,
+               to_timestamp(nullif(record->>'$.changeAuditStamps.lastModified.time', '')::BIGINT / 1000) AS updated_at
+        FROM ad_accounts_list
+export:
+  ad_accounts:
+    step: ad_accounts
+    primary_key: [account_id]

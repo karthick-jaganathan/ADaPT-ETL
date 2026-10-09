@@ -1,0 +1,35 @@
+# Ads of each ad account (account-level wider query).
+# Note: OpenAI Ads API does not return parent campaign_id or ad_group_id in account-level ad listings.
+# To extract ads with their parent campaign details, use the ad_tree stream.
+partitions:
+  - {name: account_id, values: "{{ config.account_ids }}"}
+retry: {max_attempts: 3, max_delay: 2m}
+requests:
+  - name: ads_list
+    sdk: openai_ads
+    service: ads
+    method: list
+    arguments:
+      params:
+        ad_account_id: "{{ partition.account_id }}"
+        limit: 500
+transform:
+  mode: page
+  steps:
+    - name: ads
+      select: |
+        SELECT partition->>'account_id'                                 AS account_id,
+               record->>'id'                                            AS ad_id,
+               record->>'name'                                          AS ad_name,
+               record->>'status'                                        AS status,
+               record->>'$.creative.type'                               AS creative_type,
+               record->>'$.creative.title'                              AS creative_title,
+               record->>'$.creative.target_url'                         AS target_url,
+               record->>'review_status'                                 AS review_status,
+               to_timestamp((record->>'created_at')::BIGINT)            AS created_at,
+               to_timestamp((record->>'updated_at')::BIGINT)            AS updated_at
+        FROM ads_list
+export:
+  ads:
+    step: ads
+    primary_key: [ad_id]

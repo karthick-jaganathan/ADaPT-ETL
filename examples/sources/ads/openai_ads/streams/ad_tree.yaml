@@ -1,0 +1,70 @@
+# Ads partitioned by campaign, linking child ads with parent campaigns.
+# Reads each campaign first, then queries the ads under that campaign_id.
+# Note: The upstream OpenAI Ads API currently evaluates /v1/ads at account scope and ignores
+# campaign_id filtering. Use the flat `ads` stream for direct account-level inventory.
+partitions:
+  - {name: account_id, values: "{{ config.account_ids }}"}
+retry: {max_attempts: 3, max_delay: 2m}
+requests:
+  - name: raw_campaigns
+    sdk: openai_ads
+    service: campaigns
+    method: list
+    arguments:
+      params:
+        ad_account_id: "{{ partition.account_id }}"
+        limit: 500
+  - name: raw_ads
+    partitions:
+      - {from: campaign_rows, fields: [account_id, campaign_id]}
+    sdk: openai_ads
+    service: ads
+    method: list
+    arguments:
+      params:
+        ad_account_id: "{{ partition.account_id }}"
+        campaign_id: "{{ partition.campaign_id }}"
+        limit: 500
+transform:
+  mode: run
+  steps:
+    - name: campaign_rows
+      select: |
+        SELECT partition->>'account_id'                                 AS account_id,
+               record->>'id'                                            AS campaign_id,
+               record->>'name'                                          AS campaign_name,
+               record->>'status'                                        AS campaign_status
+        FROM raw_campaigns
+    - name: ad_rows
+      select: |
+        SELECT partition->>'account_id'                                 AS account_id,
+               partition->>'campaign_id'                                AS campaign_id,
+               record->>'id'                                            AS ad_id,
+               record->>'name'                                          AS ad_name,
+               record->>'status'                                        AS ad_status,
+               record->>'$.creative.type'                               AS creative_type,
+               record->>'$.creative.title'                              AS creative_title,
+               record->>'$.creative.target_url'                         AS target_url,
+               record->>'review_status'                                 AS review_status,
+               to_timestamp((record->>'created_at')::BIGINT)            AS created_at
+        FROM raw_ads
+    - name: ad_tree
+      select: |
+        SELECT a.account_id,
+               a.campaign_id,
+               c.campaign_name,
+               c.campaign_status,
+               a.ad_id,
+               a.ad_name,
+               a.ad_status,
+               a.creative_type,
+               a.creative_title,
+               a.target_url,
+               a.review_status,
+               a.created_at
+        FROM ad_rows a
+        LEFT JOIN campaign_rows c USING (account_id, campaign_id)
+export:
+  ad_tree:
+    step: ad_tree
+    primary_key: [account_id, campaign_id, ad_id]

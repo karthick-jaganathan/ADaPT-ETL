@@ -1,0 +1,18 @@
+# Example source folder: this file, and one file per stream in streams/.
+# Check it with: streamwright validate examples/sources/ads/linkedin_ads
+# Run it (pip install streamwright-linkedin-ads): streamwright run examples/sources/ads/linkedin_ads --set account_ids=...
+# Secrets come from STREAMWRIGHT_SECRET_<NAME> environment variables or --secrets FILE.
+kind: source
+name: linkedin_ads_demo
+description: LinkedIn Ads metadata and performance streams.
+
+spec:
+  config:
+    account_ids: {type: list, items: string, description: Sponsored Ad Account IDs}
+    start_date: {type: date, required: false, description: "The start date for performance metrics, e.g. 2026-01-01"}
+  secrets:
+    linkedin_access_token: {type: string}
+
+auth:
+  provider: linkedin_ads
+  access_token: "{{ secrets.linkedin_access_token }}"

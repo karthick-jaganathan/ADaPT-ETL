@@ -1,0 +1,64 @@
+# Ad group performance metrics (delivery insights) per ad group per day.
+partitions:
+  - {name: account_id, values: "{{ config.account_ids }}"}
+incremental:
+  cursor_field: date
+  start: "{{ config.start_date }}"
+  window: 1d
+retry: {max_attempts: 3, max_delay: 2m}
+requests:
+  - name: raw_ad_groups
+    sdk: openai_ads
+    service: ad_groups
+    method: list
+    arguments:
+      params:
+        ad_account_id: "{{ partition.account_id }}"
+        limit: 500
+  - name: raw_ad_group_insights
+    partitions:
+      - {from: ad_group_rows, fields: [account_id, ad_group_id]}
+    sdk: openai_ads
+    service: ad_groups
+    method: insights
+    arguments:
+      id: "{{ partition.ad_group_id }}"
+      params:
+        start_date: "{{ window.start }}"
+        end_date: "{{ window.end }}"
+        limit: 500
+transform:
+  mode: run
+  steps:
+    - name: ad_group_rows
+      select: |
+        SELECT partition->>'account_id'                                 AS account_id,
+               record->>'id'                                            AS ad_group_id,
+               record->>'name'                                          AS ad_group_name
+        FROM raw_ad_groups
+    - name: insight_rows
+      select: |
+        SELECT partition->>'account_id'                                 AS account_id,
+               partition->>'ad_group_id'                                AS ad_group_id,
+               (record->>'date')::DATE                                  AS date,
+               coalesce((record->>'impressions')::BIGINT, 0)            AS impressions,
+               coalesce((record->>'clicks')::BIGINT, 0)                 AS clicks,
+               coalesce((record->>'spend')::DOUBLE, 0)                  AS spend,
+               round(coalesce((record->>'spend')::DOUBLE, 0) / nullif((record->>'clicks')::BIGINT, 0), 4) AS cpc
+        FROM raw_ad_group_insights
+    - name: ad_group_performance
+      select: |
+        SELECT i.account_id,
+               i.ad_group_id,
+               a.ad_group_name,
+               i.date,
+               i.impressions,
+               i.clicks,
+               i.spend,
+               i.cpc
+        FROM insight_rows i
+        LEFT JOIN ad_group_rows a USING (account_id, ad_group_id)
+export:
+  ad_group_performance:
+    step: ad_group_performance
+    primary_key: [account_id, ad_group_id, date]

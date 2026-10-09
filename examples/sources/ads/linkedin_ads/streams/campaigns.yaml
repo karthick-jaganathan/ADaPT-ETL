@@ -1,0 +1,38 @@
+# Campaigns of each sponsored ad account.
+partitions:
+  - {name: account_id, values: "{{ config.account_ids }}"}
+retry: {max_attempts: 3, max_delay: 2m}
+requests:
+  - name: campaigns_list
+    sdk: linkedin_ads
+    service: campaigns
+    method: list
+    arguments:
+      params:
+        q: search
+        search.account.values[0]: "urn:li:sponsoredAccount:{{ partition.account_id }}"
+        count: 100
+transform:
+  mode: page
+  steps:
+    - name: campaigns
+      select: |
+        SELECT partition->>'account_id'                                 AS account_id,
+               (record->>'id')::BIGINT                                  AS campaign_id,
+               record->>'name'                                          AS campaign_name,
+               record->>'status'                                        AS status,
+               record->>'type'                                          AS campaign_type,
+               record->>'costType'                                      AS cost_type,
+               split_part(record->>'campaignGroup', ':', 4)             AS campaign_group_id,
+               (record->>'$.dailyBudget.amount')::DOUBLE                AS daily_budget_amount,
+               (record->>'$.unitCost.amount')::DOUBLE                   AS unit_cost_amount,
+               record->>'$.dailyBudget.currencyCode'                    AS currency_code,
+               to_timestamp(nullif(record->>'$.runSchedule.start', '')::BIGINT / 1000) AS start_time,
+               to_timestamp(nullif(record->>'$.runSchedule.end', '')::BIGINT / 1000)   AS end_time,
+               to_timestamp(nullif(record->>'$.changeAuditStamps.created.time', '')::BIGINT / 1000) AS created_at,
+               to_timestamp(nullif(record->>'$.changeAuditStamps.lastModified.time', '')::BIGINT / 1000) AS updated_at
+        FROM campaigns_list
+export:
+  campaigns:
+    step: campaigns
+    primary_key: [account_id, campaign_id]

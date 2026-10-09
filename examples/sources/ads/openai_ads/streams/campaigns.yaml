@@ -1,0 +1,36 @@
+# Campaigns of each ad account. Budgets are in micros ($1 = 1,000,000 micros).
+partitions:
+  - {name: account_id, values: "{{ config.account_ids }}"}
+retry: {max_attempts: 3, max_delay: 2m}
+requests:
+  - name: campaigns_list
+    sdk: openai_ads
+    service: campaigns
+    method: list
+    arguments:
+      params:
+        ad_account_id: "{{ partition.account_id }}"
+        limit: 500
+transform:
+  mode: page
+  steps:
+    - name: campaigns
+      select: |
+        SELECT partition->>'account_id'                                 AS account_id,
+               record->>'id'                                            AS campaign_id,
+               record->>'name'                                          AS campaign_name,
+               record->>'status'                                        AS status,
+               record->>'objective'                                     AS objective,
+               record->>'bidding_type'                                  AS bidding_type,
+               record->>'billing_event_type'                            AS billing_event_type,
+               (record->>'$.budget.daily_spend_limit_micros')::BIGINT    AS daily_budget_micros,
+               (record->>'$.budget.lifetime_spend_limit_micros')::BIGINT AS lifetime_budget_micros,
+               to_timestamp(nullif(record->>'start_time', '')::BIGINT)  AS start_time,
+               to_timestamp(nullif(record->>'end_time', '')::BIGINT)    AS end_time,
+               to_timestamp((record->>'created_at')::BIGINT)            AS created_at,
+               to_timestamp((record->>'updated_at')::BIGINT)            AS updated_at
+        FROM campaigns_list
+export:
+  campaigns:
+    step: campaigns
+    primary_key: [campaign_id]

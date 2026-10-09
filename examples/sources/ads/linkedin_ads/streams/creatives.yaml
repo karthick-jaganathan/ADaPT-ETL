@@ -1,0 +1,32 @@
+# Creatives (ads) of each sponsored ad account.
+partitions:
+  - {name: account_id, values: "{{ config.account_ids }}"}
+retry: {max_attempts: 3, max_delay: 2m}
+requests:
+  - name: creatives_list
+    sdk: linkedin_ads
+    service: creatives
+    method: list
+    arguments:
+      params:
+        q: search
+        search.account.values[0]: "urn:li:sponsoredAccount:{{ partition.account_id }}"
+        count: 100
+transform:
+  mode: page
+  steps:
+    - name: creatives
+      select: |
+        SELECT partition->>'account_id'                                 AS account_id,
+               (record->>'id')::BIGINT                                  AS creative_id,
+               split_part(record->>'campaign', ':', 4)                  AS campaign_id,
+               record->>'status'                                        AS status,
+               record->>'type'                                          AS creative_type,
+               record->>'reference'                                     AS content_reference,
+               to_timestamp(nullif(record->>'$.changeAuditStamps.created.time', '')::BIGINT / 1000) AS created_at,
+               to_timestamp(nullif(record->>'$.changeAuditStamps.lastModified.time', '')::BIGINT / 1000) AS updated_at
+        FROM creatives_list
+export:
+  creatives:
+    step: creatives
+    primary_key: [account_id, creative_id]
