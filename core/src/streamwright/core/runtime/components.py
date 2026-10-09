@@ -38,7 +38,7 @@ from streamwright.core.engine import queries
 from streamwright.core.net.http import RetryPolicy
 
 
-__all__ = ["ENTRY_POINT_GROUP", "QUERY_BUILDER_GROUP", "Connector", "QueryBuilder", "ConnectorError",
+__all__ = ["ENTRY_POINT_GROUP", "QUERY_BUILDER_GROUP", "Connector", "RestConnector", "QueryBuilder", "ConnectorError",
            "ComponentLoadError", "ConnectorContext", "register", "unregister", "available", "load", "component_problems",
            "check_source", "check_queries", "check_call", "sdk_call", "poll_call", "sdk_calls", "request_body",
            "path_text"]
@@ -75,6 +75,8 @@ class Connector(object):
     """
 
     name = None
+    transport = "sdk"     # "sdk": connect()/request() run sdk: requests; "http": core's HTTP engine runs http: requests
+    query_builders = ()
     auth_required = ()
     auth_optional = ()
     request_headers = ()  # names a request's `headers` may use, e.g. a per-request account
@@ -84,6 +86,8 @@ class Connector(object):
 
     def check_auth(self, auth):
         """Problems with the keys of the `auth` block (without `provider`)."""
+        if self.transport == "http":
+            return []
         known = tuple(self.auth_required) + tuple(self.auth_optional)
         problems = ["auth: provider %r needs %r" % (self.name, key) for key in self.auth_required if key not in auth]
         problems += ["auth: provider %r does not support %r (supported: %s)" % (self.name, key, ", ".join(known))
@@ -120,6 +124,7 @@ class QueryBuilder(object):
     """
 
     name = None
+    connector = None
 
     def check(self, spec):
         """Problems with an unrendered spec (values may still be references) as (path inside the spec, message)."""
@@ -237,24 +242,38 @@ def package_name(name):
 def load(name, allowed=None, kind="connector"):
     """The component registered as `name`; raises ComponentLoadError if it is not allowed or not installed."""
     group, base = _KINDS[kind]
-    if allowed is not None and name not in allowed:
+    if kind == "connector" and allowed is not None and name not in allowed:
         raise ComponentLoadError("%s %r is not in the allowed list (%s)" % (kind, name, ", ".join(allowed) or "empty"))
     if name in _REGISTERED[kind]:
-        return _REGISTERED[kind][name]
-    if name in _LOADED[kind]:
-        return _LOADED[kind][name]
-    entries = [entry for entry in _entry_points(group) if entry.name == name]
-    if not entries:
-        raise ComponentLoadError("%s %r is not installed; install it with: pip install %s" % (
-            kind, name, package_name(name)))
-    try:
-        loaded = entries[0].load()
-    except Exception as exc:  # a broken install or a missing SDK
-        raise ComponentLoadError("%s %r could not be loaded: %s: %s" % (kind, name, type(exc).__name__, exc))
-    component = loaded() if isinstance(loaded, type) else loaded
-    if not isinstance(component, base) or component.name != name:
-        raise ComponentLoadError("entry point %r in group %s is not a %r %s" % (name, group, name, kind))
-    _LOADED[kind][name] = component
+        component = _REGISTERED[kind][name]
+    elif name in _LOADED[kind]:
+        component = _LOADED[kind][name]
+    else:
+        entries = [entry for entry in _entry_points(group) if entry.name == name]
+        if not entries:
+            if allowed is not None and name not in allowed:
+                raise ComponentLoadError("%s %r is not in the allowed list (%s)" % (
+                    kind, name, ", ".join(allowed) or "empty"))
+            raise ComponentLoadError("%s %r is not installed; install it with: pip install %s" % (
+                kind, name, package_name(name)))
+        try:
+            loaded = entries[0].load()
+        except Exception as exc:  # a broken install or a missing SDK
+            raise ComponentLoadError("%s %r could not be loaded: %s: %s" % (kind, name, type(exc).__name__, exc))
+        component = loaded() if isinstance(loaded, type) else loaded
+        if not isinstance(component, base) or component.name != name:
+            raise ComponentLoadError("entry point %r in group %s is not a %r %s" % (name, group, name, kind))
+        _LOADED[kind][name] = component
+
+    if allowed is not None and name not in allowed:
+        if kind == "query builder":
+            if getattr(component, "connector", None) in allowed:
+                return component
+            for conn_name in allowed:
+                conn = _REGISTERED["connector"].get(conn_name) or _LOADED["connector"].get(conn_name)
+                if conn and name in getattr(conn, "query_builders", ()):
+                    return component
+        raise ComponentLoadError("%s %r is not in the allowed list (%s)" % (kind, name, ", ".join(allowed) or "empty"))
     return component
 
 
@@ -263,8 +282,13 @@ def load(name, allowed=None, kind="connector"):
 # * ------
 
 def sdk_call(request):
-    """The {service, method, arguments[, headers]} call of an sdk request."""
+    """The {service, method, arguments[, headers, path, url]} call of an sdk request."""
     call = dict((key, request.get(key)) for key in ("service", "method", "arguments"))
+    for extra in ("path", "url"):
+        if request.get(extra) is not None:
+            call[extra] = request[extra]
+    if not call.get("service") and call.get("path"):
+        call["service"] = call["path"]
     if request.get("headers") is not None:
         call["headers"] = request["headers"]
     return call
@@ -273,6 +297,13 @@ def sdk_call(request):
 def poll_call(submit, poll):
     """An async job's poll call: the submit's service and headers, the poll's method and arguments."""
     call = {"service": submit.get("service"), "method": poll.get("method"), "arguments": poll.get("arguments")}
+    for extra in ("path", "url"):
+        if poll.get(extra) is not None:
+            call[extra] = poll[extra]
+        elif submit.get(extra) is not None:
+            call[extra] = submit[extra]
+    if not call.get("service") and call.get("path"):
+        call["service"] = call["path"]
     if submit.get("headers") is not None:
         call["headers"] = submit["headers"]
     return call
@@ -308,7 +339,8 @@ def check_call(connector, call, builders=None):
     if headers is not None:
         unknown = sorted(str(name) for name in (headers if isinstance(headers, dict) else {})
                          if name not in connector.request_headers)
-        where = "%s: %s.%s" % (connector.name, call.get("service"), call.get("method"))
+        target = call.get("service") or call.get("path")
+        where = "%s: %s.%s" % (connector.name, target, call.get("method"))
         if not isinstance(headers, dict):
             problems.append("%s: `headers` must be a mapping" % where)
         elif unknown:
@@ -356,6 +388,11 @@ def component_problems(source, allowed=None):
         else:
             auth = dict((key, value) for key, value in source["auth"].items() if key != "provider")
             problems += [(("auth",), problem, False) for problem in connector.check_auth(auth)]
+    effective_allowed = allowed
+    if allowed is not None and connector is not None:
+        extra = getattr(connector, "query_builders", ())
+        if extra:
+            effective_allowed = list(allowed) + [b for b in extra if b not in allowed]
     for index, stream in enumerate(source.get("streams") or []):
         items = stream.get("requests") if isinstance(stream, dict) else None
         for position, item in enumerate(items if isinstance(items, list) else []):
@@ -363,7 +400,7 @@ def component_problems(source, allowed=None):
                 continue
             request, path = request_body(item), ("streams", index, "requests", position)
             problems += [(path + inner, message, missing) for inner, message, missing in
-                         check_queries(request, allowed, builders)]
+                         check_queries(request, effective_allowed, builders)]
             if connector is not None:
                 for call in sdk_calls(request):
                     problems += [(path, problem, False) for problem in check_call(connector, call, builders)]
@@ -390,3 +427,10 @@ def check_source(source, allowed=None):
         else:
             messages.append(message)
     return messages
+
+
+def __getattr__(name):
+    if name == "RestConnector":
+        from streamwright.core.runtime.rest import RestConnector
+        return RestConnector
+    raise AttributeError("module %r has no attribute %r" % (__name__, name))
