@@ -4,11 +4,10 @@
 A catalog is a static index that maps a connector key to how it's installed - a
 PyPI requirement, a pinned git URL, or an image. It is read from the live hub
 (DEFAULT_HUB, or $STREAMWRIGHT_HUB_URL / --hub-url); when the hub is unreachable,
-from the last copy fetched (~/.streamwright/connectors.json), else from the copy
-bundled with this release - with a warning either way. The hub URL "bundled" uses
-the bundled copy only (no network): for reproducible builds. The key is the same name used in
-source YAML (`provider`/`sdk`); the install source is just a delivery detail, so
-a package can move from git to PyPI without changing what users type.
+from the last copy fetched (~/.streamwright/connectors.json) with a warning.
+The key is the same name used in source YAML (`provider`/`sdk`); the install source
+is just a delivery detail, so a package can move from git to PyPI without changing
+what users type.
 
 Security: non-"official" connectors run third-party code, so `install` asks for
 confirmation (or `--yes`) and refuses non-interactive installs without it.
@@ -19,23 +18,12 @@ import subprocess
 import sys
 from pathlib import Path
 
-try:
-    from importlib import resources
-except ImportError:  # pragma: no cover
-    import importlib_resources as resources
-
 from streamwright.core.runtime import components
 
 HUB_ENV = "STREAMWRIGHT_HUB_URL"
 DEFAULT_HUB = "https://karthick-jaganathan.github.io/streamwright-hub/index.json"
-BUNDLED = "bundled"  # a hub URL that means: the catalog bundled with this release, no network
 CACHE = Path(os.path.expanduser("~/.streamwright/connectors.json"))
 TIMEOUT_S = 5
-
-
-def _bundled():
-    text = resources.files("streamwright.core").joinpath("connectors.json").read_text()
-    return json.loads(text)
 
 
 def _valid(data):
@@ -61,11 +49,9 @@ def _remote(url):
 def load(hub_url=None):
     """
     The catalog: the live hub (`hub_url`, else $STREAMWRIGHT_HUB_URL, else DEFAULT_HUB; each fetch is cached). When the
-    hub cannot be read, the cached copy, else the bundled one, with a warning on stderr. `bundled`: the bundled copy only.
+    hub cannot be read, the cached copy is used with a warning on stderr.
     """
     url = hub_url or os.environ.get(HUB_ENV) or DEFAULT_HUB
-    if url == BUNDLED:
-        return _bundled()
     try:
         return _remote(url)
     except Exception as exc:  # offline, hub down or a bad publish: fall back, visibly
@@ -84,9 +70,7 @@ def load(hub_url=None):
                 return data
         except Exception:
             pass
-    sys.stderr.write("streamwright: the connector hub %s is unreachable (%s); using the catalog bundled with this "
-                     "release\n" % (url, reason))
-    return _bundled()
+    raise RuntimeError("the connector hub %s is unreachable (%s) and no cached catalog is available" % (url, reason))
 
 
 def _mtime(path):

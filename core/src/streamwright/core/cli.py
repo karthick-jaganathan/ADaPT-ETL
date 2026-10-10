@@ -249,8 +249,7 @@ def _parser():
     conn.add_argument("--yes", action="store_true", help="skip the confirmation prompt when installing")
     conn.add_argument("--hub-url", metavar="URL",
                       help="the connector hub (default: $STREAMWRIGHT_HUB_URL, else the live StreamWright hub; when it is "
-                           "unreachable, the last fetched or the bundled catalog, with a warning). 'bundled': the "
-                           "catalog bundled with this release, no network")
+                           "unreachable, the cached catalog is used, with a warning)")
 
     validate = commands.add_parser("validate", help="check configuration files: streamwright-validate, plus the checks of "
                                                      "the installed connectors and query builders", add_help=False)

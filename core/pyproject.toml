@@ -4,14 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "streamwright"
-version = "0.1.5"
+version = "0.1.6"
 description = "Declarative data connectors — pull from APIs, files and databases with YAML, shape with SQL, write anywhere."
 readme = "README.md"
 license = {text = "Apache-2.0"}
 authors = [
     {name = "Karthick Jaganathan", email = "kjaganathan.sde@gmail.com"},
 ]
-keywords = ["data", "pipeline", "etl", "connector", "singer", "yaml"]
+keywords = ["data", "pipeline", "etl", "connector", "singer", "yaml", "duckdb", "rest-api"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -58,6 +58,3 @@ packages = [
     "streamwright.core.runtime",
 ]
 
-[tool.setuptools.package-data]
-# the bundled connector catalog (the fallback of `streamwright connectors` when the live hub is unreachable)
-"streamwright.core" = ["connectors.json"]

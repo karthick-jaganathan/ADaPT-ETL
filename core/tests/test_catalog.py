@@ -178,11 +178,6 @@ def test_the_hub_url_can_be_set(hub, monkeypatch):
     assert hub["urls"] == ["https://hub.example/a.json", "https://hub.example/b.json"]
 
 
-def test_bundled_uses_no_network(hub):
-    data = catalog.load(catalog.BUNDLED)
-    assert hub["urls"] == [] and data == catalog._bundled()
-
-
 def test_an_unreachable_hub_falls_back_to_the_last_fetched_copy_with_a_warning(hub, capsys):
     catalog.CACHE.write_text(json.dumps(GOOD))
     assert catalog.load() == GOOD
@@ -191,9 +186,9 @@ def test_an_unreachable_hub_falls_back_to_the_last_fetched_copy_with_a_warning(h
     assert "using the copy fetched on" in err
 
 
-def test_with_no_fetched_copy_the_bundled_catalog_is_used_with_a_warning(hub, capsys):
-    assert catalog.load() == catalog._bundled()
-    assert "using the catalog bundled with this release" in capsys.readouterr().err
+def test_with_no_fetched_copy_an_unreachable_hub_raises_error(hub):
+    with pytest.raises(RuntimeError, match="and no cached catalog is available"):
+        catalog.load()
 
 
 def test_a_malformed_index_is_not_used_nor_cached(hub, capsys):
