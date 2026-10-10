@@ -35,7 +35,7 @@ import re
 import time
 
 from streamwright.core.runtime import logs
-from streamwright.core.runtime.components import Connector, ConnectorError
+from streamwright.core.runtime.components import Connector, ConnectorError, ConnectorSpec
 from streamwright.connectors.azure_blob.reader import (CREDENTIALS, FORMATS, PAGE_SIZE, PROVIDER, SCHEME, SCHEMES,
                                                       SETTINGS, AccessError, MissingError, ReadError, Reader,
                                                       allowed_roots, format_of, is_glob, is_url, masked_forms,
@@ -114,12 +114,15 @@ def _roots_problems(roots):
 
 class AzureBlobConnector(Connector):
 
-    name = PROVIDER
+    spec = ConnectorSpec(
+        name=PROVIDER,
+        title="Azure Blob Storage",
+        category="object storage",
+        transport="duckdb",
+        extension="azure",
+    )
     auth_required = ("roots",)
     auth_optional = tuple(CREDENTIALS) + tuple(SETTINGS)
-    network_loggers = ()  # DuckDB writes no logs
-    category = "object storage"
-    summary = "Azure Blob Storage objects (DuckDB azure)"
 
     def __init__(self, page_size=PAGE_SIZE, clock=time.monotonic):
         self.page_size = page_size

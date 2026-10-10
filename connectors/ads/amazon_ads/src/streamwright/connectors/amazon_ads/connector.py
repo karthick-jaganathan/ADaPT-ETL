@@ -19,7 +19,7 @@ The `amazon_ads` connector: thin placeholder exposing metadata and transport="ht
 HTTP execution and pagination are performed declaratively by StreamWright's HTTP engine.
 """
 
-from streamwright.core.runtime.components import Connector
+from streamwright.core.runtime.components import Connector, ConnectorSpec
 
 __all__ = ["AmazonAdsConnector"]
 
@@ -29,7 +29,9 @@ class AmazonAdsConnector(Connector):
     Amazon Advertising API connector metadata.
     Configured via `source.yaml` with transport="http".
     """
-    name = "amazon_ads"
-    transport = "http"
-    category = "advertising"
-    summary = "Amazon Ads"
+    spec = ConnectorSpec(
+        name="amazon_ads",
+        title="Amazon Ads",
+        category="advertising",
+        transport="http",
+    )

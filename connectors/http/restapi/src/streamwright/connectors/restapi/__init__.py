@@ -14,17 +14,6 @@
 # * limitations under the License.
 # **************************************************************************/
 
-from streamwright.core.runtime.components import Connector, ConnectorSpec
+from streamwright.connectors.restapi.connector import RestApiConnector, HttpConnector
 
-__all__ = ["OpenAIAdsConnector"]
-
-
-class OpenAIAdsConnector(Connector):
-    """OpenAI Ads: an HTTP API declared in the source (auth + http); see examples/sources/ads/openai_ads."""
-    spec = ConnectorSpec(
-        name="openai_ads",
-        title="OpenAI Ads",
-        category="advertising",
-        transport="http",
-        loggers=("urllib3.connectionpool",),
-    )
+__all__ = ["RestApiConnector", "HttpConnector"]

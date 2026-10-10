@@ -2,7 +2,7 @@
 
 # Package information
 PACKAGE_NAME = streamwright-files
-VERSION = 0.0.1
+VERSION = 0.1.0
 
 # Installation mode (dev, prod, dist)
 MODE ?= prod
@@ -76,7 +76,7 @@ clean:
 	find . -type d -name "dist" -exec rm -rf {} + 2>/dev/null || true
 	@echo "✅ Cleanup complete!"
 
-# Run tests (offline: local files only)
+# Run tests
 test:
 	@echo "Running tests for $(PACKAGE_NAME)..."
 	python -m pytest tests -q
@@ -86,4 +86,4 @@ verify:
 	@echo "Verifying $(PACKAGE_NAME) installation..."
 	@pip show $(PACKAGE_NAME) >/dev/null 2>&1 && echo "✅ $(PACKAGE_NAME) is installed!" || echo "❌ $(PACKAGE_NAME) is not installed!"
 	@python -c "import streamwright.connectors.files.connector; print('✅ streamwright.connectors.files import works!')" 2>/dev/null || echo "❌ streamwright.connectors.files import failed!"
-	@streamwright connectors | grep -qE '^files( |$$)' && echo "✅ files connector is registered!" || echo "❌ files connector is not registered!" 
+	@streamwright connectors | grep -qE '\[installed\]\s+files\b' && echo "✅ files connector is registered!" || echo "❌ files connector is not registered!"

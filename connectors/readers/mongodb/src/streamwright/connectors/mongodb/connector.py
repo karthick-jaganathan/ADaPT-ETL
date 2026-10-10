@@ -22,7 +22,7 @@ import base64
 import datetime
 from urllib.parse import quote_plus, urlsplit, unquote
 
-from streamwright.core.runtime.components import Connector, ConnectorError
+from streamwright.core.runtime.components import Connector, ConnectorError, ConnectorSpec
 
 __all__ = ["MongoDBConnector"]
 
@@ -63,9 +63,13 @@ class MongoDBConnector(Connector):
     """
     The `mongodb` connector: read-only extraction from MongoDB collections.
     """
-    name = "mongodb"
-    category = "databases"
-    summary = "MongoDB collections and aggregations"
+    spec = ConnectorSpec(
+        name="mongodb",
+        title="MongoDB",
+        category="databases",
+        transport="sdk",
+        package="pymongo",
+    )
     auth_required = ()
     auth_optional = ("uri", "host", "port", "database", "username", "password", "auth_source", "options")
 

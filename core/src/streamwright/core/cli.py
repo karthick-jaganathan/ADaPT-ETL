@@ -37,6 +37,7 @@ Exit status: 0 success, 1 the run failed, 2 invalid source or inputs.
 
 import argparse
 import datetime
+import functools
 import json
 import logging
 import os
@@ -509,8 +510,17 @@ def _log_error(message):
     return None
 
 
+@functools.lru_cache(maxsize=None)
+def _pkg_version(dist_name):
+    try:
+        from importlib import metadata
+        return metadata.version(dist_name)
+    except Exception:
+        return None
+
+
 def _connector_lines():
-    """`streamwright connectors`: installed connectors grouped by category, each with its description and SDK loggers."""
+    """`streamwright connectors`: installed connectors grouped by category using connector.spec."""
     groups = {}
     for name in components.available():
         try:
@@ -518,18 +528,31 @@ def _connector_lines():
         except components.ComponentLoadError as exc:
             groups.setdefault("other", []).append("  %s — %s" % (name, exc))
             continue
-        loggers = getattr(connector, "network_loggers", None) or ()
-        loggers = (loggers,) if isinstance(loggers, str) else tuple(loggers)
-        parts = [name]
-        summary = getattr(connector, "summary", "") or ""
-        if summary:
-            parts.append("— " + summary)
-        if loggers:
-            parts.append("(SDK loggers: %s)" % ", ".join(loggers))
-        category = getattr(connector, "category", "other") or "other"
-        groups.setdefault(category, []).append("  " + " ".join(parts))
+        spec = getattr(connector, "spec", None)
+        if spec is None:
+            spec = components.ConnectorSpec(name=name)
+        prefix = "  [installed]  "
+        conn_name = spec.name or name
+        title = spec.title
+        client_tag = spec.badge(_pkg_version)
+        loggers = spec.effective_loggers()
+
+        if client_tag and loggers:
+            logger_str = ", ".join(loggers)
+            line = "%s%-15s%-23s%-32s  [logger: %s]" % (prefix, conn_name, title, client_tag, logger_str)
+        elif client_tag:
+            line = "%s%-15s%-23s%s" % (prefix, conn_name, title, client_tag)
+        elif loggers:
+            logger_str = ", ".join(loggers)
+            line = "%s%-15s%-23s%-32s  [logger: %s]" % (prefix, conn_name, title, "", logger_str)
+        else:
+            line = "%s%-15s%s" % (prefix, conn_name, title)
+
+        groups.setdefault(spec.category, []).append(line)
     lines = []
     for category in sorted(groups):
+        if lines:
+            lines.append("")
         lines.append("%s:" % category)
         lines.extend(sorted(groups[category]))
     return lines

@@ -43,7 +43,7 @@ import re
 import time
 
 from streamwright.core.runtime import logs
-from streamwright.core.runtime.components import Connector, ConnectorError
+from streamwright.core.runtime.components import Connector, ConnectorError, ConnectorSpec
 from streamwright.connectors.files.reader import (AccessError, FORMATS, OBJECT_STORAGE, PAGE_SIZE, ReadError, Reader,
                                            allowed_roots, format_of, is_glob, is_url, option_problems, path_problem,
                                            regex_problem)
@@ -82,12 +82,14 @@ def _paths(path):
 
 class FilesConnector(Connector):
 
-    name = "files"
+    spec = ConnectorSpec(
+        name="files",
+        title="Local files",
+        category="files",
+        transport="duckdb",
+    )
     auth_required = ("roots",)
     auth_optional = ()
-    network_loggers = ()  # DuckDB writes no logs
-    category = "files"
-    summary = "Local files: CSV, JSON, JSONL, Parquet, TSV"
 
     def __init__(self, page_size=PAGE_SIZE, clock=time.monotonic):
         self.page_size = page_size

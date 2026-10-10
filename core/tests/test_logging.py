@@ -15,7 +15,7 @@ from streamwright.core import cli
 from streamwright.core.runtime import components, logs
 from streamwright.core.net.http import Redactor, error_excerpt
 from streamwright.core.runtime.logs import LogSetup, RunMetrics
-from streamwright.core.runtime.components import Connector, ConnectorContext
+from streamwright.core.runtime.components import Connector, ConnectorContext, ConnectorSpec
 from streamwright.core.engine.runner import SourceError, SourceRunner, _summary as job_summary
 from streamwright.core.runtime.testing import FakeClock, MemoryOutput, page_stream
 
@@ -485,9 +485,8 @@ SDK_TOKEN = "sdk-token-42"
 class TokenConnector(Connector):
     """Gets an access token when it connects (and logs it, as SDKs do); its SDK logs its requests on WIRE."""
 
-    name = "token_sdk"
+    spec = ConnectorSpec(name="token_sdk", loggers=("token_sdk.wire",))
     auth_required = ("api_secret",)
-    network_loggers = ("token_sdk.wire",)
 
     def connect(self, auth, context):
         # as google-api-core does to the `google` logger when a client is made: its lines reach no handler
@@ -594,7 +593,7 @@ def test_connectors_lists_the_sdk_loggers(token_sdk, capsys, monkeypatch):
     assert cli.main(["connectors"]) == 0
     lines = capsys.readouterr().out.splitlines()
     stripped = [line.strip() for line in lines]
-    assert "token_sdk (SDK loggers: token_sdk.wire)" in stripped
+    assert any("token_sdk" in line and "[logger: token_sdk.wire]" in line for line in stripped)
     assert "broken — connector 'broken' could not be loaded: ImportError: no SDK" in stripped
 
 

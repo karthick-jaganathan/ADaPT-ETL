@@ -2,7 +2,7 @@
 
 # Package information
 PACKAGE_NAME = streamwright-azure-blob
-VERSION = 0.0.1
+VERSION = 0.1.0
 
 # Installation mode (dev, prod, dist)
 MODE ?= prod
@@ -76,7 +76,7 @@ clean:
 	find . -type d -name "dist" -exec rm -rf {} + 2>/dev/null || true
 	@echo "✅ Cleanup complete!"
 
-# Run tests (offline: object storage is simulated; set STREAMWRIGHT_TEST_AZURE for a real container)
+# Run tests
 test:
 	@echo "Running tests for $(PACKAGE_NAME)..."
 	python -m pytest tests -q
@@ -86,4 +86,4 @@ verify:
 	@echo "Verifying $(PACKAGE_NAME) installation..."
 	@pip show $(PACKAGE_NAME) >/dev/null 2>&1 && echo "✅ $(PACKAGE_NAME) is installed!" || echo "❌ $(PACKAGE_NAME) is not installed!"
 	@python -c "import streamwright.connectors.azure_blob.connector; print('✅ streamwright.connectors.azure_blob import works!')" 2>/dev/null || echo "❌ streamwright.connectors.azure_blob import failed!"
-	@streamwright connectors | grep -qE '^azure_blob( |$$)' && echo "✅ azure_blob connector is registered!" || echo "❌ azure_blob connector is not registered!"
+	@streamwright connectors | grep -qE '\[installed\]\s+azure_blob\b' && echo "✅ azure_blob connector is registered!" || echo "❌ azure_blob connector is not registered!"

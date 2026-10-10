@@ -23,6 +23,7 @@ vendor SDK: `files` (local files), `s3` and `gcs` (object storage) and `postgres
 | [mysql](readers/mysql/README.md) | `streamwright-mysql` | `mysql` | duckdb (its mysql extension) | - |
 | [mongodb](readers/mongodb/README.md) | `streamwright-mongodb` | `mongodb` | pymongo | - |
 | [deltalake](readers/deltalake/README.md) | `streamwright-deltalake` | `deltalake` | duckdb (its delta extension) | - |
+| [restapi](http/restapi/README.md) | `streamwright-restapi` | `restapi` | requests | `streamwright.network` |
 
 ```bash
 make install-connectors         # all of them, from the repository root; or: pip install ./connectors/ads/google_ads
@@ -105,11 +106,10 @@ Example sources are the folders in [examples/sources/](../examples/sources/), wh
    <name> = "streamwright.connectors.<name>.connector:<Name>Connector"
    ```
 
-2. Implement the connector contract ([Writing a connector](https://karthick-jaganathan.github.io/streamwright/core/connectors-and-readers/#writing-a-connector)): allow only
-   read-only calls, wrap every API call in `context.call(...)`, map SDK errors in `error()`, pass the tokens the
-   connector obtains at run time to `context.secret(value)` (they are `***` in every log line and error), set
-   `network_loggers` to the names of the loggers the SDK writes its requests and responses to, and set `category`
-   (how `streamwright connectors` groups it, e.g. `"databases"`) and a one-line `summary`, both shown by `streamwright connectors`.
+2. Implement the connector contract ([Writing a connector](https://karthick-jaganathan.github.io/streamwright/core/connectors-and-readers/#writing-a-connector)): define
+   `spec = ConnectorSpec(name="<name>", title="...", category="...", transport="...")`, allow only
+   read-only calls, wrap every API call in `context.call(...)`, map SDK errors in `error()`, and pass tokens the
+   connector obtains at run time to `context.secret(value)` (they are `***` in every log line and error).
 3. Test offline with `streamwright.core.runtime.testing` (`FakeApi`, `MemoryOutput`, `FakeClock`, and `page_stream` for a stream
    with one request, step and export), starting each test module with `pytest.importorskip("<sdk module>")` so the
    core CI job, which has no SDKs, skips it.

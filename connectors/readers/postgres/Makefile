@@ -2,7 +2,7 @@
 
 # Package information
 PACKAGE_NAME = streamwright-postgres
-VERSION = 0.0.1
+VERSION = 0.1.0
 
 # Installation mode (dev, prod, dist)
 MODE ?= prod
@@ -76,7 +76,7 @@ clean:
 	find . -type d -name "dist" -exec rm -rf {} + 2>/dev/null || true
 	@echo "✅ Cleanup complete!"
 
-# Run tests (offline: a local DuckDB stand-in; set STREAMWRIGHT_TEST_PG_DSN or STREAMWRIGHT_TEST_PG_HOST for a real Postgres)
+# Run tests
 test:
 	@echo "Running tests for $(PACKAGE_NAME)..."
 	python -m pytest tests -q
@@ -86,4 +86,4 @@ verify:
 	@echo "Verifying $(PACKAGE_NAME) installation..."
 	@pip show $(PACKAGE_NAME) >/dev/null 2>&1 && echo "✅ $(PACKAGE_NAME) is installed!" || echo "❌ $(PACKAGE_NAME) is not installed!"
 	@python -c "import streamwright.connectors.postgres.connector; print('✅ streamwright.connectors.postgres import works!')" 2>/dev/null || echo "❌ streamwright.connectors.postgres import failed!"
-	@streamwright connectors | grep -qE '^postgres( |$$)' && echo "✅ postgres connector is registered!" || echo "❌ postgres connector is not registered!" 
+	@streamwright connectors | grep -qE '\[installed\]\s+postgres\b' && echo "✅ postgres connector is registered!" || echo "❌ postgres connector is not registered!"

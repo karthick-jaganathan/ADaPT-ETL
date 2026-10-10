@@ -14,17 +14,10 @@
 # * limitations under the License.
 # **************************************************************************/
 
-from streamwright.core.runtime.components import Connector, ConnectorSpec
+import pytest
+from streamwright.core.runtime.testing import FakeApi
 
-__all__ = ["OpenAIAdsConnector"]
 
-
-class OpenAIAdsConnector(Connector):
-    """OpenAI Ads: an HTTP API declared in the source (auth + http); see examples/sources/ads/openai_ads."""
-    spec = ConnectorSpec(
-        name="openai_ads",
-        title="OpenAI Ads",
-        category="advertising",
-        transport="http",
-        loggers=("urllib3.connectionpool",),
-    )
+@pytest.fixture
+def api():
+    return FakeApi()

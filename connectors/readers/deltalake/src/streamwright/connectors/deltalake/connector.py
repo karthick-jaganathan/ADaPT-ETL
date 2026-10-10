@@ -18,7 +18,7 @@
 The `deltalake` connector: read-only queries and table scans on Delta Lake tables.
 """
 
-from streamwright.core.runtime.components import Connector, ConnectorError
+from streamwright.core.runtime.components import Connector, ConnectorError, ConnectorSpec
 from streamwright.connectors.deltalake.reader import DeltaDatabase, ConnectError, QueryError, check_query, scan_query
 
 __all__ = ["DeltaLakeConnector"]
@@ -31,9 +31,13 @@ class DeltaLakeConnector(Connector):
     """
     The `deltalake` connector: runs read-only scans and queries on Delta Lake tables.
     """
-    name = "deltalake"
-    category = "lakehouse"
-    summary = "Delta Lake tables (DuckDB delta)"
+    spec = ConnectorSpec(
+        name="deltalake",
+        title="Delta Lake",
+        category="lakehouse",
+        transport="duckdb",
+        extension="delta",
+    )
     auth_required = ()
     auth_optional = (
         "s3", "gcs", "azure", "local", "roots",

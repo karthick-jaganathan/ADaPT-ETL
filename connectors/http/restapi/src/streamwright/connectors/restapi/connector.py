@@ -14,17 +14,37 @@
 # * limitations under the License.
 # **************************************************************************/
 
+"""
+The `restapi` connector: declarative HTTP connector exposing metadata and transport="http".
+HTTP execution and pagination are performed declaratively by StreamWright's HTTP engine.
+"""
+
 from streamwright.core.runtime.components import Connector, ConnectorSpec
 
-__all__ = ["OpenAIAdsConnector"]
+__all__ = ["RestApiConnector", "HttpConnector"]
 
 
-class OpenAIAdsConnector(Connector):
-    """OpenAI Ads: an HTTP API declared in the source (auth + http); see examples/sources/ads/openai_ads."""
+class RestApiConnector(Connector):
+    """
+    Generic REST API connector metadata.
+    Configured via `source.yaml` with transport="http".
+    """
     spec = ConnectorSpec(
-        name="openai_ads",
-        title="OpenAI Ads",
-        category="advertising",
+        name="restapi",
+        title="REST API",
+        category="http",
         transport="http",
-        loggers=("urllib3.connectionpool",),
+    )
+
+
+class HttpConnector(Connector):
+    """
+    Generic HTTP connector metadata (alias of restapi).
+    Configured via `source.yaml` with transport="http".
+    """
+    spec = ConnectorSpec(
+        name="http",
+        title="HTTP",
+        category="http",
+        transport="http",
     )

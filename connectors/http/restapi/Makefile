@@ -1,7 +1,7 @@
-# StreamWright deltalake connector Makefile
+# StreamWright restapi connector Makefile
 
 # Package information
-PACKAGE_NAME = streamwright-deltalake
+PACKAGE_NAME = streamwright-restapi
 VERSION = 0.1.0
 
 # Installation mode (dev, prod, dist)
@@ -14,7 +14,7 @@ DIST_DIR = /tmp/sdist/streamwright
 
 # Default target
 help:
-	@echo "StreamWright deltalake connector - Available commands:"
+	@echo "StreamWright restapi connector - Available commands:"
 	@echo ""
 	@echo "  make install [MODE=dev|prod|dist] - Install $(PACKAGE_NAME) package (default: prod)"
 	@echo "  make uninstall                    - Uninstall $(PACKAGE_NAME) package"
@@ -85,5 +85,5 @@ test:
 verify:
 	@echo "Verifying $(PACKAGE_NAME) installation..."
 	@pip show $(PACKAGE_NAME) >/dev/null 2>&1 && echo "✅ $(PACKAGE_NAME) is installed!" || echo "❌ $(PACKAGE_NAME) is not installed!"
-	@python -c "import streamwright.connectors.deltalake.connector; print('✅ streamwright.connectors.deltalake import works!')" 2>/dev/null || echo "❌ streamwright.connectors.deltalake import failed!"
-	@streamwright connectors | grep -qE '\[installed\]\s+deltalake\b' && echo "✅ deltalake connector is registered!" || echo "❌ deltalake connector is not registered!"
+	@python -c "import streamwright.connectors.restapi.connector; print('✅ streamwright.connectors.restapi import works!')" 2>/dev/null || echo "❌ streamwright.connectors.restapi import failed!"
+	@streamwright connectors | grep -qE '\[installed\]\s+restapi\b' && echo "✅ restapi connector is registered!" || echo "❌ restapi connector is not registered!"

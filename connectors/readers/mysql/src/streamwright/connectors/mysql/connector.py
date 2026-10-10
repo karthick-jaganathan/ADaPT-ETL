@@ -19,7 +19,7 @@ The `mysql` connector: read-only SELECT queries on a MySQL database through Duck
 """
 
 from streamwright.core.runtime import logs
-from streamwright.core.runtime.components import Connector, ConnectorError
+from streamwright.core.runtime.components import Connector, ConnectorError, ConnectorSpec
 from streamwright.connectors.mysql.reader import (
     Database, ConnectError, QueryError, check_query, table_query,
     structured_conninfo, dsn_secrets, where_problems, identifier_problem
@@ -39,9 +39,13 @@ class MySQLConnector(Connector):
     """
     The `mysql` connector: executes read-only queries and table extracts against MySQL.
     """
-    name = "mysql"
-    category = "databases"
-    summary = "MySQL tables, read-only"
+    spec = ConnectorSpec(
+        name="mysql",
+        title="MySQL",
+        category="databases",
+        transport="duckdb",
+        extension="mysql",
+    )
     auth_required = ()
     auth_optional = ("dsn", "host", "port", "database", "user", "password", "sslmode", "options", "attach_type")
 

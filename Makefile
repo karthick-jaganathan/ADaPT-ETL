@@ -9,11 +9,12 @@ FORCE_DEPS ?= false
 # The streamwright package (the `streamwright` CLI: run, validate, connectors), at core
 CORE_DIR = core
 # Connectors (optional: each installs its own dependencies: a vendor SDK, or DuckDB for files, s3, gcs and
-CONNECTORS = files s3 gcs azure_blob postgres mysql mongodb deltalake google_ads microsoft_ads meta_ads openai_ads linkedin_ads amazon_ads apple_ads
+CONNECTORS = files s3 gcs azure_blob postgres mysql mongodb deltalake google_ads microsoft_ads meta_ads openai_ads linkedin_ads amazon_ads apple_ads restapi
 CONNECTOR_DIRS = connectors/readers/files connectors/readers/s3 connectors/readers/gcs connectors/readers/azure_blob connectors/readers/postgres \
 	connectors/readers/mysql connectors/readers/mongodb connectors/readers/deltalake \
 	connectors/ads/google_ads connectors/ads/microsoft_ads connectors/ads/meta_ads connectors/ads/openai_ads connectors/ads/linkedin_ads \
-	connectors/ads/amazon_ads connectors/ads/apple_ads
+	connectors/ads/amazon_ads connectors/ads/apple_ads \
+	connectors/http/restapi
 
 # Distribution base directory
 DIST_BASE = /tmp/sdist/streamwright
@@ -90,6 +91,9 @@ install-amazon-ads:
 
 install-apple-ads:
 	cd connectors/ads/apple_ads && $(MAKE) install MODE=$(MODE) FORCE_DEPS=$(FORCE_DEPS)
+
+install-restapi:
+	cd connectors/http/restapi && $(MAKE) install MODE=$(MODE) FORCE_DEPS=$(FORCE_DEPS)
 
 install-files:
 	cd connectors/readers/files && $(MAKE) install MODE=$(MODE) FORCE_DEPS=$(FORCE_DEPS)

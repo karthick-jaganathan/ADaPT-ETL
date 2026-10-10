@@ -49,7 +49,7 @@ import re
 import time
 
 from streamwright.core.runtime import logs
-from streamwright.core.runtime.components import Connector, ConnectorError
+from streamwright.core.runtime.components import Connector, ConnectorError, ConnectorSpec
 from streamwright.connectors.postgres.reader import (ATTACH_TYPES, CONNECTION_OPTIONS, DEFAULT_PORT, PAGE_SIZE, SSLMODES,
                                               ConnectError, Database, QueryError, check_query, conninfo_value,
                                               dsn_secrets, identifier_problem, message, structured_conninfo,
@@ -194,12 +194,15 @@ def connector_error(exc, redact=None):
 
 class PostgresConnector(Connector):
 
-    name = "postgres"
+    spec = ConnectorSpec(
+        name="postgres",
+        title="PostgreSQL",
+        category="databases",
+        transport="duckdb",
+        extension="postgres",
+    )
     auth_required = ()  # `dsn`, or `host`, `database` and `user` (check_auth)
     auth_optional = ("dsn",) + CONNECTION_KEYS + ("statement_timeout",)
-    network_loggers = ()  # DuckDB and its postgres extension write no logs
-    category = "databases"
-    summary = "PostgreSQL tables, read-only"
 
     def __init__(self, page_size=PAGE_SIZE, clock=time.monotonic, attach_type="postgres"):
         """

@@ -1,8 +1,8 @@
-# StreamWright Meta Ads connector Makefile
+# StreamWright meta_ads connector Makefile
 
 # Package information
 PACKAGE_NAME = streamwright-meta-ads
-VERSION = 0.0.1
+VERSION = 0.1.0
 
 # Installation mode (dev, prod, dist)
 MODE ?= prod
@@ -14,13 +14,13 @@ DIST_DIR = /tmp/sdist/streamwright
 
 # Default target
 help:
-	@echo "StreamWright Meta Ads connector - Available commands:"
+	@echo "StreamWright meta_ads connector - Available commands:"
 	@echo ""
 	@echo "  make install [MODE=dev|prod|dist] - Install $(PACKAGE_NAME) package (default: prod)"
 	@echo "  make uninstall                    - Uninstall $(PACKAGE_NAME) package"
 	@echo "  make build                        - Build distribution packages"
 	@echo "  make clean                        - Clean build artifacts"
-	@echo "  make test                         - Run tests (if available)"
+	@echo "  make test                         - Run the connector's tests"
 	@echo "  make verify                       - Verify installation"
 	@echo "  make help                         - Show this help message"
 	@echo ""
@@ -76,15 +76,14 @@ clean:
 	find . -type d -name "dist" -exec rm -rf {} + 2>/dev/null || true
 	@echo "✅ Cleanup complete!"
 
-# Run tests (placeholder)
+# Run tests
 test:
 	@echo "Running tests for $(PACKAGE_NAME)..."
-	@echo "⚠️  No tests configured yet. Add your test commands here."
-	# pytest tests/ --verbose
+	python -m pytest tests -q
 
 # Quick verification
 verify:
 	@echo "Verifying $(PACKAGE_NAME) installation..."
 	@pip show $(PACKAGE_NAME) >/dev/null 2>&1 && echo "✅ $(PACKAGE_NAME) is installed!" || echo "❌ $(PACKAGE_NAME) is not installed!"
 	@python -c "import streamwright.connectors.meta_ads.connector; print('✅ streamwright.connectors.meta_ads import works!')" 2>/dev/null || echo "❌ streamwright.connectors.meta_ads import failed!"
-	@streamwright connectors | grep -qE '^meta_ads( |$$)' && echo "✅ meta_ads connector is registered!" || echo "❌ meta_ads connector is not registered!" 
+	@streamwright connectors | grep -qE '\[installed\]\s+meta_ads\b' && echo "✅ meta_ads connector is registered!" || echo "❌ meta_ads connector is not registered!"

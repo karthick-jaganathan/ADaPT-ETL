@@ -608,4 +608,4 @@ def test_refreshed_access_tokens_are_masked():
     credentials.refresh(0)
     credentials.refresh(1)
     assert context.redact("ya29.access-1 ya29.access-2") == "*** ***"
-    assert GoogleAdsConnector.network_loggers == ("google.ads.googleads.client",)
+    assert GoogleAdsConnector.spec.loggers == ("google.ads.googleads.client",)

@@ -49,7 +49,7 @@ import socket
 import urllib.error
 
 from streamwright.core.config.inputs import InputError, as_date
-from streamwright.core.runtime.components import Connector, ConnectorError
+from streamwright.core.runtime.components import Connector, ConnectorError, ConnectorSpec
 
 
 __all__ = ["MicrosoftAdsConnector", "MicrosoftAdsConnection", "SERVICES"]
@@ -252,14 +252,17 @@ class MicrosoftAdsConnection(object):
 
 class MicrosoftAdsConnector(Connector):
 
-    name = "microsoft_ads"
+    spec = ConnectorSpec(
+        name="microsoft_ads",
+        title="Microsoft Advertising",
+        category="advertising",
+        transport="sdk",
+        package="bingads",
+        loggers=("suds.client", "suds.transport"),
+    )
     auth_required = ("developer_token", "client_id", "refresh_token")
     auth_optional = ("client_secret", "tenant", "customer_id", "account_id", "environment")
     request_headers = ("CustomerAccountId", "CustomerId")
-    # suds, the SDK's SOAP client: the messages sent and received (suds.client), and their HTTP exchanges
-    network_loggers = ("suds.client", "suds.transport")
-    category = "advertising"
-    summary = "Microsoft Advertising (Bing Ads SDK)"
 
     def check_request(self, request):
         service, method = request.get("service"), request.get("method")

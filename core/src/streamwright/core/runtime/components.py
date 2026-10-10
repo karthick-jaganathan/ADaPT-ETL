@@ -38,14 +38,49 @@ from streamwright.core.engine import queries
 from streamwright.core.net.http import RetryPolicy
 
 
-__all__ = ["ENTRY_POINT_GROUP", "QUERY_BUILDER_GROUP", "Connector", "QueryBuilder", "ConnectorError",
-           "ComponentLoadError", "ConnectorContext", "register", "unregister", "available", "load", "component_problems",
-           "check_source", "check_queries", "check_call", "sdk_call", "poll_call", "sdk_calls", "request_body",
-           "path_text"]
+__all__ = ["ENTRY_POINT_GROUP", "QUERY_BUILDER_GROUP", "Connector", "ConnectorSpec", "QueryBuilder",
+           "ConnectorError", "ComponentLoadError", "ConnectorContext", "register", "unregister", "available",
+           "load", "component_problems", "check_source", "check_queries", "check_call", "sdk_call", "poll_call",
+           "sdk_calls", "request_body", "path_text"]
 
 LOG = logging.getLogger("streamwright.source")
 ENTRY_POINT_GROUP = "streamwright.connectors"
 QUERY_BUILDER_GROUP = "streamwright.query_builders"
+
+
+class ConnectorSpec(object):
+    """Declarative specification for a connector."""
+
+    def __init__(self, name=None, title="", category="other", transport="sdk", package=None, extension=None, loggers=()):
+        self.name = name
+        self.title = title
+        self.category = category
+        self.transport = transport
+        self.package = package or ("requests" if transport == "http" else "duckdb" if transport == "duckdb" else None)
+        self.extension = extension
+        if isinstance(loggers, str):
+            self.loggers = (loggers,)
+        else:
+            self.loggers = tuple(loggers) if loggers else ()
+
+    def badge(self, version_resolver):
+        """Formats the badge tag: [SDK][google-ads v33.0.0], [DuckDB postgres v1.5.6], [HTTP][requests v2.34.2]."""
+        v = version_resolver(self.package) if self.package else None
+        ver_str = " v%s" % v if v else ""
+        if self.transport == "http":
+            return "[HTTP][requests%s]" % ver_str
+        if self.transport == "sdk":
+            return "[SDK][%s%s]" % (self.package, ver_str) if self.package else "[SDK]"
+        if self.transport == "duckdb":
+            ext_str = " %s" % self.extension if self.extension else ""
+            return "[DuckDB%s%s]" % (ext_str, ver_str)
+        return "[%s]" % self.transport
+
+    def effective_loggers(self):
+        """Declarative HTTP connectors automatically include streamwright.network."""
+        if self.transport == "http":
+            return ("streamwright.network",) + tuple(l for l in self.loggers if l != "streamwright.network")
+        return self.loggers
 
 
 class ConnectorError(Exception):
@@ -67,22 +102,24 @@ class ComponentLoadError(Exception):
 
 class Connector(object):
     """
-    Base class for connectors. Subclasses set `name`, the `auth` keys their provider takes and the `headers` their
-    requests can set, and implement connect() and request(); check_request() rejects requests the connector does not
-    support before a run starts. `network_loggers` names the loggers the connector's SDK writes its requests and
-    responses to, so that `streamwright connectors` (and the docs) can list them for `streamwright run --log NAME=DEBUG`; streamwright never
-    turns them on by itself.
+    Base class for connectors. Subclasses configure their declarative specification via `spec = ConnectorSpec(...)`
+    and implement connect() and request().
     """
 
-    name = None
-    transport = "sdk"     # "sdk": connect()/request() run sdk: requests; "http": core's HTTP engine runs http: requests
+    spec = None           # a ConnectorSpec instance defining name, title, category, transport, package, extension, loggers
     query_builders = ()
     auth_required = ()
     auth_optional = ()
     request_headers = ()  # names a request's `headers` may use, e.g. a per-request account
-    network_loggers = ()  # e.g. ("google.ads.googleads.client",)
-    category = "other"    # how `streamwright connectors` groups it (e.g. "databases"); each connector sets its own
-    summary = ""          # a one-line description shown by `streamwright connectors`
+
+    @property
+    def name(self):
+        return self.spec.name if self.spec else None
+
+    @property
+    def transport(self):
+        return self.spec.transport if self.spec else "sdk"
+
 
     def check_auth(self, auth):
         """Problems with the keys of the `auth` block (without `provider`)."""
@@ -210,10 +247,19 @@ def _kind(component):
     raise TypeError("%r is neither a Connector nor a QueryBuilder" % (component,))
 
 
+def _component_name(component):
+    spec = getattr(component, "spec", None)
+    if isinstance(spec, ConnectorSpec) and spec.name:
+        return spec.name
+    name = getattr(component, "name", None)
+    return name if isinstance(name, str) else (spec.name if spec else None)
+
+
 def register(component):
     """Registers a connector or query builder object in this process (for tests and embedding; installs use entry
     points)."""
-    _REGISTERED[_kind(component)][component.name] = component
+    name = _component_name(component)
+    _REGISTERED[_kind(component)][name] = component
 
 
 def unregister(name):
@@ -261,7 +307,7 @@ def load(name, allowed=None, kind="connector"):
         except Exception as exc:  # a broken install or a missing SDK
             raise ComponentLoadError("%s %r could not be loaded: %s: %s" % (kind, name, type(exc).__name__, exc))
         component = loaded() if isinstance(loaded, type) else loaded
-        if not isinstance(component, base) or component.name != name:
+        if not isinstance(component, base) or _component_name(component) != name:
             raise ComponentLoadError("entry point %r in group %s is not a %r %s" % (name, group, name, kind))
         _LOADED[kind][name] = component
 

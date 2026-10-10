@@ -19,7 +19,7 @@ The `linkedin_ads` connector: thin placeholder exposing metadata and transport="
 HTTP execution and pagination are performed declaratively by StreamWright's HTTP engine.
 """
 
-from streamwright.core.runtime.components import Connector
+from streamwright.core.runtime.components import Connector, ConnectorSpec
 
 __all__ = ["LinkedInAdsConnector"]
 
@@ -29,7 +29,9 @@ class LinkedInAdsConnector(Connector):
     LinkedIn Marketing Developer Platform connector metadata.
     Configured via `source.yaml` with transport="http".
     """
-    name = "linkedin_ads"
-    transport = "http"
-    category = "advertising"
-    summary = "LinkedIn Ads"
+    spec = ConnectorSpec(
+        name="linkedin_ads",
+        title="LinkedIn Ads",
+        category="advertising",
+        transport="http",
+    )

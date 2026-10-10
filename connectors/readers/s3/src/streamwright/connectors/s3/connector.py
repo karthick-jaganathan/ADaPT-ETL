@@ -46,7 +46,7 @@ import re
 import time
 
 from streamwright.core.runtime import logs
-from streamwright.core.runtime.components import Connector, ConnectorError
+from streamwright.core.runtime.components import Connector, ConnectorError, ConnectorSpec
 from streamwright.connectors.s3.reader import (CREDENTIALS, FORMATS, PAGE_SIZE, PROVIDER, SCHEME, SETTINGS, AccessError,
                                         MissingError, ReadError, Reader, allowed_roots, format_of, is_glob, is_url,
                                         masked_forms, option_problems, path_problem, regex_problem, setting_problem,
@@ -124,12 +124,15 @@ def _roots_problems(roots):
 
 class S3Connector(Connector):
 
-    name = PROVIDER
+    spec = ConnectorSpec(
+        name=PROVIDER,
+        title="Amazon S3",
+        category="object storage",
+        transport="duckdb",
+        extension="httpfs",
+    )
     auth_required = ("roots", "key_id", "secret")
     auth_optional = ("session_token",) + tuple(SETTINGS)
-    network_loggers = ()  # DuckDB writes no logs
-    category = "object storage"
-    summary = "Amazon S3 objects (DuckDB httpfs)"
 
     def __init__(self, page_size=PAGE_SIZE, clock=time.monotonic):
         self.page_size = page_size

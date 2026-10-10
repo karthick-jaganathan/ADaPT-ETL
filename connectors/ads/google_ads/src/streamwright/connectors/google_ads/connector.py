@@ -37,7 +37,7 @@ Only these read-only methods can be called.
 import importlib
 import re
 
-from streamwright.core.runtime.components import Connector, ConnectorError
+from streamwright.core.runtime.components import Connector, ConnectorError, ConnectorSpec
 from streamwright.core.engine.queries import BuiltQuery
 
 
@@ -177,14 +177,17 @@ class GoogleAdsConnection(object):
 
 class GoogleAdsConnector(Connector):
 
-    name = "google_ads"
+    spec = ConnectorSpec(
+        name="google_ads",
+        title="Google Ads",
+        category="advertising",
+        transport="sdk",
+        package="google-ads",
+        loggers=("google.ads.googleads.client",),
+    )
     query_builders = ("gaql",)
     auth_required = ("developer_token", "client_id", "client_secret", "refresh_token")
     auth_optional = ("login_customer_id", "api_version")
-    # the client's request logs (its LoggingInterceptor: a summary at INFO, requests and responses at DEBUG)
-    network_loggers = ("google.ads.googleads.client",)
-    category = "advertising"
-    summary = "Google Ads (GAQL via the google-ads SDK)"
 
     def check_request(self, request):
         problems = self._check_call(request)

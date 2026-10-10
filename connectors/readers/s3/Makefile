@@ -2,7 +2,7 @@
 
 # Package information
 PACKAGE_NAME = streamwright-s3
-VERSION = 0.0.1
+VERSION = 0.1.0
 
 # Installation mode (dev, prod, dist)
 MODE ?= prod
@@ -76,7 +76,7 @@ clean:
 	find . -type d -name "dist" -exec rm -rf {} + 2>/dev/null || true
 	@echo "✅ Cleanup complete!"
 
-# Run tests (offline: object storage is simulated; set STREAMWRIGHT_TEST_S3 for a real bucket)
+# Run tests
 test:
 	@echo "Running tests for $(PACKAGE_NAME)..."
 	python -m pytest tests -q
@@ -86,4 +86,4 @@ verify:
 	@echo "Verifying $(PACKAGE_NAME) installation..."
 	@pip show $(PACKAGE_NAME) >/dev/null 2>&1 && echo "✅ $(PACKAGE_NAME) is installed!" || echo "❌ $(PACKAGE_NAME) is not installed!"
 	@python -c "import streamwright.connectors.s3.connector; print('✅ streamwright.connectors.s3 import works!')" 2>/dev/null || echo "❌ streamwright.connectors.s3 import failed!"
-	@streamwright connectors | grep -qE '^s3( |$$)' && echo "✅ s3 connector is registered!" || echo "❌ s3 connector is not registered!" 
+	@streamwright connectors | grep -qE '\[installed\]\s+s3\b' && echo "✅ s3 connector is registered!" || echo "❌ s3 connector is not registered!"

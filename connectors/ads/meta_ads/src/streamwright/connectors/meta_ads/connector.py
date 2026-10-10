@@ -39,7 +39,7 @@ import json
 import re
 
 from streamwright.core.runtime import logs
-from streamwright.core.runtime.components import Connector, ConnectorError
+from streamwright.core.runtime.components import Connector, ConnectorError, ConnectorSpec
 
 
 __all__ = ["MetaAdsConnector", "OBJECTS"]
@@ -99,13 +99,16 @@ def _network_details(context):
 
 class MetaAdsConnector(Connector):
 
-    name = "meta_ads"
+    spec = ConnectorSpec(
+        name="meta_ads",
+        title="Meta Ads",
+        category="advertising",
+        transport="sdk",
+        package="facebook-business",
+        loggers=("urllib3.connectionpool",),
+    )
     auth_required = ("access_token",)
     auth_optional = ("app_id", "app_secret", "api_version")
-    # the SDK sends its requests with requests: urllib3 logs each one's method, URL and status
-    network_loggers = ("urllib3.connectionpool",)
-    category = "advertising"
-    summary = "Meta Ads (facebook-business SDK)"
 
     def check_request(self, request):
         service, method = request.get("service"), request.get("method")

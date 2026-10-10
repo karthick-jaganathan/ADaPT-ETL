@@ -1,14 +1,62 @@
 {
   "connectors": {
+    "amazon_ads": {
+      "family": "ads",
+      "homepage": "https://github.com/karthick-jaganathan/streamwright",
+      "install": {
+        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@3eeb5e6897fa8c4e5852b415a1104664b484931e#subdirectory=connectors/ads/amazon_ads"
+      },
+      "key": "amazon_ads",
+      "maintainer": "karthick-jaganathan",
+      "summary": "Amazon Ads marketing and reporting [declarative HTTP]",
+      "title": "Amazon Ads",
+      "trust": "official"
+    },
+    "apple_ads": {
+      "family": "ads",
+      "homepage": "https://github.com/karthick-jaganathan/streamwright",
+      "install": {
+        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@3eeb5e6897fa8c4e5852b415a1104664b484931e#subdirectory=connectors/ads/apple_ads"
+      },
+      "key": "apple_ads",
+      "maintainer": "karthick-jaganathan",
+      "summary": "Apple Ads campaigns and reporting [declarative HTTP]",
+      "title": "Apple Ads",
+      "trust": "official"
+    },
+    "azure_blob": {
+      "family": "readers",
+      "homepage": "https://github.com/karthick-jaganathan/streamwright",
+      "install": {
+        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@3eeb5e6897fa8c4e5852b415a1104664b484931e#subdirectory=connectors/readers/azure_blob"
+      },
+      "key": "azure_blob",
+      "maintainer": "karthick-jaganathan",
+      "summary": "Azure Blob Storage objects [DuckDB azure]",
+      "title": "Azure Blob Storage",
+      "trust": "official"
+    },
+    "deltalake": {
+      "family": "readers",
+      "homepage": "https://github.com/karthick-jaganathan/streamwright",
+      "install": {
+        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@3eeb5e6897fa8c4e5852b415a1104664b484931e#subdirectory=connectors/readers/deltalake"
+      },
+      "key": "deltalake",
+      "maintainer": "karthick-jaganathan",
+      "summary": "Delta Lake tables, read-only [DuckDB delta]",
+      "title": "Delta Lake",
+      "trust": "official"
+    },
     "files": {
       "family": "readers",
       "homepage": "https://github.com/karthick-jaganathan/streamwright",
       "install": {
-        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@26a58d8b9c6a0549a184a3939a8c57490ba03f90#subdirectory=connectors/readers/files"
+        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@3eeb5e6897fa8c4e5852b415a1104664b484931e#subdirectory=connectors/readers/files"
       },
       "key": "files",
       "maintainer": "karthick-jaganathan",
-      "summary": "Local JSONL/CSV/Parquet (runs offline)",
+      "summary": "Local files: CSV, JSON, JSONL, Parquet, TSV (runs offline)",
       "title": "Files",
       "trust": "official"
     },
@@ -16,11 +64,11 @@
       "family": "readers",
       "homepage": "https://github.com/karthick-jaganathan/streamwright",
       "install": {
-        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@26a58d8b9c6a0549a184a3939a8c57490ba03f90#subdirectory=connectors/readers/gcs"
+        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@3eeb5e6897fa8c4e5852b415a1104664b484931e#subdirectory=connectors/readers/gcs"
       },
       "key": "gcs",
       "maintainer": "karthick-jaganathan",
-      "summary": "Read objects from Google Cloud Storage",
+      "summary": "Google Cloud Storage objects",
       "title": "Google Cloud Storage",
       "trust": "official"
     },
@@ -28,23 +76,35 @@
       "family": "ads",
       "homepage": "https://github.com/karthick-jaganathan/streamwright",
       "install": {
-        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@26a58d8b9c6a0549a184a3939a8c57490ba03f90#subdirectory=connectors/ads/google_ads"
+        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@3eeb5e6897fa8c4e5852b415a1104664b484931e#subdirectory=connectors/ads/google_ads"
       },
       "key": "google_ads",
       "maintainer": "karthick-jaganathan",
-      "summary": "Google Ads reports & resources (GAQL)",
+      "summary": "Google Ads campaigns and reporting [google-ads SDK]",
       "title": "Google Ads",
+      "trust": "official"
+    },
+    "linkedin_ads": {
+      "family": "ads",
+      "homepage": "https://github.com/karthick-jaganathan/streamwright",
+      "install": {
+        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@3eeb5e6897fa8c4e5852b415a1104664b484931e#subdirectory=connectors/ads/linkedin_ads"
+      },
+      "key": "linkedin_ads",
+      "maintainer": "karthick-jaganathan",
+      "summary": "LinkedIn Ads marketing and analytics [declarative HTTP]",
+      "title": "LinkedIn Ads",
       "trust": "official"
     },
     "meta_ads": {
       "family": "ads",
       "homepage": "https://github.com/karthick-jaganathan/streamwright",
       "install": {
-        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@26a58d8b9c6a0549a184a3939a8c57490ba03f90#subdirectory=connectors/ads/meta_ads"
+        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@3eeb5e6897fa8c4e5852b415a1104664b484931e#subdirectory=connectors/ads/meta_ads"
       },
       "key": "meta_ads",
       "maintainer": "karthick-jaganathan",
-      "summary": "Meta Marketing insights & objects",
+      "summary": "Meta Ads marketing and insights [facebook-business SDK]",
       "title": "Meta Ads",
       "trust": "official"
     },
@@ -52,40 +112,88 @@
       "family": "ads",
       "homepage": "https://github.com/karthick-jaganathan/streamwright",
       "install": {
-        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@26a58d8b9c6a0549a184a3939a8c57490ba03f90#subdirectory=connectors/ads/microsoft_ads"
+        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@3eeb5e6897fa8c4e5852b415a1104664b484931e#subdirectory=connectors/ads/microsoft_ads"
       },
       "key": "microsoft_ads",
       "maintainer": "karthick-jaganathan",
-      "summary": "Microsoft Advertising reports",
-      "title": "Microsoft Ads",
+      "summary": "Microsoft Advertising campaigns and reporting [bingads SDK]",
+      "title": "Microsoft Advertising",
+      "trust": "official"
+    },
+    "mongodb": {
+      "family": "readers",
+      "homepage": "https://github.com/karthick-jaganathan/streamwright",
+      "install": {
+        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@3eeb5e6897fa8c4e5852b415a1104664b484931e#subdirectory=connectors/readers/mongodb"
+      },
+      "key": "mongodb",
+      "maintainer": "karthick-jaganathan",
+      "summary": "MongoDB collections and aggregations, read-only",
+      "title": "MongoDB",
+      "trust": "official"
+    },
+    "mysql": {
+      "family": "readers",
+      "homepage": "https://github.com/karthick-jaganathan/streamwright",
+      "install": {
+        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@3eeb5e6897fa8c4e5852b415a1104664b484931e#subdirectory=connectors/readers/mysql"
+      },
+      "key": "mysql",
+      "maintainer": "karthick-jaganathan",
+      "summary": "MySQL tables, read-only",
+      "title": "MySQL",
+      "trust": "official"
+    },
+    "openai_ads": {
+      "family": "ads",
+      "homepage": "https://github.com/karthick-jaganathan/streamwright",
+      "install": {
+        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@3eeb5e6897fa8c4e5852b415a1104664b484931e#subdirectory=connectors/ads/openai_ads"
+      },
+      "key": "openai_ads",
+      "maintainer": "karthick-jaganathan",
+      "summary": "OpenAI Ads campaigns and performance [declarative HTTP]",
+      "title": "OpenAI Ads",
       "trust": "official"
     },
     "postgres": {
       "family": "readers",
       "homepage": "https://github.com/karthick-jaganathan/streamwright",
       "install": {
-        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@26a58d8b9c6a0549a184a3939a8c57490ba03f90#subdirectory=connectors/readers/postgres"
+        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@3eeb5e6897fa8c4e5852b415a1104664b484931e#subdirectory=connectors/readers/postgres"
       },
       "key": "postgres",
       "maintainer": "karthick-jaganathan",
-      "summary": "Read-only SELECT queries on PostgreSQL",
+      "summary": "PostgreSQL tables, read-only",
       "title": "PostgreSQL",
+      "trust": "official"
+    },
+    "restapi": {
+      "family": "http",
+      "homepage": "https://github.com/karthick-jaganathan/streamwright",
+      "install": {
+        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@3eeb5e6897fa8c4e5852b415a1104664b484931e#subdirectory=connectors/http/restapi"
+      },
+      "key": "restapi",
+      "maintainer": "karthick-jaganathan",
+      "summary": "Generic REST API / HTTP connector [declarative HTTP]",
+      "title": "REST API",
       "trust": "official"
     },
     "s3": {
       "family": "readers",
       "homepage": "https://github.com/karthick-jaganathan/streamwright",
       "install": {
-        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@26a58d8b9c6a0549a184a3939a8c57490ba03f90#subdirectory=connectors/readers/s3"
+        "git": "git+https://github.com/karthick-jaganathan/streamwright.git@3eeb5e6897fa8c4e5852b415a1104664b484931e#subdirectory=connectors/readers/s3"
       },
       "key": "s3",
       "maintainer": "karthick-jaganathan",
-      "summary": "Read objects from Amazon S3",
+      "summary": "Amazon S3 objects [DuckDB httpfs]",
       "title": "Amazon S3",
       "trust": "official"
     }
   },
-  "count": 7,
-  "generated_at": "2026-10-08T11:05:52.036167+00:00",
+  "count": 16,
+  "generated_at": "2026-10-10T07:54:01.824092+00:00",
   "schema_version": 1
 }

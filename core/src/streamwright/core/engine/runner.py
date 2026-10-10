@@ -612,7 +612,7 @@ class SourceRunner(object):
         client = self.client(stream, limiter)
         context = None
         if any(components.sdk_calls(components.request_body(item)) for item in stream.get("requests") or []):
-            if self.connector and getattr(self.connector, "transport", "sdk") == "sdk":
+            if self.connector and getattr(self.connector, "transport", "sdk") != "http":
                 context = ConnectorContext(self.connector, self.redact, retry=self.retry_policy(stream),
                                            rate_limiter=limiter, sleep=self.sleep, metrics=self.metrics, clock=self.clock)
                 self.connect(context)
