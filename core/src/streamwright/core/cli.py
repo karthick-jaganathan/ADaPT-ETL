@@ -25,6 +25,8 @@ The `streamwright` command.
   streamwright connectors list | search WORDS | install KEY [KEY ...] [--yes] [--hub-url URL]
                                        (the catalog; install resolves every KEY, then runs one pip install)
   streamwright validate PATH...        (streamwright-validate, plus the checks of the installed connectors and query builders)
+  streamwright mcp [--transport stdio|sse] (Model Context Protocol server for AI assistants)
+  streamwright ai COMMAND ...          (autonomous AI assistant, scaffolding engine, and self-healing compiler)
 
 Logging options (streamwright run and streamwright validate): --log-level LEVEL, --log NAME=LEVEL, --log-format text|json,
 --log-config FILE, --log-max-chars N. Loggers: streamwright.source (progress, summaries, warnings), streamwright.network (INFO: a
@@ -254,6 +256,12 @@ def _parser():
     validate = commands.add_parser("validate", help="check configuration files: streamwright-validate, plus the checks of "
                                                      "the installed connectors and query builders", add_help=False)
     validate.add_argument("arguments", nargs=argparse.REMAINDER)
+
+    mcp_cmd = commands.add_parser("mcp", help="run the StreamWright Model Context Protocol (MCP) server", add_help=False)
+    mcp_cmd.add_argument("arguments", nargs=argparse.REMAINDER)
+
+    ai_cmd = commands.add_parser("ai", help="run the StreamWright AI assistant, compiler, and self-healing loop", add_help=False)
+    ai_cmd.add_argument("arguments", nargs=argparse.REMAINDER)
     return parser
 
 
@@ -601,6 +609,20 @@ def main(argv=None):
                                non_strict_codes=("connector-not-installed",))
         finally:
             setup.close()
+    if argv[:1] == ["mcp"]:
+        try:
+            from streamwright_mcp.cli import main as mcp_main
+        except ImportError:
+            sys.stderr.write("streamwright: 'streamwright-mcp' is not installed. Install it with: pip install streamwright-mcp\n")
+            return 1
+        return mcp_main(argv[1:]) or 0
+    if argv[:1] == ["ai"]:
+        try:
+            from streamwright_ai.cli import main as ai_main
+        except ImportError:
+            sys.stderr.write("streamwright: 'streamwright-ai' is not installed. Install it with: pip install streamwright-ai\n")
+            return 1
+        return ai_main(argv[1:])
     args = _parser().parse_args(argv)
     if args.command == "connectors":
         return _connectors_command(args)
