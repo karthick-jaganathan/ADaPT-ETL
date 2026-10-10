@@ -13,3 +13,23 @@
 # * See the License for the specific language governing permissions and
 # * limitations under the License.
 # **************************************************************************/
+
+"""
+The `apple_ads` connector: thin placeholder exposing metadata and transport="http".
+HTTP execution and pagination are performed declaratively by StreamWright's HTTP engine.
+"""
+
+from streamwright.core.runtime.components import Connector
+
+__all__ = ["AppleAdsConnector"]
+
+
+class AppleAdsConnector(Connector):
+    """
+    Apple Ads Platform API connector metadata.
+    Configured via `source.yaml` with transport="http".
+    """
+    name = "apple_ads"
+    transport = "http"
+    category = "advertising"
+    summary = "Apple Ads"

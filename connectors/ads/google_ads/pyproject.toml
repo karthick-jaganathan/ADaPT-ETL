@@ -9,7 +9,7 @@ description = "StreamWright - Google Ads connector (google_ads auth provider, ga
 readme = "README.md"
 license = "Apache-2.0"
 authors = [
-    {name = "Karthick Jaganathan"},
+    {name = "Karthick Jaganathan", email = "kjaganathan.sde@gmail.com"},
 ]
 keywords = ["data", "pipeline", "etl", "connector", "google-ads", "gaql"]
 classifiers = [

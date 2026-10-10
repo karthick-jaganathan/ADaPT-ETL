@@ -1,0 +1,25 @@
+# Example source folder: this file, and one file per stream in streams/.
+# Check it with: streamwright validate examples/sources/readers/mysql_demo
+# Run it (pip install streamwright-mysql): streamwright run examples/sources/readers/mysql_demo
+# Secrets come from STREAMWRIGHT_SECRET_<NAME> environment variables or --secrets FILE.
+kind: source
+name: mysql_demo
+description: Read-only streams from a MySQL database.
+
+spec:
+  config:
+    host: {type: string, description: "MySQL host"}
+    database: {type: string, description: "MySQL database name"}
+    user: {type: string, description: "MySQL username"}
+    port: {type: integer, default: 3306, description: "MySQL port"}
+    start_date: {type: date, required: false, description: "Start date for order queries"}
+  secrets:
+    mysql_password: {type: string}
+
+auth:
+  provider: mysql
+  host: "{{ config.host }}"
+  port: "{{ config.port }}"
+  database: "{{ config.database }}"
+  user: "{{ config.user }}"
+  password: "{{ secrets.mysql_password }}"

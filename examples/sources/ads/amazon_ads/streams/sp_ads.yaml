@@ -1,0 +1,29 @@
+description: Amazon Sponsored Products ads (SKU and ASIN product ads).
+
+# HTTP GET request to list product ads
+requests:
+  - name: raw_sp_ads
+    http:
+      path: /v2/sp/productAds
+      method: GET
+
+# Transform step: extracts product ad metadata, parent IDs, and product identifiers
+transform:
+  mode: page
+  steps:
+    - name: sp_ads
+      select: |
+        SELECT
+          record->>'adId'                                     AS ad_id,
+          record->>'campaignId'                               AS campaign_id,
+          record->>'adGroupId'                                AS ad_group_id,
+          record->>'sku'                                      AS sku,
+          record->>'asin'                                     AS asin,
+          record->>'state'                                    AS state
+        FROM raw_sp_ads
+
+# Output table and primary key contract
+export:
+  sp_ads:
+    step: sp_ads
+    primary_key: [ad_id]

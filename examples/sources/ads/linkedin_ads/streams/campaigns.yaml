@@ -2,16 +2,18 @@
 partitions:
   - {name: account_id, values: "{{ config.account_ids }}"}
 retry: {max_attempts: 3, max_delay: 2m}
+
+# HTTP request to list campaigns for each ad account
 requests:
-  - name: campaigns_list
-    sdk: linkedin_ads
-    service: campaigns
-    method: list
-    arguments:
+  - name: raw_campaigns
+    http:
+      path: /rest/adCampaigns
+      method: GET
       params:
         q: search
         search.account.values[0]: "urn:li:sponsoredAccount:{{ partition.account_id }}"
-        count: 100
+
+# Transform step: extracts campaign attributes, budgets, and parent campaign_group_id
 transform:
   mode: page
   steps:
@@ -31,7 +33,9 @@ transform:
                to_timestamp(nullif(record->>'$.runSchedule.end', '')::BIGINT / 1000)   AS end_time,
                to_timestamp(nullif(record->>'$.changeAuditStamps.created.time', '')::BIGINT / 1000) AS created_at,
                to_timestamp(nullif(record->>'$.changeAuditStamps.lastModified.time', '')::BIGINT / 1000) AS updated_at
-        FROM campaigns_list
+        FROM raw_campaigns
+
+# Output table and primary key contract
 export:
   campaigns:
     step: campaigns

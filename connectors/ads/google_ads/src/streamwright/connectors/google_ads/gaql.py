@@ -256,6 +256,7 @@ class GaqlBuilder(QueryBuilder):
     """`{gaql: {...}}` in a request: registered in the streamwright.query_builders entry-point group."""
 
     name = "gaql"
+    connector = "google_ads"
 
     def check(self, spec):
         return check(spec)

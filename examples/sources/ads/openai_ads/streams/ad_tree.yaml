@@ -5,26 +5,28 @@
 partitions:
   - {name: account_id, values: "{{ config.account_ids }}"}
 retry: {max_attempts: 3, max_delay: 2m}
+
+# HTTP requests: fetch campaigns first, then query child ads per campaign
 requests:
   - name: raw_campaigns
-    sdk: openai_ads
-    service: campaigns
-    method: list
-    arguments:
+    http:
+      path: /v1/campaigns
+      method: GET
       params:
         ad_account_id: "{{ partition.account_id }}"
         limit: 500
   - name: raw_ads
     partitions:
       - {from: campaign_rows, fields: [account_id, campaign_id]}
-    sdk: openai_ads
-    service: ads
-    method: list
-    arguments:
+    http:
+      path: /v1/ads
+      method: GET
       params:
         ad_account_id: "{{ partition.account_id }}"
         campaign_id: "{{ partition.campaign_id }}"
         limit: 500
+
+# Transform step: unpack campaign and ad records, then join on campaign_id
 transform:
   mode: run
   steps:
@@ -64,6 +66,7 @@ transform:
                a.created_at
         FROM ad_rows a
         LEFT JOIN campaign_rows c USING (account_id, campaign_id)
+# Output table and primary key contract
 export:
   ad_tree:
     step: ad_tree

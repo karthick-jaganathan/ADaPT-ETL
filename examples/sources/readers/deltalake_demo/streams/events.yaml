@@ -1,0 +1,28 @@
+description: Delta Lake table scan for event stream.
+
+requests:
+  - name: raw_events
+    service: tables
+    method: scan
+    sdk: deltalake
+    arguments:
+      table_path: "{{ config.table_path }}"
+      columns: [event_id, user_id, event_name, event_time, properties]
+
+transform:
+  mode: page
+  steps:
+    - name: events
+      select: |
+        SELECT
+          record->>'event_id'                                 AS event_id,
+          record->>'user_id'                                  AS user_id,
+          record->>'event_name'                               AS event_name,
+          (record->>'event_time')::TIMESTAMPTZ                AS event_time,
+          record->>'properties'                               AS properties
+        FROM raw_events
+
+export:
+  events:
+    step: events
+    primary_key: [event_id]

@@ -9,10 +9,11 @@ FORCE_DEPS ?= false
 # The streamwright package (the `streamwright` CLI: run, validate, connectors), at core
 CORE_DIR = core
 # Connectors (optional: each installs its own dependencies: a vendor SDK, or DuckDB for files, s3, gcs and
-# postgres), under connectors/{readers,ads}/<name>
-CONNECTORS = files s3 gcs postgres google_ads microsoft_ads meta_ads openai_ads linkedin_ads
-CONNECTOR_DIRS = connectors/readers/files connectors/readers/s3 connectors/readers/gcs connectors/readers/postgres \
-	connectors/ads/google_ads connectors/ads/microsoft_ads connectors/ads/meta_ads connectors/ads/openai_ads connectors/ads/linkedin_ads
+CONNECTORS = files s3 gcs azure_blob postgres mysql mongodb deltalake google_ads microsoft_ads meta_ads openai_ads linkedin_ads amazon_ads apple_ads
+CONNECTOR_DIRS = connectors/readers/files connectors/readers/s3 connectors/readers/gcs connectors/readers/azure_blob connectors/readers/postgres \
+	connectors/readers/mysql connectors/readers/mongodb connectors/readers/deltalake \
+	connectors/ads/google_ads connectors/ads/microsoft_ads connectors/ads/meta_ads connectors/ads/openai_ads connectors/ads/linkedin_ads \
+	connectors/ads/amazon_ads connectors/ads/apple_ads
 
 # Distribution base directory
 DIST_BASE = /tmp/sdist/streamwright
@@ -84,6 +85,12 @@ install-openai-ads:
 install-linkedin-ads:
 	cd connectors/ads/linkedin_ads && $(MAKE) install MODE=$(MODE) FORCE_DEPS=$(FORCE_DEPS)
 
+install-amazon-ads:
+	cd connectors/ads/amazon_ads && $(MAKE) install MODE=$(MODE) FORCE_DEPS=$(FORCE_DEPS)
+
+install-apple-ads:
+	cd connectors/ads/apple_ads && $(MAKE) install MODE=$(MODE) FORCE_DEPS=$(FORCE_DEPS)
+
 install-files:
 	cd connectors/readers/files && $(MAKE) install MODE=$(MODE) FORCE_DEPS=$(FORCE_DEPS)
 
@@ -93,8 +100,20 @@ install-s3:
 install-gcs:
 	cd connectors/readers/gcs && $(MAKE) install MODE=$(MODE) FORCE_DEPS=$(FORCE_DEPS)
 
+install-azure-blob:
+	cd connectors/readers/azure_blob && $(MAKE) install MODE=$(MODE) FORCE_DEPS=$(FORCE_DEPS)
+
 install-postgres:
 	cd connectors/readers/postgres && $(MAKE) install MODE=$(MODE) FORCE_DEPS=$(FORCE_DEPS)
+
+install-mysql:
+	cd connectors/readers/mysql && $(MAKE) install MODE=$(MODE) FORCE_DEPS=$(FORCE_DEPS)
+
+install-mongodb:
+	cd connectors/readers/mongodb && $(MAKE) install MODE=$(MODE) FORCE_DEPS=$(FORCE_DEPS)
+
+install-deltalake:
+	cd connectors/readers/deltalake && $(MAKE) install MODE=$(MODE) FORCE_DEPS=$(FORCE_DEPS)
 
 # Generic build command for all packages
 build: build-all
@@ -113,7 +132,8 @@ build-all:
 # Utility commands
 uninstall:
 	@echo "Uninstalling all StreamWright packages..."
-	pip uninstall -y streamwright-google-ads streamwright-microsoft-ads streamwright-meta-ads streamwright-openai-ads streamwright-linkedin-ads streamwright-files streamwright-s3 streamwright-gcs streamwright-postgres \
+	pip uninstall -y streamwright-google-ads streamwright-microsoft-ads streamwright-meta-ads streamwright-openai-ads streamwright-linkedin-ads streamwright-amazon-ads streamwright-apple-ads \
+		streamwright-files streamwright-s3 streamwright-gcs streamwright-azure-blob streamwright-postgres streamwright-mysql streamwright-mongodb streamwright-deltalake \
 		streamwright 2>/dev/null || true
 	@echo "✅ All packages uninstalled!"
 

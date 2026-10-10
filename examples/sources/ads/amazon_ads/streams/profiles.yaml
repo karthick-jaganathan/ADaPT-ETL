@@ -1,0 +1,30 @@
+description: Amazon Advertising profiles and marketplace configurations.
+
+# HTTP GET request to list profiles (returns JSON array directly)
+requests:
+  - name: raw_profiles
+    http:
+      path: /v2/profiles
+      method: GET
+
+# Transform step: unpacks profile and nested marketplace accountInfo fields
+transform:
+  mode: page
+  steps:
+    - name: profiles
+      select: |
+        SELECT
+          record->>'profileId'                                AS profile_id,
+          record->>'countryCode'                              AS country_code,
+          record->>'currencyCode'                             AS currency_code,
+          record->>'timezone'                                 AS timezone,
+          record->>'$.accountInfo.marketplaceStringId'        AS marketplace_id,
+          record->>'$.accountInfo.type'                       AS account_type,
+          record->>'$.accountInfo.name'                       AS account_name
+        FROM raw_profiles
+
+# Output table and primary key contract
+export:
+  profiles:
+    step: profiles
+    primary_key: [profile_id]

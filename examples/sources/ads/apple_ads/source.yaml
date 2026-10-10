@@ -1,0 +1,39 @@
+# Example source folder: this file, and one file per stream in streams/.
+# Check it with: streamwright validate examples/sources/ads/apple_ads
+# Run it (pip install streamwright-apple-ads): streamwright run examples/sources/ads/apple_ads
+# Secrets come from STREAMWRIGHT_SECRET_<NAME> environment variables or --secrets FILE.
+kind: source
+name: apple_ads_demo
+description: Apple Ads campaign, ad group, keyword, and performance streams.
+
+# Input specification: runtime configuration (visible) and secrets (redacted)
+spec:
+  config:
+    ad_account_id: {type: string, description: "Apple Ads ad account ID (sent as X-AP-Context)"}
+    campaign_ids: {type: list, items: string, required: false, description: "List of campaign IDs for child streams"}
+  secrets:
+    apple_ads_token: {type: string}
+
+# Authentication: Apple Ads bearer token from secrets
+auth:
+  provider: apple_ads
+  type: bearer
+  token: "{{ secrets.apple_ads_token }}"
+
+# HTTP defaults shared across all streams in this source
+http:
+  base_url: https://api.ads.apple.com
+  headers:
+    # Ad account context passed in request headers for all API calls
+    X-AP-Context: "adAccountId={{ config.ad_account_id }}"
+  # Body-based offset paginator: sends pagination.offset and pagination.limit in POST JSON body
+  paginator:
+    type: offset
+    in: body
+    offset_param: pagination.offset
+    limit_param: pagination.limit
+    page_size: 100
+    total_path: pagination.totalCount
+  # Default records path: extracts record list from the {"result": [...]} response envelope
+  records:
+    path: result

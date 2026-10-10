@@ -6,13 +6,36 @@ kind: source
 name: linkedin_ads_demo
 description: LinkedIn Ads metadata and performance streams.
 
+# Input specification: runtime configuration (visible) and secrets (redacted)
 spec:
   config:
     account_ids: {type: list, items: string, description: Sponsored Ad Account IDs}
+    api_version: {type: string, default: "202401", description: "LinkedIn Version header (YYYYMM)"}
     start_date: {type: date, required: false, description: "The start date for performance metrics, e.g. 2026-01-01"}
   secrets:
     linkedin_access_token: {type: string}
 
+# Authentication: LinkedIn Ads bearer token from secrets
 auth:
   provider: linkedin_ads
-  access_token: "{{ secrets.linkedin_access_token }}"
+  type: bearer
+  token: "{{ secrets.linkedin_access_token }}"
+
+# HTTP defaults shared across all streams in this source
+http:
+  base_url: https://api.linkedin.com
+  headers:
+    LinkedIn-Version: "{{ config.api_version }}"
+    X-Restli-Protocol-Version: "2.0.0"
+  # Dotted params encoding translates nested structures: {'dateRange.start.day': 1}
+  params_encoding: dotted
+  # Default offset paginator: advances start/count params up to paging.total
+  paginator:
+    type: offset
+    offset_param: start
+    limit_param: count
+    page_size: 100
+    total_path: paging.total
+  # Default records path: extracts record list from the {"elements": [...]} response envelope
+  records:
+    path: elements

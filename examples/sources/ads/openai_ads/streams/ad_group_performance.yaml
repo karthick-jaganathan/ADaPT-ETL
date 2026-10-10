@@ -6,27 +6,28 @@ incremental:
   start: "{{ config.start_date }}"
   window: 1d
 retry: {max_attempts: 3, max_delay: 2m}
+
+# HTTP requests: list ad groups, then request delivery insights for each ad group within the date window
 requests:
   - name: raw_ad_groups
-    sdk: openai_ads
-    service: ad_groups
-    method: list
-    arguments:
+    http:
+      path: /v1/ad_groups
+      method: GET
       params:
         ad_account_id: "{{ partition.account_id }}"
         limit: 500
   - name: raw_ad_group_insights
     partitions:
       - {from: ad_group_rows, fields: [account_id, ad_group_id]}
-    sdk: openai_ads
-    service: ad_groups
-    method: insights
-    arguments:
-      id: "{{ partition.ad_group_id }}"
+    http:
+      path: "/v1/ad_groups/{{ partition.ad_group_id }}/insights"
+      method: GET
       params:
         start_date: "{{ window.start }}"
         end_date: "{{ window.end }}"
         limit: 500
+
+# Transform step: unpack daily metrics and join with ad group metadata
 transform:
   mode: run
   steps:
@@ -58,6 +59,7 @@ transform:
                i.cpc
         FROM insight_rows i
         LEFT JOIN ad_group_rows a USING (account_id, ad_group_id)
+# Output table and primary key contract
 export:
   ad_group_performance:
     step: ad_group_performance

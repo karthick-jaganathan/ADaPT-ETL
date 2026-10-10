@@ -9,7 +9,7 @@ description = "StreamWright - postgres connector (read-only SELECT queries on Po
 readme = "README.md"
 license = "Apache-2.0"
 authors = [
-    {name = "Karthick Jaganathan"},
+    {name = "Karthick Jaganathan", email = "kjaganathan.sde@gmail.com"},
 ]
 keywords = ["data", "pipeline", "etl", "postgres", "postgresql", "database", "duckdb"]
 classifiers = [
@@ -25,7 +25,6 @@ requires-python = ">=3.10"
 # DuckDB installs its postgres extension on the first connect (or ahead of time: INSTALL postgres)
 dependencies = [
     "streamwright~=0.1.0",
-    "duckdb>=1.5",
 ]
 
 [project.urls]

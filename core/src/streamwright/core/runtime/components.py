@@ -38,7 +38,7 @@ from streamwright.core.engine import queries
 from streamwright.core.net.http import RetryPolicy
 
 
-__all__ = ["ENTRY_POINT_GROUP", "QUERY_BUILDER_GROUP", "Connector", "RestConnector", "QueryBuilder", "ConnectorError",
+__all__ = ["ENTRY_POINT_GROUP", "QUERY_BUILDER_GROUP", "Connector", "QueryBuilder", "ConnectorError",
            "ComponentLoadError", "ConnectorContext", "register", "unregister", "available", "load", "component_problems",
            "check_source", "check_queries", "check_call", "sdk_call", "poll_call", "sdk_calls", "request_body",
            "path_text"]
@@ -428,9 +428,3 @@ def check_source(source, allowed=None):
             messages.append(message)
     return messages
 
-
-def __getattr__(name):
-    if name == "RestConnector":
-        from streamwright.core.runtime.rest import RestConnector
-        return RestConnector
-    raise AttributeError("module %r has no attribute %r" % (__name__, name))

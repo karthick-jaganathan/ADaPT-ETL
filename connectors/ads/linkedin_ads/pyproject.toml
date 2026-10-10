@@ -9,7 +9,7 @@ description = "StreamWright - LinkedIn Ads connector"
 readme = "README.md"
 license = "Apache-2.0"
 authors = [
-    {name = "StreamWright"}
+    {name = "Karthick Jaganathan", email = "kjaganathan.sde@gmail.com"},
 ]
 keywords = ["data", "pipeline", "etl", "connector", "linkedin-ads"]
 classifiers = [
@@ -24,8 +24,11 @@ classifiers = [
 requires-python = ">=3.10"
 dependencies = [
     "streamwright~=0.1.0",
-    "requests>=2.28.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/karthick-jaganathan/streamwright"
+Repository = "https://github.com/karthick-jaganathan/streamwright"
 
 [project.entry-points."streamwright.connectors"]
 linkedin_ads = "streamwright.connectors.linkedin_ads.connector:LinkedInAdsConnector"

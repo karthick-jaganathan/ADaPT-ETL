@@ -1,0 +1,24 @@
+# Example source folder: this file, and one file per stream in streams/.
+# Check it with: streamwright validate examples/sources/readers/mongodb_demo
+# Run it (pip install streamwright-mongodb): streamwright run examples/sources/readers/mongodb_demo
+# Secrets come from STREAMWRIGHT_SECRET_<NAME> environment variables or --secrets FILE.
+kind: source
+name: mongodb_demo
+description: Read-only document extracts from MongoDB collections.
+
+spec:
+  config:
+    host: {type: string, description: "MongoDB host"}
+    database: {type: string, description: "MongoDB database name"}
+    username: {type: string, required: false, description: "MongoDB username"}
+    port: {type: integer, default: 27017, description: "MongoDB port"}
+  secrets:
+    mongodb_password: {type: string}
+
+auth:
+  provider: mongodb
+  host: "{{ config.host }}"
+  port: "{{ config.port }}"
+  database: "{{ config.database }}"
+  username: "{{ config.username }}"
+  password: "{{ secrets.mongodb_password }}"

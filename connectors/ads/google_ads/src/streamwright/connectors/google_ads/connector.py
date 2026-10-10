@@ -178,6 +178,7 @@ class GoogleAdsConnection(object):
 class GoogleAdsConnector(Connector):
 
     name = "google_ads"
+    query_builders = ("gaql",)
     auth_required = ("developer_token", "client_id", "client_secret", "refresh_token")
     auth_optional = ("login_customer_id", "api_version")
     # the client's request logs (its LoggingInterceptor: a summary at INFO, requests and responses at DEBUG)

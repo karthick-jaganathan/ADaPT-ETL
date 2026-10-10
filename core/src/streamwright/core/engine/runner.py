@@ -39,7 +39,9 @@ import requests
 from streamwright.core.net import downloads
 from streamwright.core.runtime import components, logs
 from streamwright.core.engine import queries, sql
-from streamwright.core.net.http import Authenticator, HttpClient, HttpError, RateLimiter, Redactor, error_excerpt, paginate
+from streamwright.core.net.http import Authenticator, HttpClient, HttpError, RateLimiter, Redactor, error_excerpt, paginate, merge_headers
+from streamwright.core.net.encoding import encode_params
+from streamwright.core.net.paginators import set_dotted_path
 from streamwright.core.config.inputs import as_date, parse_duration
 from streamwright.core.runtime.logs import RunMetrics
 from streamwright.core.runtime.components import ConnectorContext, ConnectorError, ComponentLoadError
@@ -236,6 +238,7 @@ class SourceRunner(object):
                  clock=time.monotonic, sleep=time.sleep, redact=None, allowed_connectors=None, metrics=None):
         self.source = source
         self.config = config
+        self.secrets = secrets
         self.output = output
         self.today = today or datetime.date.today()
         self.state = copy.deepcopy(state) if state else {}
@@ -273,12 +276,30 @@ class SourceRunner(object):
                 self.connector = components.load(self.provider, allowed_connectors)
             except ComponentLoadError as exc:
                 raise SourceError(str(exc))
-            self.connector_auth = render(dict((key, value) for key, value in auth.items() if key != "provider"),
-                                         dict(self.scopes(), secrets=secrets))
+            if getattr(self.connector, "transport", "sdk") == "http":
+                auth_block = dict((key, value) for key, value in auth.items() if key != "provider")
+                rendered = render(auth_block, dict(self.scopes(), secrets=secrets))
+                self.authenticator = Authenticator(rendered, self.session, self.redact)
+                self.connector_auth = None
+            else:
+                self.connector_auth = render(dict((key, value) for key, value in auth.items() if key != "provider"),
+                                             dict(self.scopes(), secrets=secrets))
+            if self.allowed_connectors is not None:
+                extra = getattr(self.connector, "query_builders", ())
+                if extra:
+                    self.allowed_connectors = list(self.allowed_connectors) + [b for b in extra if b not in self.allowed_connectors]
         else:
             rendered = render(auth, dict(self.scopes(), secrets=secrets))
             self.authenticator = Authenticator(rendered, self.session, self.redact)
-        self.http = render(source.get("http") or {}, self.scopes())
+        source_http = dict(source.get("http") or {})
+        headers_spec = source_http.pop("headers", None)
+        self.http = render(source_http, self.scopes())
+        if headers_spec is not None:
+            rendered_headers = render(headers_spec, dict(self.scopes(), secrets=secrets))
+            if isinstance(rendered_headers, dict):
+                self.http["headers"] = dict((k, v) for k, v in rendered_headers.items() if v not in ("", None))
+            else:
+                self.http["headers"] = rendered_headers
         # the source-level limit is shared by every stream; a stream's own `rate_limit` replaces it
         self.shared_limiter = self.limiter(self.http.get("rate_limit"))
 
@@ -554,9 +575,14 @@ class SourceRunner(object):
             if "async_job" in request and "sdk" not in (request["async_job"].get("submit") or {}):
                 problems.append("%s: an async job's `submit` must be an sdk request (its `poll` calls the same "
                                 "service)" % where)
-            if self.connector is not None and _http_requests(request):
-                problems.append("%s: http requests need a built-in `auth.type`; auth provider %r only authenticates "
-                                "sdk requests" % (where, self.provider))
+            if self.connector is not None:
+                if getattr(self.connector, "transport", "sdk") == "http":
+                    if calls:
+                        problems.append("%s: %s is a REST API connector: use an http request (http: {path, method, ...}), not sdk" % (where, self.provider))
+                else:
+                    if _http_requests(request):
+                        problems.append("%s: http requests need a built-in `auth.type`; auth provider %r only authenticates "
+                                        "sdk requests" % (where, self.provider))
         return problems
 
     def run_stream(self, stream):
@@ -586,9 +612,10 @@ class SourceRunner(object):
         client = self.client(stream, limiter)
         context = None
         if any(components.sdk_calls(components.request_body(item)) for item in stream.get("requests") or []):
-            context = ConnectorContext(self.connector, self.redact, retry=self.retry_policy(stream),
-                                       rate_limiter=limiter, sleep=self.sleep, metrics=self.metrics, clock=self.clock)
-            self.connect(context)
+            if self.connector and getattr(self.connector, "transport", "sdk") == "sdk":
+                context = ConnectorContext(self.connector, self.redact, retry=self.retry_policy(stream),
+                                           rate_limiter=limiter, sleep=self.sleep, metrics=self.metrics, clock=self.clock)
+                self.connect(context)
         return client, context
 
     def parameters(self, plan, step):
@@ -808,7 +835,17 @@ class SourceRunner(object):
     def request_select(self, request, response):
         """The records in one response of a request: its `records.path` (or the response itself) as a list."""
         path = (request.get("records") or {}).get("path")
-        data = response if not path else _lookup(response, path)
+        if not path:
+            data = response
+        else:
+            try:
+                data = get_path(response, path)
+            except (KeyError, TypeError, IndexError):
+                # a response without the path's first key means a wrong path; below it, an absent or null value
+                # (`{"data": null}`, an empty SOAP element) means no records
+                if isinstance(response, dict) and response and path.split(".")[0] not in response:
+                    raise SourceError("records path %r not found in the response" % (path,))
+                return []
         if data is None:
             return []
         if isinstance(data, dict):
@@ -824,13 +861,16 @@ class SourceRunner(object):
         (RunMetrics.read) that counts the pages.
         """
         body = components.request_body(request)
-        explode = (request.get("records") or {}).get("explode")
+        effective_records = request["records"] if "records" in request else self.http.get("records")
+        explode = (effective_records or {}).get("explode")
 
         def select(response):
-            return self.request_select(request, response)
+            return self.request_select({"records": effective_records}, response)
         if "http" in body:
             pages = self.http_pages(body["http"], request, client, scopes, where)
         elif "sdk" in body:
+            if self.connector and getattr(self.connector, "transport", "sdk") == "http":
+                raise SourceError("%s is a REST API connector: use an http request (http: {path, method, ...}), not sdk" % self.provider)
             pages = self.sdk_responses(body, context, scopes, where, select)
         else:
             pages = self.async_job(stream, body["async_job"], client, context, scopes, select, where)
@@ -840,22 +880,48 @@ class SourceRunner(object):
 
     def http_pages(self, request, item, client, scopes, where=None):
         """The pages of an http request; `item`: its request item (`paginator`, `records`)."""
-        http = self.build(request, render(request, scopes))
+        effective_paginator_spec = item["paginator"] if "paginator" in item else self.http.get("paginator")
+        effective_records = item["records"] if "records" in item else self.http.get("records")
+        effective_encoding = request.get("params_encoding") or self.http.get("params_encoding", "plain")
 
-        def send(params, url):
-            if url:
-                return client.request(http.get("method", "GET"), client.follow(url), headers=http.get("headers"),
-                                      fields=where)
-            merged = dict(http.get("params") or {}, **params)
-            return client.request(http.get("method", "GET"), http["path"], params=merged,
-                                  headers=http.get("headers"), json_body=http.get("json"), fields=where)
+        unrendered_req = dict(request)
+        req_headers_spec = unrendered_req.pop("headers", None)
+        http = self.build(unrendered_req, render(unrendered_req, scopes))
 
-        def paginator_for(response):
-            if item.get("paginator") is None:
+        rendered_req_headers = render(req_headers_spec, dict(scopes, secrets=self.secrets)) if req_headers_spec else {}
+        merged_headers = merge_headers(self.http.get("headers"), rendered_req_headers)
+
+        def send(patch):
+            if patch.url:
+                url = client.follow(patch.url)
+                res = client.request(http.get("method", "GET"), url, headers=merged_headers, fields=where)
+                send.last_headers = client.last_headers
+                return res
+
+            params = dict(http.get("params") or {})
+            if patch.params:
+                params.update(patch.params)
+            encoded_params = encode_params(params, effective_encoding)
+
+            json_body = http.get("json")
+            if patch.body:
+                json_copy = copy.deepcopy(json_body) if json_body is not None else {}
+                for path, val in patch.body.items():
+                    set_dotted_path(json_copy, path, val)
+                json_body = json_copy
+
+            res = client.request(http.get("method", "GET"), http["path"], params=encoded_params,
+                                 headers=merged_headers, json_body=json_body, fields=where)
+            send.last_headers = client.last_headers
+            return res
+
+        def paginator_for_resp(response):
+            if effective_paginator_spec is None:
                 return None
-            return render(item["paginator"], dict(scopes, response=response or {}))
+            return render(effective_paginator_spec, dict(scopes, response=response or {}))
 
-        for _, records in paginate(send, paginator_for, lambda response: self.request_select(item, response)):
+        select_item = {"records": effective_records}
+        for _, records in paginate(send, paginator_for_resp, lambda response: self.request_select(select_item, response)):
             yield records
 
     def build(self, unrendered, rendered):

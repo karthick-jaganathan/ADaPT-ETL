@@ -1,0 +1,14 @@
+kind: source
+name: azure_blob_demo
+description: Orders and events from objects in an Azure Blob Storage container.
+
+spec:
+  config:
+    container_root: {type: string, default: "azure://acme-data/exports/", description: "The URL prefix objects are read from (azure://container/prefix/)"}
+  secrets:
+    azure_connection_string: {type: string, description: "Azure storage connection string"}
+
+auth:
+  provider: azure_blob
+  roots: ["{{ config.container_root }}"]
+  connection_string: "{{ secrets.azure_connection_string }}"

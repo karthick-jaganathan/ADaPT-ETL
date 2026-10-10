@@ -158,3 +158,8 @@ accounts.yaml
 credentials.yaml
 credentials.json
 **/.streamwright/
+
+# Agent tools & indexes
+.scout/
+AGENTS.md
+CLAUDE.md

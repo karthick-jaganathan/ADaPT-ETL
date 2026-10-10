@@ -1,16 +1,20 @@
 # Campaigns of each ad account. Budgets are in micros ($1 = 1,000,000 micros).
+# Partition by account_id from runtime configuration
 partitions:
   - {name: account_id, values: "{{ config.account_ids }}"}
 retry: {max_attempts: 3, max_delay: 2m}
+
+# HTTP request: list campaigns for each account
 requests:
-  - name: campaigns_list
-    sdk: openai_ads
-    service: campaigns
-    method: list
-    arguments:
+  - name: raw_campaigns
+    http:
+      path: /v1/campaigns
+      method: GET
       params:
         ad_account_id: "{{ partition.account_id }}"
         limit: 500
+
+# Transform step: parse JSON records, extract budget micros, and convert UNIX timestamps
 transform:
   mode: page
   steps:
@@ -29,7 +33,9 @@ transform:
                to_timestamp(nullif(record->>'end_time', '')::BIGINT)    AS end_time,
                to_timestamp((record->>'created_at')::BIGINT)            AS created_at,
                to_timestamp((record->>'updated_at')::BIGINT)            AS updated_at
-        FROM campaigns_list
+        FROM raw_campaigns
+
+# Output table and primary key contract
 export:
   campaigns:
     step: campaigns

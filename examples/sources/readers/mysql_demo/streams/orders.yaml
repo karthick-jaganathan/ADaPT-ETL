@@ -1,0 +1,32 @@
+description: MySQL orders query extract with window parameter binding.
+
+requests:
+  - name: raw_orders
+    service: database
+    method: query
+    sdk: mysql
+    arguments:
+      query: |
+        SELECT id, customer_id, order_date, total_amount, status
+        FROM orders
+        WHERE order_date >= $start_date
+      params:
+        start_date: "{{ config.start_date }}"
+
+transform:
+  mode: page
+  steps:
+    - name: orders
+      select: |
+        SELECT
+          (record->>'id')::BIGINT                             AS order_id,
+          (record->>'customer_id')::BIGINT                    AS customer_id,
+          (record->>'order_date')::DATE                       AS order_date,
+          (record->>'total_amount')::DOUBLE                   AS total_amount,
+          record->>'status'                                   AS status
+        FROM raw_orders
+
+export:
+  orders:
+    step: orders
+    primary_key: [order_id]

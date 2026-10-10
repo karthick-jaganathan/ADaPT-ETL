@@ -63,7 +63,7 @@ SECRET_KEY_HINTS = ("secret", "token", "password")  # auth keys whose literal va
 # * ----------------------
 # * HTTP, retries and limits
 # * ----------------------
-HTTP_KEYS = ("base_url", "headers", "rate_limit", "retry")
+HTTP_KEYS = ("base_url", "headers", "rate_limit", "retry", "paginator", "records", "params_encoding")
 RATE_LIMIT_KEYS = ("requests", "per")
 # not `on`: YAML 1.1 reads the key `on` as the boolean true
 RETRY_KEYS = ("codes", "max_attempts", "backoff", "max_delay")
@@ -93,8 +93,10 @@ BATCH_SIZE = "batch_size"  # on request partitions: lists of up to N values of o
 INCREMENTAL_KEYS = ("cursor_field", "start", "window", "lookback")
 
 REQUEST_KINDS = ("http", "sdk", "async_job")
-HTTP_REQUEST_KEYS = ("path", "method", "params", "headers", "json")
+HTTP_REQUEST_KEYS = ("path", "method", "params", "headers", "json", "params_encoding")
 HTTP_METHODS = ("GET", "POST", "PUT", "PATCH", "DELETE")
+PARAMS_ENCODING_TYPES = ("plain", "dotted")
+PAGINATOR_IN_LOCATIONS = ("query", "body")
 SDK_REQUEST_KEYS = ("sdk", "service", "method", "arguments", "headers")  # headers: the connector's request_headers
 REQUEST_ITEM_BASE_KEYS = ("name", "paginator", "records", "partitions")
 REQUEST_ITEM_KEYS = REQUEST_ITEM_BASE_KEYS + ("http", "async_job") + SDK_REQUEST_KEYS
@@ -107,10 +109,10 @@ COMPRESSIONS = ("zip", "gzip", "none")
 
 PAGINATOR_TYPES = {
     "none": {"required": (), "optional": ()},
-    "offset": {"required": ("offset_param", "limit_param", "page_size"), "optional": ()},
-    # cursor: `token_path` + `param`, or `next_url_path` alone
-    "cursor": {"required": (), "optional": ("token_path", "param", "next_url_path")},
-    "page_number": {"required": ("page_param",), "optional": ("page_size", "size_param", "start")},
+    "offset": {"required": ("offset_param", "limit_param", "page_size"), "optional": ("start", "total_path", "in")},
+    "cursor": {"required": (), "optional": ("token_path", "param", "next_url_path", "has_more_path", "in")},
+    "page_number": {"required": ("page_param",), "optional": ("page_size", "size_param", "start", "total_pages_path", "in")},
+    "link_header": {"required": (), "optional": ()},
 }
 RECORDS_KEYS = ("path", "explode")
 
@@ -207,11 +209,12 @@ def _definitions():
         "http_request": _obj({
             "path": _STR, "method": _enum(HTTP_METHODS), "params": {"type": "object"},
             "headers": {"type": "object", "additionalProperties": _STR}, "json": {},
+            "params_encoding": _enum(PARAMS_ENCODING_TYPES),
         }, required=("path",)),
         "sdk_request": _obj({"sdk": _STR, "service": _STR, "method": _STR, "arguments": {"type": "object"},
                              "headers": {"type": "object", "additionalProperties": {"type": ["string", "integer"]},
                                          "description": "Per-request headers the connector supports, e.g. "
-                                                        "CustomerAccountId (microsoft_ads)."}},
+                                                         "CustomerAccountId (microsoft_ads)."}},
                             required=("sdk", "method")),
         "poll_condition": _obj({"path": _STR, "equals": {}, "in": {"type": "array"}}, required=("path",)),
         "async_job": {
@@ -257,14 +260,25 @@ def _definitions():
         "paginator": _dispatch({
             "none": _obj({"type": {}}),
             "offset": _obj({"type": {}, "offset_param": _STR, "limit_param": _STR,
-                            "page_size": {"type": "integer", "minimum": 1}},
+                            "page_size": {"type": "integer", "minimum": 1},
+                            "start": {"type": "integer", "minimum": 0},
+                            "total_path": _STR,
+                            "in": _enum(PAGINATOR_IN_LOCATIONS)},
                            required=PAGINATOR_TYPES["offset"]["required"]),
             "cursor": {"anyOf": [
-                _obj({"type": {}, "token_path": _STR, "param": _STR}, required=("token_path", "param")),
-                _obj({"type": {}, "next_url_path": _STR}, required=("next_url_path",)),
+                _obj({"type": {}, "token_path": _STR, "param": _STR,
+                      "has_more_path": _STR, "in": _enum(PAGINATOR_IN_LOCATIONS)},
+                     required=("token_path", "param")),
+                _obj({"type": {}, "next_url_path": _STR,
+                      "has_more_path": _STR, "in": _enum(PAGINATOR_IN_LOCATIONS)},
+                     required=("next_url_path",)),
             ]},
             "page_number": _obj({"type": {}, "page_param": _STR, "page_size": {"type": "integer", "minimum": 1},
-                                 "size_param": _STR, "start": {"type": "integer"}}, required=("page_param",)),
+                                 "size_param": _STR, "start": {"type": "integer", "minimum": 0},
+                                 "total_pages_path": _STR,
+                                 "in": _enum(PAGINATOR_IN_LOCATIONS)},
+                                required=("page_param",)),
+            "link_header": _obj({"type": {}}),
         }),
         "partition": {"oneOf": [
             _obj({"name": _NAME, "values": {"type": ["array", "string"]}}, required=PARTITION_VALUES_KEYS),
@@ -331,7 +345,7 @@ def _definitions():
     definitions["auth"] = {
         "type": "object",
         "if": {"required": ["provider"]},
-        "then": {"properties": {"provider": _STR}, "not": {"required": ["type"]},
+        "then": {"properties": {"provider": _STR},
                  "description": "Connector provider; its keys are defined by the connector."},
         "else": _dispatch(builtin_auth),
     }
@@ -354,8 +368,15 @@ def json_schema():
             "description": _STR,
             "spec": _obj({"config": _ref("inputs"), "secrets": _ref("inputs")}),
             "auth": _ref("auth"),
-            "http": _obj({"base_url": _STR, "headers": {"type": "object", "additionalProperties": _STR},
-                          "rate_limit": _ref("rate_limit"), "retry": _ref("retry")}),
+            "http": _obj({
+                "base_url": _STR,
+                "headers": {"type": "object", "additionalProperties": _STR},
+                "rate_limit": _ref("rate_limit"),
+                "retry": _ref("retry"),
+                "paginator": _ref("paginator"),
+                "records": _ref("records"),
+                "params_encoding": _enum(PARAMS_ENCODING_TYPES),
+            }),
             "streams": {"type": "array", "minItems": 1, "items": _ref("stream")},
         },
         # not `streams`: the source.yaml of a source folder has none (streamwright-validate checks that a source has streams)

@@ -3,51 +3,49 @@
 The `linkedin_ads` connector for [streamwright](../../../core/README.md): the LinkedIn Marketing Developer Platform REST API. Example:
 the source folder [examples/sources/ads/linkedin_ads/](../../../examples/sources/ads/linkedin_ads/).
 
+<!-- TODO(linkedin-restli2): support full Rest.li 2.0 query syntax (List(...) and (k:v)) in a future restli2 encoder -->
+
 ## Install
 
 ```bash
-make install-linkedin-ads    # from the repository root; or: pip install ./connectors/ads/linkedin_ads
-streamwright connectors      # lists linkedin_ads (with its network logger)
+pip install ./connectors/ads/linkedin_ads
+streamwright connectors      # lists linkedin_ads
 ```
 
-## Auth
+## Configuration
 
-| Key | Meaning |
-|---|---|
-| `access_token` | required: a LinkedIn OAuth 2.0 access token |
-| `api_version` | optional: API version header (`LinkedIn-Version`), defaults to `202401` |
-
-## Requests
+In `source.yaml`:
 
 ```yaml
-requests:
-  - name: campaigns_list
-    sdk: linkedin_ads
-    service: campaigns            # ad_accounts, campaign_groups, campaigns, creatives, ad_analytics
-    method: list                  # list, get, or analytics
-    arguments:
-      params:
-        q: search
-        search.account.values[0]: "urn:li:sponsoredAccount:{{ partition.account_id }}"
-        count: 100
+auth:
+  provider: linkedin_ads
+  type: bearer
+  token: "{{ secrets.linkedin_access_token }}"
+
+http:
+  base_url: https://api.linkedin.com
+  headers:
+    LinkedIn-Version: "{{ config.api_version }}"
+    X-Restli-Protocol-Version: "2.0.0"
+  params_encoding: dotted
+  paginator:
+    type: offset
+    offset_param: start
+    limit_param: count
+    page_size: 100
+    total_path: paging.total
+  records:
+    path: elements
 ```
 
-- **Services**:
-  - `ad_accounts`: Sponsored ad accounts (`/rest/adAccounts`).
-  - `campaign_groups`: Campaign groups (`/rest/adCampaignGroups`).
-  - `campaigns`: Ad campaigns (`/rest/adCampaigns`).
-  - `creatives`: Ad creatives (`/rest/adCreatives`).
-  - `ad_analytics`: Delivery metrics (`/rest/adAnalytics`).
-- **Methods**:
-  - `list`: lists objects using LinkedIn Rest.li offset pagination (`start` / `count`).
-  - `get`: retrieves a single object by its `id` / URN.
-  - `analytics`: queries performance and delivery analytics by date range, pivot, and time granularity.
+## Streams
 
-## Errors
+- `ad_accounts`: Sponsored ad accounts (`/rest/adAccounts`).
+- `campaign_groups`: Campaign groups (`/rest/adCampaignGroups`).
+- `campaigns`: Ad campaigns (`/rest/adCampaigns`).
+- `creatives`: Ad creatives (`/rest/adCreatives`).
+- `campaign_performance`: Delivery metrics (`/rest/adAnalytics`).
 
-HTTP 429 (rate limits) and HTTP 5xx server errors are retried, honoring the `Retry-After` header when provided. Other HTTP errors fail with the API's status code and error message.
+## Errors & Retries
 
-## Logs
-
-Requests are sent via `requests`: urllib3 logs connection details on `urllib3.connectionpool`.
-With `--log streamwright.network=DEBUG`, streamwright logs each request's and response's headers and body, with the `access_token` masked.
+HTTP 429 (rate limits) and HTTP 5xx server errors are handled by StreamWright's HTTP engine with exponential backoff, honoring the `Retry-After` header when provided.

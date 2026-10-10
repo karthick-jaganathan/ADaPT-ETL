@@ -9,7 +9,7 @@ description = "StreamWright - Meta Ads connector (the meta_ads auth provider and
 readme = "README.md"
 license = "Apache-2.0"
 authors = [
-    {name = "Karthick Jaganathan"},
+    {name = "Karthick Jaganathan", email = "kjaganathan.sde@gmail.com"},
 ]
 keywords = ["data", "pipeline", "etl", "connector", "meta-ads", "facebook-ads"]
 classifiers = [

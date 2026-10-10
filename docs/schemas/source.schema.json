@@ -227,11 +227,6 @@
       },
       "then": {
         "description": "Connector provider; its keys are defined by the connector.",
-        "not": {
-          "required": [
-            "type"
-          ]
-        },
         "properties": {
           "provider": {
             "type": "string"
@@ -286,6 +281,12 @@
         },
         "params": {
           "type": "object"
+        },
+        "params_encoding": {
+          "enum": [
+            "plain",
+            "dotted"
+          ]
         },
         "path": {
           "type": "string"
@@ -411,6 +412,12 @@
             "additionalProperties": false,
             "properties": {
               "<<": {},
+              "in": {
+                "enum": [
+                  "query",
+                  "body"
+                ]
+              },
               "limit_param": {
                 "type": "string"
               },
@@ -420,6 +427,13 @@
               "page_size": {
                 "minimum": 1,
                 "type": "integer"
+              },
+              "start": {
+                "minimum": 0,
+                "type": "integer"
+              },
+              "total_path": {
+                "type": "string"
               },
               "type": {}
             },
@@ -448,6 +462,15 @@
                 "additionalProperties": false,
                 "properties": {
                   "<<": {},
+                  "has_more_path": {
+                    "type": "string"
+                  },
+                  "in": {
+                    "enum": [
+                      "query",
+                      "body"
+                    ]
+                  },
                   "param": {
                     "type": "string"
                   },
@@ -466,6 +489,15 @@
                 "additionalProperties": false,
                 "properties": {
                   "<<": {},
+                  "has_more_path": {
+                    "type": "string"
+                  },
+                  "in": {
+                    "enum": [
+                      "query",
+                      "body"
+                    ]
+                  },
                   "next_url_path": {
                     "type": "string"
                   },
@@ -494,6 +526,12 @@
             "additionalProperties": false,
             "properties": {
               "<<": {},
+              "in": {
+                "enum": [
+                  "query",
+                  "body"
+                ]
+              },
               "page_param": {
                 "type": "string"
               },
@@ -505,13 +543,37 @@
                 "type": "string"
               },
               "start": {
+                "minimum": 0,
                 "type": "integer"
+              },
+              "total_pages_path": {
+                "type": "string"
               },
               "type": {}
             },
             "required": [
               "page_param"
             ],
+            "type": "object"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "link_header"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "additionalProperties": false,
+            "properties": {
+              "<<": {},
+              "type": {}
+            },
             "type": "object"
           }
         }
@@ -522,7 +584,8 @@
             "none",
             "offset",
             "cursor",
-            "page_number"
+            "page_number",
+            "link_header"
           ]
         }
       },
@@ -1099,8 +1162,20 @@
           },
           "type": "object"
         },
+        "paginator": {
+          "$ref": "#/definitions/paginator"
+        },
+        "params_encoding": {
+          "enum": [
+            "plain",
+            "dotted"
+          ]
+        },
         "rate_limit": {
           "$ref": "#/definitions/rate_limit"
+        },
+        "records": {
+          "$ref": "#/definitions/records"
         },
         "retry": {
           "$ref": "#/definitions/retry"

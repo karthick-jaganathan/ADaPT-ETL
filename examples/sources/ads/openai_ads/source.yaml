@@ -6,6 +6,7 @@ kind: source
 name: openai_ads_demo
 description: OpenAI Ads performance and metadata streams.
 
+# Input specification: runtime configuration (visible) and secrets (redacted)
 spec:
   config:
     account_ids: {type: list, items: string, description: Ad account IDs}
@@ -13,6 +14,18 @@ spec:
   secrets:
     openai_ads_key: {type: string}
 
+# Authentication: OpenAI Ads bearer token from secrets
 auth:
-  provider: openai_ads               # registered by the streamwright-openai-ads connector
-  advertiser_api_key: "{{ secrets.openai_ads_key }}"
+  provider: openai_ads
+  type: bearer
+  token: "{{ secrets.openai_ads_key }}"
+
+# HTTP defaults shared across all streams in this source
+http:
+  base_url: https://api.ads.openai.com
+  # Default cursor paginator: advances using response.last_id -> request query param ?after=
+  paginator: {type: cursor, token_path: last_id, param: after, has_more_path: has_more}
+  # Default records path: extracts record list from the {"data": [...]} response envelope
+  records: {path: data}
+  # Automatic retries for rate limits (429) and server errors with exponential backoff
+  retry: {codes: [429, 500, 502, 503, 504], max_attempts: 5, backoff: exponential, max_delay: 2m}

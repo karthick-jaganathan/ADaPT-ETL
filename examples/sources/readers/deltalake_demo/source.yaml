@@ -1,0 +1,21 @@
+# Example source folder: this file, and one file per stream in streams/.
+# Check it with: streamwright validate examples/sources/readers/deltalake_demo
+# Run it (pip install streamwright-deltalake): streamwright run examples/sources/readers/deltalake_demo
+# Secrets come from STREAMWRIGHT_SECRET_<NAME> environment variables or --secrets FILE.
+kind: source
+name: deltalake_demo
+description: Read-only streams from Delta Lake tables (local or cloud object storage).
+
+spec:
+  config:
+    table_path: {type: string, description: "Delta table URI, e.g. s3://bucket/events or /data/events"}
+    aws_region: {type: string, default: "us-east-1", required: false}
+  secrets:
+    aws_access_key_id: {type: string, required: false}
+    aws_secret_access_key: {type: string, required: false}
+
+auth:
+  provider: deltalake
+  aws_access_key_id: "{{ secrets.aws_access_key_id }}"
+  aws_secret_access_key: "{{ secrets.aws_secret_access_key }}"
+  aws_region: "{{ config.aws_region }}"

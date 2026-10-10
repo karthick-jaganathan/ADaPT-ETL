@@ -1,18 +1,25 @@
 # Ad groups of each ad account (account-level wider query).
 # Note: OpenAI Ads API does not return parent campaign_id in account-level ad group listings.
 # To extract ad groups with their parent campaign details, use the ad_group_tree stream.
+
+# Partition across account IDs
 partitions:
   - {name: account_id, values: "{{ config.account_ids }}"}
 retry: {max_attempts: 3, max_delay: 2m}
+
+# HTTP request: list ad groups for the account
 requests:
-  - name: ad_groups_list
-    sdk: openai_ads
-    service: ad_groups
-    method: list
-    arguments:
+  - name: raw_ad_groups
+    records:
+      path: data
+    http:
+      path: /v1/ad_groups
+      method: GET
       params:
         ad_account_id: "{{ partition.account_id }}"
         limit: 500
+
+# Transform step: extract bidding config and timestamp fields
 transform:
   mode: page
   steps:
@@ -26,7 +33,9 @@ transform:
                (record->>'$.bidding_config.max_bid_micros')::BIGINT     AS max_bid_micros,
                to_timestamp((record->>'created_at')::BIGINT)            AS created_at,
                to_timestamp((record->>'updated_at')::BIGINT)            AS updated_at
-        FROM ad_groups_list
+        FROM raw_ad_groups
+
+# Output table and primary key contract
 export:
   ad_groups:
     step: ad_groups

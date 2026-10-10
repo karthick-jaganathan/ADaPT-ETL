@@ -1,0 +1,43 @@
+description: Apple Ads targeted keywords and match types.
+
+partitions:
+  - {name: campaign_id, values: "{{ config.campaign_ids }}"}
+
+# HTTP POST query for keywords filtered by campaignId partition
+requests:
+  - name: raw_keywords
+    http:
+      path: /v1/keywords/query
+      method: POST
+      json:
+        pagination:
+          pageSize: 100
+          fetchTotalCount: true
+        filters:
+          - field: campaignId
+            operator: EQUALS
+            value: "{{ partition.campaign_id }}"
+
+# Transform step: extracts keyword text, match type, status, and bid amount
+transform:
+  mode: page
+  steps:
+    - name: keywords
+      select: |
+        SELECT
+          (record->>'adAccountId')::BIGINT                    AS ad_account_id,
+          (record->>'campaignId')::BIGINT                     AS campaign_id,
+          (record->>'adGroupId')::BIGINT                      AS ad_group_id,
+          (record->>'id')::BIGINT                             AS keyword_id,
+          record->>'text'                                     AS keyword_text,
+          record->>'matchType'                                AS match_type,
+          record->>'status'                                   AS status,
+          (record->>'$.bidAmount.amount')::DOUBLE             AS bid_amount,
+          record->>'$.bidAmount.currency'                     AS currency
+        FROM raw_keywords
+
+# Output table and primary key contract
+export:
+  keywords:
+    step: keywords
+    primary_key: [keyword_id]

@@ -1,0 +1,40 @@
+description: Apple Ads campaign reporting analytics (impressions, taps, installs, spend).
+
+# HTTP POST report query with daily time range (records path overrides default to result.rows)
+requests:
+  - name: raw_campaign_reports
+    records:
+      path: result.rows
+    http:
+      path: /v1/reports/apps/campaigns/query
+      method: POST
+      json:
+        pagination:
+          pageSize: 100
+          fetchTotalCount: true
+        timeRange:
+          startTime: "2026-01-01"
+          endTime: "2026-01-07"
+          granularity: DAILY
+
+# Transform step: unpacks campaign metrics and spend amounts
+transform:
+  mode: page
+  steps:
+    - name: campaign_reports
+      select: |
+        SELECT
+          COALESCE(record->'metadata'->>'id', record->>'campaignId')::BIGINT                 AS campaign_id,
+          record->'metadata'->>'name'                                                         AS campaign_name,
+          COALESCE((record->'totalMetrics'->>'impressions')::BIGINT, (record->>'impressions')::BIGINT) AS impressions,
+          COALESCE((record->'totalMetrics'->>'taps')::BIGINT, (record->>'taps')::BIGINT)     AS taps,
+          COALESCE((record->'totalMetrics'->>'totalInstalls')::BIGINT, (record->>'installs')::BIGINT) AS installs,
+          COALESCE((record->'totalMetrics'->'localSpend'->>'amount')::DOUBLE, (record->>'$.localSpend.amount')::DOUBLE) AS spend,
+          COALESCE(record->'totalMetrics'->'localSpend'->>'currency', record->>'$.localSpend.currency') AS currency
+        FROM raw_campaign_reports
+
+# Output table and primary key contract
+export:
+  campaign_reports:
+    step: campaign_reports
+    primary_key: [campaign_id]

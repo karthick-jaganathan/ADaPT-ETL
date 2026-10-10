@@ -1,0 +1,28 @@
+description: MySQL customers table extract.
+
+requests:
+  - name: raw_customers
+    service: database
+    method: table
+    sdk: mysql
+    arguments:
+      table: customers
+      columns: [id, name, email, status, created_at]
+
+transform:
+  mode: page
+  steps:
+    - name: customers
+      select: |
+        SELECT
+          (record->>'id')::BIGINT                             AS customer_id,
+          record->>'name'                                     AS name,
+          record->>'email'                                    AS email,
+          record->>'status'                                   AS status,
+          (record->>'created_at')::TIMESTAMPTZ                AS created_at
+        FROM raw_customers
+
+export:
+  customers:
+    step: customers
+    primary_key: [customer_id]

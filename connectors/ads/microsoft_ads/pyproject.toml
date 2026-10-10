@@ -9,7 +9,7 @@ description = "StreamWright - Microsoft Advertising connector (the microsoft_ads
 readme = "README.md"
 license = "Apache-2.0"
 authors = [
-    {name = "Karthick Jaganathan"},
+    {name = "Karthick Jaganathan", email = "kjaganathan.sde@gmail.com"},
 ]
 keywords = ["data", "pipeline", "etl", "connector", "microsoft-ads", "bing-ads"]
 classifiers = [

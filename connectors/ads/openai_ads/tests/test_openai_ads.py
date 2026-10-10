@@ -14,31 +14,26 @@
 # * limitations under the License.
 # **************************************************************************/
 
+import datetime
+from urllib.parse import parse_qs, urlparse
 import pytest
 import responses
-from streamwright.core.runtime.testing import MemoryOutput, page_stream
-from streamwright.core.runtime.components import ConnectorError
+
 from streamwright.core.engine.runner import SourceRunner
-from streamwright.connectors.openai_ads.connector import OpenAIAdsConnector
+from streamwright.core.config.loader import load_source
+from streamwright.core.runtime.testing import MemoryOutput
 
-def run(request, auth):
-    auth = dict(auth, provider="openai_ads")
-    source = {
-        "kind": "source",
-        "name": "test_source",
-        "auth": auth,
-        "streams": [page_stream("test_stream", request, "SELECT * FROM records")]
-    }
-    output = MemoryOutput()
-    SourceRunner(source, {}, auth, output=output).run()
-    return output
 
-def test_missing_auth():
-    connector = OpenAIAdsConnector()
-    with pytest.raises(ConnectorError, match="auth 'advertiser_api_key' is empty"):
-        connector.connect({}, None)
-    with pytest.raises(ConnectorError, match="auth 'advertiser_api_key' is empty"):
-        connector.connect({"advertiser_api_key": "   "}, None)
+def _load_openai_source(stream_name=None):
+    source = load_source("examples/sources/ads/openai_ads")
+    if stream_name:
+        source["streams"] = [s for s in source["streams"] if s["name"] == stream_name]
+    return source
+
+
+def _records(output, export_name):
+    return [rec for exp, rec in output.records if exp == export_name]
+
 
 @responses.activate
 def test_ad_accounts_list():
@@ -46,15 +41,33 @@ def test_ad_accounts_list():
         responses.GET,
         "https://api.ads.openai.com/v1/ad_accounts",
         json={
-            "data": [{"id": "act_1", "name": "Test Account"}],
-            "has_more": False
+            "data": [{"id": "act_1", "name": "Test Account", "status": "ACTIVE",
+                      "currency_code": "USD", "timezone": "UTC", "url": "https://example.com"}],
+            "has_more": False,
         },
-        status=200
+        status=200,
     )
-    
-    output = run({"service": "ad_accounts", "method": "list", "sdk": "openai_ads"}, {"advertiser_api_key": "sk-test-123"})
-    assert len(output.records) == 1
-    assert output.records[0][1]["record"] == {"id": "act_1", "name": "Test Account"}
+
+    source = _load_openai_source("ad_accounts")
+    secrets = {"openai_ads_key": "sk-test-123"}
+    config = {"account_ids": ["act_1"]}
+    output = MemoryOutput()
+
+    SourceRunner(source, config, secrets, output=output).run()
+
+    assert len(responses.calls) == 1
+    req = responses.calls[0].request
+    assert req.method == "GET"
+    parsed = urlparse(req.url)
+    assert parsed.path == "/v1/ad_accounts"
+    assert parse_qs(parsed.query) == {"limit": ["500"]}
+    assert req.headers["Authorization"] == "Bearer sk-test-123"
+
+    table = _records(output, "ad_accounts")
+    assert len(table) == 1
+    assert table[0]["account_id"] == "act_1"
+    assert table[0]["account_name"] == "Test Account"
+
 
 @responses.activate
 def test_campaigns_pagination():
@@ -62,150 +75,185 @@ def test_campaigns_pagination():
         responses.GET,
         "https://api.ads.openai.com/v1/campaigns",
         json={
-            "data": [{"id": "cmp_1"}],
+            "data": [{
+                "id": "cmp_1", "name": "Campaign 1", "status": "ACTIVE",
+                "objective": "AWARENESS", "bidding_type": "CPM", "billing_event_type": "IMPRESSIONS",
+                "budget": {"daily_spend_limit_micros": 1000000, "lifetime_spend_limit_micros": 5000000},
+                "start_time": "1700000000", "end_time": "1700086400",
+                "created_at": 1700000000, "updated_at": 1700000000,
+            }],
             "has_more": True,
-            "last_id": "cmp_1"
+            "last_id": "cmp_1",
         },
-        match=[responses.matchers.query_param_matcher({})],
-        status=200
+        match=[responses.matchers.query_param_matcher({"ad_account_id": "act_1", "limit": "500"})],
+        status=200,
     )
     responses.add(
         responses.GET,
         "https://api.ads.openai.com/v1/campaigns",
         json={
-            "data": [{"id": "cmp_2"}],
-            "has_more": False
+            "data": [{
+                "id": "cmp_2", "name": "Campaign 2", "status": "ACTIVE",
+                "objective": "CONVERSIONS", "bidding_type": "oCPM", "billing_event_type": "IMPRESSIONS",
+                "budget": {"daily_spend_limit_micros": 2000000, "lifetime_spend_limit_micros": 10000000},
+                "start_time": "1700000000", "end_time": "1700086400",
+                "created_at": 1700000000, "updated_at": 1700000000,
+            }],
+            "has_more": False,
         },
-        match=[responses.matchers.query_param_matcher({"after": "cmp_1"})],
-        status=200
+        match=[responses.matchers.query_param_matcher({"ad_account_id": "act_1", "limit": "500", "after": "cmp_1"})],
+        status=200,
     )
-    
-    output = run({"service": "campaigns", "method": "list", "sdk": "openai_ads"}, {"advertiser_api_key": "sk-test-123"})
-    assert len(output.records) == 2
-    assert output.records[0][1]["record"] == {"id": "cmp_1"}
-    assert output.records[1][1]["record"] == {"id": "cmp_2"}
 
-@responses.activate
-def test_get_ad_group():
-    responses.add(
-        responses.GET,
-        "https://api.ads.openai.com/v1/ad_groups/ag_123",
-        json={"id": "ag_123", "name": "Test Ad Group"},
-        status=200
-    )
-    
-    output = run({
-        "service": "ad_groups",
-        "method": "get",
-        "sdk": "openai_ads",
-        "arguments": {"id": "ag_123"}
-    }, {"advertiser_api_key": "sk-test-123"})
-    assert len(output.records) == 1
-    assert output.records[0][1]["record"] == {"id": "ag_123", "name": "Test Ad Group"}
+    source = _load_openai_source("campaigns")
+    secrets = {"openai_ads_key": "sk-test-123"}
+    config = {"account_ids": ["act_1"]}
+    output = MemoryOutput()
+
+    SourceRunner(source, config, secrets, output=output).run()
+
+    assert len(responses.calls) == 2
+    for call in responses.calls:
+        assert call.request.headers["Authorization"] == "Bearer sk-test-123"
+
+    table = _records(output, "campaigns")
+    assert len(table) == 2
+    assert table[0]["campaign_id"] == "cmp_1"
+    assert table[1]["campaign_id"] == "cmp_2"
+
 
 @responses.activate
 def test_campaign_insights():
     responses.add(
         responses.GET,
+        "https://api.ads.openai.com/v1/campaigns",
+        json={
+            "data": [{"id": "cmp_1", "name": "Brand Campaign"}],
+            "has_more": False,
+        },
+        match=[responses.matchers.query_param_matcher({"ad_account_id": "act_1", "limit": "500"})],
+        status=200,
+    )
+    responses.add(
+        responses.GET,
         "https://api.ads.openai.com/v1/campaigns/cmp_1/insights",
         json={
-            "data": [{"campaign_id": "cmp_1", "impressions": 100, "clicks": 10, "spend": 5.5}],
-            "has_more": False
+            "data": [{"date": "2026-01-01", "impressions": 100, "clicks": 10, "spend": 5.5}],
+            "has_more": False,
         },
-        status=200
+        match=[responses.matchers.query_param_matcher({"start_date": "2026-01-01", "end_date": "2026-01-01", "limit": "500"})],
+        status=200,
     )
-    
-    output = run({
-        "service": "campaigns",
-        "method": "insights",
-        "sdk": "openai_ads",
-        "arguments": {"id": "cmp_1"}
-    }, {"advertiser_api_key": "sk-test-123"})
-    assert len(output.records) == 1
-    assert output.records[0][1]["record"] == {"campaign_id": "cmp_1", "impressions": 100, "clicks": 10, "spend": 5.5}
+
+    source = _load_openai_source("campaign_performance")
+    secrets = {"openai_ads_key": "sk-test-123"}
+    config = {"account_ids": ["act_1"], "start_date": "2026-01-01"}
+    output = MemoryOutput()
+
+    SourceRunner(source, config, secrets, output=output, today=datetime.date(2026, 1, 1)).run()
+
+    assert len(responses.calls) == 2
+    assert responses.calls[1].request.path_url == "/v1/campaigns/cmp_1/insights?start_date=2026-01-01&end_date=2026-01-01&limit=500"
+
+    table = _records(output, "campaign_performance")
+    assert len(table) == 1
+    row = table[0]
+    assert row["campaign_id"] == "cmp_1"
+    assert row["campaign_name"] == "Brand Campaign"
+    assert row["impressions"] == 100
+    assert row["clicks"] == 10
+    assert row["spend"] == 5.5
+
+
+@responses.activate
+def test_single_entity_get():
+    responses.add(
+        responses.GET,
+        "https://api.ads.openai.com/v1/ad_groups/ag_123",
+        json={"id": "ag_123", "name": "Single Ad Group", "status": "ACTIVE"},
+        status=200,
+    )
+
+    source = {
+        "kind": "source",
+        "name": "single_entity_test",
+        "auth": {
+            "provider": "openai_ads",
+            "type": "bearer",
+            "token": "{{ secrets.openai_ads_key }}",
+        },
+        "http": {
+            "base_url": "https://api.ads.openai.com",
+            "paginator": {"type": "cursor", "token_path": "last_id", "param": "after", "has_more_path": "has_more"},
+            "records": {"path": "data"},
+        },
+        "streams": [{
+            "name": "ad_group_single",
+            "requests": [{
+                "name": "raw_ad_group",
+                "paginator": {"type": "none"},
+                "records": {},
+                "http": {
+                    "path": "/v1/ad_groups/ag_123",
+                    "method": "GET",
+                },
+            }],
+            "transform": {
+                "mode": "page",
+                "steps": [{
+                    "name": "ad_group",
+                    "select": "SELECT record->>'id' AS id, record->>'name' AS name FROM raw_ad_group",
+                }],
+            },
+            "export": {"ad_group": {"step": "ad_group", "primary_key": ["id"]}},
+        }],
+    }
+
+    output = MemoryOutput()
+    SourceRunner(source, {}, {"openai_ads_key": "sk-test-123"}, output=output).run()
+
+    assert len(responses.calls) == 1
+    assert responses.calls[0].request.url == "https://api.ads.openai.com/v1/ad_groups/ag_123"
+    table = _records(output, "ad_group")
+    assert len(table) == 1
+    assert table[0]["id"] == "ag_123"
+    assert table[0]["name"] == "Single Ad Group"
+
 
 @responses.activate
 def test_rate_limit_retry():
     responses.add(
         responses.GET,
-        "https://api.ads.openai.com/v1/ads",
+        "https://api.ads.openai.com/v1/ad_accounts",
         json={"error": {"message": "Rate limit exceeded"}},
-        headers={"Retry-After": "1"},
-        status=429
+        headers={"Retry-After": "0"},
+        status=429,
     )
     responses.add(
         responses.GET,
-        "https://api.ads.openai.com/v1/ads",
-        json={"data": [{"id": "ad_1"}], "has_more": False},
-        status=200
+        "https://api.ads.openai.com/v1/ad_accounts",
+        json={
+            "data": [{"id": "act_1", "name": "Retried Account", "status": "ACTIVE"}],
+            "has_more": False,
+        },
+        status=200,
     )
-    
-    output = run({"service": "ads", "method": "list", "sdk": "openai_ads"}, {"advertiser_api_key": "sk-test-123"})
-    assert len(output.records) == 1
-    assert output.records[0][1]["record"] == {"id": "ad_1"}
 
-def test_validation():
-    connector = OpenAIAdsConnector()
-    assert connector.check_request({"service": "unknown", "method": "list"}) != []
-    assert connector.check_request({"service": "ads", "method": "unknown"}) != []
-    assert connector.check_request({"service": "ads", "method": "get"}) != []
-    assert connector.check_request({"service": "ads", "method": "get", "arguments": {"id": "1"}}) == []
-    assert connector.check_request({"service": "ads", "method": "insights"}) != []
-    assert connector.check_request({"service": "ads", "method": "insights", "arguments": {"id": "1"}}) == []
-    assert connector.check_request({"service": "ad_accounts", "method": "insights", "arguments": {"id": "1"}}) != []
-    assert connector.check_request({"service": "ads", "method": "list", "arguments": "not-a-mapping"}) != []
-    assert connector.check_request({"service": "ads", "method": "get", "arguments": {"id": ""}}) != []
-    assert connector.check_request({"service": "ads", "method": "get", "arguments": {"id": None}}) != []
-    assert connector.check_request({"service": "ads", "method": "list", "arguments": {"params": "not-a-dict"}}) != []
+    source = _load_openai_source("ad_accounts")
+    secrets = {"openai_ads_key": "sk-test-123"}
+    config = {"account_ids": ["act_1"]}
+    output = MemoryOutput()
+
+    SourceRunner(source, config, secrets, output=output).run()
+
+    assert len(responses.calls) == 2
+    table = _records(output, "ad_accounts")
+    assert len(table) == 1
+    assert table[0]["account_name"] == "Retried Account"
 
 
-def test_request_validation_error():
-    connector = OpenAIAdsConnector()
-    with pytest.raises(ConnectorError, match="service 'unknown' is not supported"):
-        list(connector.request(None, {"service": "unknown", "method": "list"}, None))
-
-def test_error_translation():
-    import requests
-    connector = OpenAIAdsConnector()
-    
-    # Connection / timeout errors
-    conn_err = connector.error(requests.ConnectionError("connection dropped"))
-    assert conn_err.retryable is True
-    
-    timeout_err = connector.error(requests.Timeout("timed out"))
-    assert timeout_err.retryable is True
-    
-    # 429 with Retry-After header
-    resp_429 = requests.Response()
-    resp_429.status_code = 429
-    resp_429.headers["Retry-After"] = "45"
-    resp_429._content = b'{"error": {"message": "Rate limit exceeded"}}'
-    err_429 = connector.error(requests.HTTPError("Rate limited", response=resp_429))
-    assert err_429.code == 429
-    assert err_429.retryable is True
-    assert err_429.retry_after == 45
-    assert "Rate limit exceeded" in str(err_429)
-    
-    # 500 internal server error
-    resp_500 = requests.Response()
-    resp_500.status_code = 500
-    resp_500._content = b'{"error": {"message": "Internal error"}}'
-    err_500 = connector.error(requests.HTTPError("Server error", response=resp_500))
-    assert err_500.code == 500
-    assert err_500.retryable is True
-    
-    # 400 bad request (non-retryable)
-    resp_400 = requests.Response()
-    resp_400.status_code = 400
-    resp_400._content = b'{"error": {"message": "Bad request"}}'
-    err_400 = connector.error(requests.HTTPError("Client error", response=resp_400))
-    assert err_400.code == 400
-    assert err_400.retryable is False
-    
-    # HTTPError with no response object
-    err_no_resp = connector.error(requests.HTTPError("No response"))
-    assert err_no_resp.retryable is False
-    
-    # Non-requests exception
-    assert connector.error(ValueError("unrelated error")) is None
-
+def test_missing_auth():
+    from streamwright.core.engine.runner import SourceError
+    source = _load_openai_source("ad_accounts")
+    with pytest.raises(SourceError, match="token"):
+        SourceRunner(source, {"account_ids": ["act_1"]}, {}, output=MemoryOutput()).run()

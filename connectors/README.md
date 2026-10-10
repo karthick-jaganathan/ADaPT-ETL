@@ -13,10 +13,16 @@ vendor SDK: `files` (local files), `s3` and `gcs` (object storage) and `postgres
 | [meta_ads](ads/meta_ads/README.md) | `streamwright-meta-ads` | `meta_ads` | facebook_business | `urllib3.connectionpool` |
 | [openai_ads](ads/openai_ads/README.md) | `streamwright-openai-ads` | `openai_ads` | requests | `urllib3.connectionpool` |
 | [linkedin_ads](ads/linkedin_ads/README.md) | `streamwright-linkedin-ads` | `linkedin_ads` | requests | `urllib3.connectionpool` |
+| [amazon_ads](ads/amazon_ads/README.md) | `streamwright-amazon-ads` | `amazon_ads` | requests | `urllib3.connectionpool` |
+| [apple_ads](ads/apple_ads/README.md) | `streamwright-apple-ads` | `apple_ads` | requests | `urllib3.connectionpool` |
 | [files](readers/files/README.md) | `streamwright-files` | `files` | duckdb | - |
 | [s3](readers/s3/README.md) | `streamwright-s3` | `s3` | duckdb (its httpfs extension) | - |
 | [gcs](readers/gcs/README.md) | `streamwright-gcs` | `gcs` | duckdb (its httpfs extension) | - |
+| [azure_blob](readers/azure_blob/README.md) | `streamwright-azure-blob` | `azure_blob` | duckdb (its azure extension) | - |
 | [postgres](readers/postgres/README.md) | `streamwright-postgres` | `postgres` | duckdb (its postgres extension) | - |
+| [mysql](readers/mysql/README.md) | `streamwright-mysql` | `mysql` | duckdb (its mysql extension) | - |
+| [mongodb](readers/mongodb/README.md) | `streamwright-mongodb` | `mongodb` | pymongo | - |
+| [deltalake](readers/deltalake/README.md) | `streamwright-deltalake` | `deltalake` | duckdb (its delta extension) | - |
 
 ```bash
 make install-connectors         # all of them, from the repository root; or: pip install ./connectors/ads/google_ads
@@ -54,19 +60,20 @@ streamwright run examples/sources/ads/google_ads --set customer_ids=1112223333 -
   file, a glob or a list; or, with `match` (a Python regex fully matched against each file's path relative to it), a
   folder, searched in its sub-folders too with `recursive: true`. Example:
   [examples/sources/readers/files_demo](../examples/sources/readers/files_demo/), which runs offline.
-- `s3` and `gcs` read the same formats from object storage through DuckDB's httpfs, with the same arguments on
-  `service: object`: `auth: {provider: s3, roots: ["s3://bucket/prefix/"], key_id, secret, ...}` (optional
-  `session_token`, `region`, `endpoint`, `url_style`, `use_ssl`), or `{provider: gcs, roots: ["gs://bucket/prefix/"],
-  key_id, secret}` (an HMAC key). Credentials are `{{ secrets.* }}` references only and redacted; any `?` or `%` in a
-  URL is refused, and the scheme, bucket and prefix of a root must match exactly. Examples:
-  [examples/sources/readers/s3_demo](../examples/sources/readers/s3_demo/), [examples/sources/readers/gcs_demo](../examples/sources/readers/gcs_demo/).
+- `s3`, `gcs`, and `azure_blob` read the same formats from object storage through DuckDB (httpfs for S3/GCS, azure for Azure Blob), with the same arguments on
+  `service: object`: `auth: {provider: s3, roots: ["s3://bucket/prefix/"], key_id, secret, ...}`,
+  `{provider: gcs, roots: ["gs://bucket/prefix/"], key_id, secret}`, or `{provider: azure_blob, roots: ["azure://container/prefix/"], connection_string, ...}`.
+  Credentials are `{{ secrets.* }}` references only and redacted; any `?` or `%` in a
+  URL is refused, and the scheme, bucket/container and prefix of a root must match exactly. Examples:
+  [examples/sources/readers/s3_demo](../examples/sources/readers/s3_demo/), [examples/sources/readers/gcs_demo](../examples/sources/readers/gcs_demo/),
+  [examples/sources/readers/azure_blob_demo](../examples/sources/readers/azure_blob_demo/).
 - `postgres` runs read-only SELECT queries on a PostgreSQL database, attached `READ_ONLY` through DuckDB's postgres
   extension and a temporary DuckDB secret holding the DSN: `auth: {provider: postgres, dsn: "{{ secrets.pg_dsn }}"}`,
   and requests are `sdk: postgres` with `method: query` (`{query, params}`: DuckDB SQL over the attached database,
   with bound `$name` values; DuckDB's system and catalog views are refused) or `method: table`. Example:
   [examples/sources/readers/postgres_demo](../examples/sources/readers/postgres_demo/).
 
-There is no `https` reader. Allow them like the others: `streamwright run --allow-connector files` (or `s3`, `gcs`,
+There is no `https` reader. Allow them like the others: `streamwright run --allow-connector files` (or `s3`, `gcs`, `azure_blob`,
 `postgres`). They log one line per file, object or query on `streamwright.network`, and have no SDK loggers.
 
 ## Layout

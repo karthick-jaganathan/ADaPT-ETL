@@ -1,0 +1,30 @@
+description: Amazon Sponsored Products bidded keywords and match types.
+
+# HTTP GET request to list bidded keywords
+requests:
+  - name: raw_sp_keywords
+    http:
+      path: /v2/sp/keywords
+      method: GET
+
+# Transform step: extracts keyword text, match type, status, and bid amount
+transform:
+  mode: page
+  steps:
+    - name: sp_keywords
+      select: |
+        SELECT
+          record->>'keywordId'                                AS keyword_id,
+          record->>'campaignId'                               AS campaign_id,
+          record->>'adGroupId'                                AS ad_group_id,
+          record->>'keywordText'                              AS keyword_text,
+          record->>'matchType'                                AS match_type,
+          record->>'state'                                    AS state,
+          (record->>'bid')::DOUBLE                            AS bid
+        FROM raw_sp_keywords
+
+# Output table and primary key contract
+export:
+  sp_keywords:
+    step: sp_keywords
+    primary_key: [keyword_id]

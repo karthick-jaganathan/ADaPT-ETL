@@ -1,0 +1,28 @@
+description: Amazon Sponsored Products ad groups.
+
+# HTTP GET request to list Sponsored Products ad groups
+requests:
+  - name: raw_sp_ad_groups
+    http:
+      path: /v2/sp/adGroups
+      method: GET
+
+# Transform step: extracts ad group metadata, status, and default bid
+transform:
+  mode: page
+  steps:
+    - name: sp_ad_groups
+      select: |
+        SELECT
+          record->>'adGroupId'                                AS ad_group_id,
+          record->>'campaignId'                               AS campaign_id,
+          record->>'name'                                     AS ad_group_name,
+          record->>'state'                                    AS state,
+          (record->>'defaultBid')::DOUBLE                     AS default_bid
+        FROM raw_sp_ad_groups
+
+# Output table and primary key contract
+export:
+  sp_ad_groups:
+    step: sp_ad_groups
+    primary_key: [ad_group_id]

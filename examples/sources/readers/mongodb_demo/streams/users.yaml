@@ -1,0 +1,29 @@
+description: MongoDB users collection document stream.
+
+requests:
+  - name: raw_users
+    service: database
+    method: find
+    sdk: mongodb
+    arguments:
+      collection: users
+      filter:
+        status: active
+
+transform:
+  mode: page
+  steps:
+    - name: users
+      select: |
+        SELECT
+          record->>'_id'                                      AS user_id,
+          record->>'name'                                     AS name,
+          record->>'email'                                    AS email,
+          record->>'status'                                   AS status,
+          (record->>'created_at')::TIMESTAMPTZ                AS created_at
+        FROM raw_users
+
+export:
+  users:
+    step: users
+    primary_key: [user_id]

@@ -7,9 +7,9 @@ name = "streamwright"
 version = "0.1.5"
 description = "Declarative data connectors — pull from APIs, files and databases with YAML, shape with SQL, write anywhere."
 readme = "README.md"
-license = "Apache-2.0"
+license = {text = "Apache-2.0"}
 authors = [
-    {name = "Karthick Jaganathan"},
+    {name = "Karthick Jaganathan", email = "kjaganathan.sde@gmail.com"},
 ]
 keywords = ["data", "pipeline", "etl", "connector", "singer", "yaml"]
 classifiers = [
@@ -43,6 +43,7 @@ Documentation = "https://streamwright.web.app/docs/"
 [project.scripts]
 # `streamwright run`, `streamwright validate`, `streamwright connectors` - one CLI (see streamwright.core.cli)
 streamwright = "streamwright.core.cli:main"
+
 
 [tool.setuptools]
 # src layout: `streamwright` is a namespace package shared with the connector distributions (streamwright.connectors.*)

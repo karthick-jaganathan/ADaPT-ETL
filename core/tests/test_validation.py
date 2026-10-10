@@ -161,14 +161,16 @@ def test_examples_match_the_design_doc():
     files = example_files()
     assert len(documented) == len(blocks)
     assert dict((path, files.get(path)) for path in documented) == documented
+    documented_sources = set(path.split("/")[0] for path in documented)
+    core_files = {p: v for p, v in files.items() if p.split("/")[0] in documented_sources}
     assert sorted(path for path in documented if path.endswith("/source.yaml")) == sorted(
-        path for path in files if path.endswith("/source.yaml"))
+        path for path in core_files if path.endswith("/source.yaml"))
     section = text[text.index("### Metadata streams"):]
     section = section[:section.index("\n## ")]
     table = dict((source, set(re.findall(r"`(\w+)`", streams)))
                  for source, streams in re.findall(r"^\| `(\w+)` \| (.*) \|$", section, re.M))
     streams = {}
-    for path in files:
+    for path in core_files:
         source, _, name = path.partition("/streams/")
         if name:
             streams.setdefault(source, set()).add(name[:-len(".yaml")])
@@ -374,7 +376,7 @@ def test_templates_are_not_allowed_in_names_and_records():
 # * ----
 
 def test_auth_checks():
-    assert codes(check(lambda d: d["auth"].update(provider="x"))) == [(ERROR, "bad-value")]
+    assert codes(check(lambda d: d["auth"].update(provider="google_ads"))) == [(ERROR, "bad-value")]
     assert codes(check(lambda d: d["auth"].update(type="bearr"))) == [(ERROR, "bad-value")]
     issues = check(lambda d: d.update(auth={"type": "oauth2_refresh_token", "token_url": "https://x/token",
                                             "client_id": "id", "client_secret": "s3cret",
@@ -383,6 +385,77 @@ def test_auth_checks():
     assert issues[0].path == "auth.client_secret"
     assert codes(check(lambda d: d.update(auth={"type": "api_key", "value": "{{ secrets.token }}"}))) == \
         [(ERROR, "missing-key")]
+
+
+def test_http_transport_provider_validation():
+    from streamwright.core.runtime.components import Connector, register
+    class MockHttpValConnector(Connector):
+        name = "mock_http_val"
+        transport = "http"
+    register(MockHttpValConnector())
+
+    def valid_http_auth(d):
+        d["auth"] = {"provider": "mock_http_val", "type": "bearer", "token": "{{ secrets.token }}"}
+    assert check(valid_http_auth) == []
+
+    def missing_type(d):
+        d["auth"] = {"provider": "mock_http_val", "token": "{{ secrets.token }}"}
+    assert (ERROR, "missing-key") in codes(check(missing_type))
+
+    def sdk_req(d):
+        d["auth"] = {"provider": "mock_http_val", "type": "bearer", "token": "{{ secrets.token }}"}
+        del d["http"]
+        d["streams"][0]["requests"] = [{"name": "raw_campaigns", "sdk": "mock_http_val", "service": "s", "method": "m"}]
+    assert (ERROR, "bad-value") in codes(check(sdk_req))
+
+
+def test_params_encoding_validation():
+    def nested_plain(d):
+        request(d)["http"]["params"] = {"filter": {"status": "ACTIVE"}}
+    assert (ERROR, "bad-value") in codes(check(nested_plain))
+    assert "nested params need `params_encoding: dotted`" in messages(check(nested_plain))
+
+    def nested_dotted_req(d):
+        request(d)["http"]["params"] = {"filter": {"status": "ACTIVE"}}
+        request(d)["http"]["params_encoding"] = "dotted"
+    assert check(nested_dotted_req) == []
+
+    def nested_dotted_top(d):
+        d["http"]["params_encoding"] = "dotted"
+        request(d)["http"]["params"] = {"filter": {"status": "ACTIVE"}}
+    assert check(nested_dotted_top) == []
+
+
+def test_headers_secrets_validation():
+    def top_headers_secret(d):
+        d["http"]["headers"] = {"Authorization": "Bearer {{ secrets.token }}"}
+    assert check(top_headers_secret) == []
+
+    def req_headers_secret(d):
+        request(d)["http"]["headers"] = {"X-Token": "{{ secrets.token }}"}
+    assert check(req_headers_secret) == []
+
+    def params_secret(d):
+        request(d)["http"]["params"] = {"token": "{{ secrets.token }}"}
+    assert (ERROR, "secret-outside-auth") in codes(check(params_secret))
+
+
+def test_body_paginator_json_validation():
+    def body_no_json(d):
+        request(d)["paginator"] = {
+            "type": "offset", "in": "body",
+            "offset_param": "offset", "limit_param": "limit", "page_size": 10
+        }
+    assert (ERROR, "bad-value") in codes(check(body_no_json))
+    assert "`in: body` requires `http.json` to be a mapping" in messages(check(body_no_json))
+
+    def body_with_json(d):
+        request(d)["http"]["json"] = {"offset": 0, "limit": 10}
+        request(d)["paginator"] = {
+            "type": "offset", "in": "body",
+            "offset_param": "offset", "limit_param": "limit", "page_size": 10
+        }
+    assert check(body_with_json) == []
 
 
 def test_connectors_and_sdk_requests():

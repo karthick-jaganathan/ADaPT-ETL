@@ -2,16 +2,18 @@
 partitions:
   - {name: account_id, values: "{{ config.account_ids }}"}
 retry: {max_attempts: 3, max_delay: 2m}
+
+# HTTP request to list campaign groups for each ad account
 requests:
-  - name: campaign_groups_list
-    sdk: linkedin_ads
-    service: campaign_groups
-    method: list
-    arguments:
+  - name: raw_campaign_groups
+    http:
+      path: /rest/adCampaignGroups
+      method: GET
       params:
         q: search
         search.account.values[0]: "urn:li:sponsoredAccount:{{ partition.account_id }}"
-        count: 100
+
+# Transform step: extracts campaign group attributes, budget amounts, and schedules
 transform:
   mode: page
   steps:
@@ -27,7 +29,9 @@ transform:
                to_timestamp(nullif(record->>'$.runSchedule.end', '')::BIGINT / 1000)   AS end_time,
                to_timestamp(nullif(record->>'$.changeAuditStamps.created.time', '')::BIGINT / 1000) AS created_at,
                to_timestamp(nullif(record->>'$.changeAuditStamps.lastModified.time', '')::BIGINT / 1000) AS updated_at
-        FROM campaign_groups_list
+        FROM raw_campaign_groups
+
+# Output table and primary key contract
 export:
   campaign_groups:
     step: campaign_groups

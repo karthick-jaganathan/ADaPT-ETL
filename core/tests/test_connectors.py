@@ -445,6 +445,32 @@ def test_query_builders_are_components(fake, capsys):
     assert fake.calls == []
 
 
+def test_allowed_connector_automatically_allows_its_query_builders(fake):
+    source = fake_source()
+    fake.handlers["list"] = lambda arguments: [{"rows": [{"id": 1}]}]
+
+    # 1. Declared via connector.query_builders
+    fake.query_builders = ("fake_query",)
+    assert components.check_source(source, allowed=["fake"]) == []
+    output, clock = MemoryOutput(), FakeClock()
+    SourceRunner(source, {"name": "test"}, {"token": "t"}, output=output, today=TODAY, clock=clock,
+                 sleep=clock.sleep, allowed_connectors=["fake"]).run()
+    assert len(output.records) == 2
+
+    # 2. Declared via builder.connector
+    fake.query_builders = ()
+    builder = components.load("fake_query", kind="query builder")
+    builder.connector = "fake"
+    try:
+        assert components.check_source(source, allowed=["fake"]) == []
+        output2 = MemoryOutput()
+        SourceRunner(source, {"name": "test"}, {"token": "t"}, output=output2, today=TODAY, clock=clock,
+                     sleep=clock.sleep, allowed_connectors=["fake"]).run()
+        assert len(output2.records) == 2
+    finally:
+        builder.connector = None
+
+
 def test_runs_check_every_stream_before_the_first_request(fake):
     """A stream that cannot run stops the run before any stream calls the API (also from Python)."""
     fake.handlers["list"] = lambda arguments: [{"rows": [{"id": 1}]}]

@@ -4,15 +4,18 @@
 partitions:
   - {name: account_id, values: "{{ config.account_ids }}"}
 retry: {max_attempts: 3, max_delay: 2m}
+
+# HTTP request to list ads for each account
 requests:
-  - name: ads_list
-    sdk: openai_ads
-    service: ads
-    method: list
-    arguments:
+  - name: raw_ads
+    http:
+      path: /v1/ads
+      method: GET
       params:
         ad_account_id: "{{ partition.account_id }}"
         limit: 500
+
+# Transform step: extracts ad fields and nested creative properties
 transform:
   mode: page
   steps:
@@ -28,7 +31,8 @@ transform:
                record->>'review_status'                                 AS review_status,
                to_timestamp((record->>'created_at')::BIGINT)            AS created_at,
                to_timestamp((record->>'updated_at')::BIGINT)            AS updated_at
-        FROM ads_list
+        FROM raw_ads
+# Output table and primary key contract
 export:
   ads:
     step: ads

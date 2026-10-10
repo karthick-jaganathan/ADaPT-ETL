@@ -1,13 +1,16 @@
 # Ad accounts available to the authenticated advertiser.
 retry: {max_attempts: 3, max_delay: 2m}
+
+# HTTP request to list ad accounts (inherits base_url, paginator, records from source.yaml)
 requests:
-  - name: ad_accounts_list
-    sdk: openai_ads
-    service: ad_accounts
-    method: list
-    arguments:
+  - name: raw_ad_accounts
+    http:
+      path: /v1/ad_accounts
+      method: GET
       params:
         limit: 500
+
+# Transform step: extracts fields from raw JSON records and normalizes column names
 transform:
   mode: page
   steps:
@@ -19,7 +22,9 @@ transform:
                record->>'currency_code'                                 AS currency_code,
                record->>'timezone'                                      AS timezone,
                record->>'url'                                           AS website_url
-        FROM ad_accounts_list
+        FROM raw_ad_accounts
+
+# Output table and primary key contract
 export:
   ad_accounts:
     step: ad_accounts

@@ -14,49 +14,35 @@
 # * limitations under the License.
 # **************************************************************************/
 
+import datetime
+from urllib.parse import parse_qs, urlparse
 import pytest
 import responses
-from streamwright.core.runtime.testing import MemoryOutput, page_stream
-from streamwright.core.runtime.components import ConnectorError
-from streamwright.core.engine.runner import SourceRunner
-from streamwright.connectors.linkedin_ads.connector import LinkedInAdsConnector
 
-def run(request, auth):
-    auth = dict(auth, provider="linkedin_ads")
-    source = {
-        "kind": "source",
-        "name": "test_source",
-        "auth": auth,
-        "streams": [page_stream("test_stream", request, "SELECT * FROM records")]
-    }
-    output = MemoryOutput()
-    SourceRunner(source, {}, auth, output=output).run()
-    return output
+from streamwright.core.engine.runner import SourceRunner, SourceError
+from streamwright.core.config.loader import load_source
+from streamwright.core.runtime.testing import MemoryOutput
+from streamwright.core.config.inputs import resolve_inputs
 
-def test_missing_auth():
-    connector = LinkedInAdsConnector()
-    with pytest.raises(ConnectorError, match="auth 'access_token' is empty"):
-        connector.connect({}, None)
-    with pytest.raises(ConnectorError, match="auth 'access_token' is empty"):
-        connector.connect({"access_token": "   "}, None)
 
-def test_headers_and_version():
-    class DummyContext:
-        def secret(self, val):
-            pass
-        def redact(self, text):
-            return text
+def _load_linkedin_source(stream_name=None):
+    source = load_source("examples/sources/ads/linkedin_ads")
+    if stream_name:
+        source["streams"] = [s for s in source["streams"] if s["name"] == stream_name]
+    return source
 
-    connector = LinkedInAdsConnector()
-    # Default version
-    session = connector.connect({"access_token": "tok_123"}, DummyContext())
-    assert session.headers["Authorization"] == "Bearer tok_123"
-    assert session.headers["LinkedIn-Version"] == "202401"
-    assert session.headers["X-Restli-Protocol-Version"] == "2.0.0"
 
-    # Custom version
-    session_custom = connector.connect({"access_token": "tok_123", "api_version": "202501"}, DummyContext())
-    assert session_custom.headers["LinkedIn-Version"] == "202501"
+def _records(output, table_name):
+    rows = []
+    for item in output.records:
+        if isinstance(item, tuple) and len(item) == 2:
+            tbl, row = item
+            if tbl == table_name:
+                rows.append(row)
+        elif isinstance(item, dict):
+            rows.append(item)
+    return rows
+
 
 @responses.activate
 def test_ad_accounts_list():
@@ -64,179 +50,238 @@ def test_ad_accounts_list():
         responses.GET,
         "https://api.linkedin.com/rest/adAccounts",
         json={
-            "elements": [{"id": 123456, "name": "Test Ad Account", "currency": "USD"}],
-            "paging": {"start": 0, "count": 100, "total": 1}
+            "elements": [{
+                "id": 123456,
+                "name": "Test Ad Account",
+                "status": "ACTIVE",
+                "type": "BUSINESS",
+                "currency": "USD",
+                "reference": "urn:li:organization:789",
+                "changeAuditStamps": {
+                    "created": {"time": 1700000000000},
+                    "lastModified": {"time": 1700000000000},
+                },
+            }],
+            "paging": {"start": 0, "count": 100, "total": 1},
         },
-        status=200
+        match=[responses.matchers.query_param_matcher({"q": "search", "start": "0", "count": "100"})],
+        status=200,
     )
-    
-    output = run({"service": "ad_accounts", "method": "list", "sdk": "linkedin_ads"}, {"access_token": "tok_test"})
-    assert len(output.records) == 1
-    assert output.records[0][1]["record"] == {"id": 123456, "name": "Test Ad Account", "currency": "USD"}
+
+    source = _load_linkedin_source("ad_accounts")
+    secrets = {"linkedin_access_token": "tok_test_123"}
+    config = {"account_ids": ["123456"]}
+    output = MemoryOutput()
+
+    _runner(source, config, secrets, output=output).run()
+
+    assert len(responses.calls) == 1
+    call = responses.calls[0]
+    assert call.request.headers["Authorization"] == "Bearer tok_test_123"
+    assert call.request.headers["LinkedIn-Version"] == "202401"
+    assert call.request.headers["X-Restli-Protocol-Version"] == "2.0.0"
+
+    table = _records(output, "ad_accounts")
+    assert len(table) == 1
+    assert table[0]["account_id"] == 123456
+    assert table[0]["account_name"] == "Test Ad Account"
+    assert table[0]["currency_code"] == "USD"
+
 
 @responses.activate
 def test_campaigns_offset_pagination():
+    # Page 1
     responses.add(
         responses.GET,
         "https://api.linkedin.com/rest/adCampaigns",
         json={
-            "elements": [{"id": 101, "name": "Campaign 1"}],
-            "paging": {"start": 0, "count": 1, "total": 2}
+            "elements": [{
+                "id": 101,
+                "name": "Campaign 1",
+                "status": "ACTIVE",
+                "type": "SPONSORED_UPDATES",
+                "costType": "CPC",
+                "campaignGroup": "urn:li:sponsoredCampaignGroup:999",
+                "dailyBudget": {"amount": 100.0, "currencyCode": "USD"},
+                "unitCost": {"amount": 2.5, "currencyCode": "USD"},
+                "runSchedule": {"start": 1700000000000, "end": 1700086400000},
+                "changeAuditStamps": {
+                    "created": {"time": 1700000000000},
+                    "lastModified": {"time": 1700000000000},
+                },
+            }],
+            "paging": {"start": 0, "count": 100, "total": 101},
         },
-        match=[responses.matchers.query_param_matcher({"start": "0", "count": "1"})],
-        status=200
+        match=[responses.matchers.query_param_matcher({
+            "q": "search",
+            "search.account.values[0]": "urn:li:sponsoredAccount:123456",
+            "start": "0",
+            "count": "100",
+        })],
+        status=200,
     )
+    # Page 2
     responses.add(
         responses.GET,
         "https://api.linkedin.com/rest/adCampaigns",
         json={
-            "elements": [{"id": 102, "name": "Campaign 2"}],
-            "paging": {"start": 1, "count": 1, "total": 2}
+            "elements": [{
+                "id": 102,
+                "name": "Campaign 2",
+                "status": "ACTIVE",
+                "type": "SPONSORED_UPDATES",
+                "costType": "CPC",
+                "campaignGroup": "urn:li:sponsoredCampaignGroup:999",
+                "dailyBudget": {"amount": 200.0, "currencyCode": "USD"},
+                "unitCost": {"amount": 3.0, "currencyCode": "USD"},
+                "runSchedule": {"start": 1700000000000, "end": 1700086400000},
+                "changeAuditStamps": {
+                    "created": {"time": 1700000000000},
+                    "lastModified": {"time": 1700000000000},
+                },
+            }],
+            "paging": {"start": 1, "count": 100, "total": 2},
         },
-        match=[responses.matchers.query_param_matcher({"start": "1", "count": "1"})],
-        status=200
+        match=[responses.matchers.query_param_matcher({
+            "q": "search",
+            "search.account.values[0]": "urn:li:sponsoredAccount:123456",
+            "start": "1",
+            "count": "100",
+        })],
+        status=200,
     )
-    
-    output = run({
-        "service": "campaigns",
-        "method": "list",
-        "sdk": "linkedin_ads",
-        "arguments": {"params": {"count": 1}}
-    }, {"access_token": "tok_test"})
-    
-    assert len(output.records) == 2
-    assert output.records[0][1]["record"] == {"id": 101, "name": "Campaign 1"}
-    assert output.records[1][1]["record"] == {"id": 102, "name": "Campaign 2"}
+
+    source = _load_linkedin_source("campaigns")
+    secrets = {"linkedin_access_token": "tok_test_123"}
+    config = {"account_ids": ["123456"]}
+    output = MemoryOutput()
+
+    _runner(source, config, secrets, output=output).run()
+
+    assert len(responses.calls) == 2
+    table = _records(output, "campaigns")
+    assert len(table) == 2
+    assert table[0]["campaign_id"] == 101
+    assert table[1]["campaign_id"] == 102
+
 
 @responses.activate
-def test_get_campaign():
+def test_custom_api_version_header():
     responses.add(
         responses.GET,
-        "https://api.linkedin.com/rest/adCampaigns/101",
-        json={"id": 101, "name": "Single Campaign", "status": "ACTIVE"},
-        status=200
+        "https://api.linkedin.com/rest/adAccounts",
+        json={
+            "elements": [{"id": 1, "name": "A"}],
+            "paging": {"start": 0, "count": 100, "total": 1},
+        },
+        status=200,
     )
-    
-    output = run({
-        "service": "campaigns",
-        "method": "get",
-        "sdk": "linkedin_ads",
-        "arguments": {"id": "101"}
-    }, {"access_token": "tok_test"})
-    
-    assert len(output.records) == 1
-    assert output.records[0][1]["record"] == {"id": 101, "name": "Single Campaign", "status": "ACTIVE"}
+
+    source = _load_linkedin_source("ad_accounts")
+    secrets = {"linkedin_access_token": "tok_test_123"}
+    config = {"account_ids": ["1"], "api_version": "202501"}
+    output = MemoryOutput()
+
+    _runner(source, config, secrets, output=output).run()
+
+    assert len(responses.calls) == 1
+    assert responses.calls[0].request.headers["LinkedIn-Version"] == "202501"
+
 
 @responses.activate
-def test_ad_analytics():
+def test_campaign_performance_dotted_params():
     responses.add(
         responses.GET,
         "https://api.linkedin.com/rest/adAnalytics",
         json={
-            "elements": [{"pivotValue": "urn:li:sponsoredCampaign:101", "impressions": 1500, "clicks": 45, "costInUsd": "22.50"}],
-            "paging": {"start": 0, "count": 100, "total": 1}
+            "elements": [{
+                "pivotValue": "urn:li:sponsoredCampaign:101",
+                "dateRange": {"start": {"year": 2026, "month": 1, "day": 1}},
+                "impressions": 1500,
+                "clicks": 45,
+                "costInUsd": 22.50,
+                "externalWebsiteConversions": 3,
+                "oneClickLeads": 1,
+            }],
+            "paging": {"start": 0, "count": 100, "total": 1},
         },
-        status=200
+        match=[responses.matchers.query_param_matcher({
+            "q": "analytics",
+            "pivot": "CAMPAIGN",
+            "timeGranularity": "DAILY",
+            "accounts[0]": "urn:li:sponsoredAccount:123456",
+            "dateRange.start.year": "2026",
+            "dateRange.start.month": "1",
+            "dateRange.start.day": "1",
+            "dateRange.end.year": "2026",
+            "dateRange.end.month": "1",
+            "dateRange.end.day": "1",
+            "start": "0",
+            "count": "100",
+        })],
+        status=200,
     )
-    
-    output = run({
-        "service": "ad_analytics",
-        "method": "analytics",
-        "sdk": "linkedin_ads",
-        "arguments": {
-            "params": {
-                "q": "analytics",
-                "pivot": "CAMPAIGN",
-                "dateRange.start.day": 1,
-                "dateRange.start.month": 10,
-                "dateRange.start.year": 2026,
-            }
-        }
-    }, {"access_token": "tok_test"})
-    
-    assert len(output.records) == 1
-    assert output.records[0][1]["record"]["impressions"] == 1500
-    assert output.records[0][1]["record"]["clicks"] == 45
+
+    source = _load_linkedin_source("campaign_performance")
+    secrets = {"linkedin_access_token": "tok_test_123"}
+    config = {"account_ids": ["123456"], "start_date": "2026-01-01"}
+    output = MemoryOutput()
+
+    _runner(source, config, secrets, output=output, today=datetime.date(2026, 1, 1)).run()
+
+    assert len(responses.calls) == 1
+    table = _records(output, "campaign_performance")
+    assert len(table) == 1
+    row = table[0]
+    assert row["campaign_id"] == 101
+    assert row["impressions"] == 1500
+    assert row["clicks"] == 45
+    assert row["spend"] == 22.50
+    assert row["cpc"] == 0.50
+    assert row["conversions"] == 3
+    assert row["leads"] == 1
+
 
 @responses.activate
 def test_rate_limit_retry():
     responses.add(
         responses.GET,
-        "https://api.linkedin.com/rest/adCreatives",
+        "https://api.linkedin.com/rest/adAccounts",
         json={"message": "Too Many Requests", "serviceErrorCode": 101},
-        headers={"Retry-After": "1"},
-        status=429
+        headers={"Retry-After": "0"},
+        status=429,
     )
     responses.add(
         responses.GET,
-        "https://api.linkedin.com/rest/adCreatives",
-        json={"elements": [{"id": 501, "name": "Creative 1"}]},
-        status=200
+        "https://api.linkedin.com/rest/adAccounts",
+        json={
+            "elements": [{"id": 1, "name": "Retried Account"}],
+            "paging": {"start": 0, "count": 100, "total": 1},
+        },
+        status=200,
     )
-    
-    output = run({"service": "creatives", "method": "list", "sdk": "linkedin_ads"}, {"access_token": "tok_test"})
-    assert len(output.records) == 1
-    assert output.records[0][1]["record"] == {"id": 501, "name": "Creative 1"}
 
-def test_validation():
-    connector = LinkedInAdsConnector()
-    assert connector.check_request({"service": "unknown", "method": "list"}) != []
-    assert connector.check_request({"service": "campaigns", "method": "unknown"}) != []
-    assert connector.check_request({"service": "campaigns", "method": "get"}) != []
-    assert connector.check_request({"service": "campaigns", "method": "get", "arguments": {"id": ""}}) != []
-    assert connector.check_request({"service": "campaigns", "method": "get", "arguments": {"id": None}}) != []
-    assert connector.check_request({"service": "campaigns", "method": "get", "arguments": {"id": "101"}}) == []
-    assert connector.check_request({"service": "campaigns", "method": "analytics"}) != []
-    assert connector.check_request({"service": "ad_analytics", "method": "analytics"}) == []
-    assert connector.check_request({"service": "campaigns", "method": "list", "arguments": "not-a-dict"}) != []
-    assert connector.check_request({"service": "campaigns", "method": "list", "arguments": {"params": "not-a-dict"}}) != []
+    source = _load_linkedin_source("ad_accounts")
+    secrets = {"linkedin_access_token": "tok_test_123"}
+    config = {"account_ids": ["1"]}
+    output = MemoryOutput()
 
-def test_request_validation_error():
-    connector = LinkedInAdsConnector()
-    with pytest.raises(ConnectorError, match="service 'unknown' is not supported"):
-        list(connector.request(None, {"service": "unknown", "method": "list"}, None))
+    _runner(source, config, secrets, output=output).run()
 
-def test_error_translation():
-    import requests
-    connector = LinkedInAdsConnector()
-    
-    # Connection & timeout errors
-    conn_err = connector.error(requests.ConnectionError("network reset"))
-    assert conn_err.retryable is True
-    
-    timeout_err = connector.error(requests.Timeout("gateway timeout"))
-    assert timeout_err.retryable is True
-    
-    # 429 with Retry-After header
-    resp_429 = requests.Response()
-    resp_429.status_code = 429
-    resp_429.headers["Retry-After"] = "60"
-    resp_429._content = b'{"message": "Rate limit exceeded"}'
-    err_429 = connector.error(requests.HTTPError("Rate limit", response=resp_429))
-    assert err_429.code == 429
-    assert err_429.retryable is True
-    assert err_429.retry_after == 60
-    assert "Rate limit exceeded" in str(err_429)
-    
-    # 500 server error
-    resp_500 = requests.Response()
-    resp_500.status_code = 500
-    resp_500._content = b'{"message": "Internal error"}'
-    err_500 = connector.error(requests.HTTPError("Server error", response=resp_500))
-    assert err_500.code == 500
-    assert err_500.retryable is True
-    
-    # 400 bad request (non-retryable)
-    resp_400 = requests.Response()
-    resp_400.status_code = 400
-    resp_400._content = b'{"message": "Bad request"}'
-    err_400 = connector.error(requests.HTTPError("Client error", response=resp_400))
-    assert err_400.code == 400
-    assert err_400.retryable is False
-    
-    # HTTPError with no response attached
-    err_no_resp = connector.error(requests.HTTPError("Detached error"))
-    assert err_no_resp.retryable is False
-    
-    # Non-requests exception
-    assert connector.error(KeyError("unrelated")) is None
+    assert len(responses.calls) == 2
+    table = _records(output, "ad_accounts")
+    assert len(table) == 1
+    assert table[0]["account_name"] == "Retried Account"
+
+
+def test_missing_auth():
+    source = _load_linkedin_source("ad_accounts")
+    with pytest.raises(SourceError, match="token"):
+        _runner(source, {"account_ids": ["1"]}, {}, output=MemoryOutput()).run()
+
+
+def _runner(source, config, secrets, **kwargs):
+    """A SourceRunner with the config defaults applied, as `streamwright run` resolves its inputs."""
+    spec = source.get("spec") or {}
+    config = resolve_inputs(spec.get("config"), config, "config")
+    return SourceRunner(source, config, secrets, **kwargs)

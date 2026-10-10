@@ -130,7 +130,10 @@ class SourceChecker(_Checker):
         self.used_inputs = set()
         self.auth_provider = None
         self.auth_type = None
+        self.auth_transport = None
         self.base_url = None
+        self.http_paginator = None
+        self.params_encoding = "plain"
         self.streams = []        # the source's streams
         self.stream_names = {}   # lowercase stream name -> index of the first stream with it
         self.export_owners = {}  # lowercase export name -> (export name, index of its stream)
@@ -261,7 +264,7 @@ class SourceChecker(_Checker):
             return
         if scope not in scopes:
             if scope == "secrets":
-                self.error("secret-outside-auth", path, "%s: secrets can only be used inside `auth`" % shown,
+                self.error("secret-outside-auth", path, "%s: secrets can only be used inside `auth` or `http.headers`" % shown,
                            container, key)
             elif scope == "window" and stream is not None:
                 self.error("unavailable-reference", path, "%s needs `incremental` on stream %r" % (
@@ -386,28 +389,48 @@ class SourceChecker(_Checker):
             return
         self.auth_type = auth.get("type")
         if "provider" in auth:
-            if "type" in auth:
-                self.error("bad-value", path, "use either `provider` (a connector) or `type` (built-in), not both",
-                           data, "auth")
             provider = auth["provider"]
             self.check_name(provider, path + ("provider",), auth, "provider")
             if isinstance(provider, str):
                 self.auth_provider = provider
                 self.check_connector(provider, path + ("provider",), auth, "provider")
+                connector = None
+                try:
+                    from streamwright.core.runtime import components
+                    connector = components.load(provider, self.options.allowed_connectors)
+                except Exception:
+                    pass
+                if connector is not None:
+                    self.auth_transport = getattr(connector, "transport", "sdk")
+                    if self.auth_transport == "http":
+                        if "type" not in auth:
+                            self.error("missing-key", path, "`auth` for http connector %r needs `type` (one of: %s)" %
+                                       (provider, ", ".join(spec.AUTH_TYPES)), data, "auth")
+                    else:
+                        if "type" in auth:
+                            self.error("bad-value", path, "connector %r is an sdk connector; do not set `type`" % provider,
+                                       data, "auth")
+                else:
+                    self.auth_transport = None
         elif "type" not in auth:
             self.error("missing-key", path, "`auth` needs `type` (one of: %s) or a connector `provider`" %
                        ", ".join(spec.AUTH_TYPES), data, "auth")
-        elif self.check_choice(auth["type"], spec.AUTH_TYPES, path + ("type",), auth, "type", "auth type"):
-            keys = spec.AUTH_TYPES[auth["type"]]
-            self.require_keys(auth, keys["required"], path, "`auth: %s`" % auth["type"])
-            self.unknown_keys(auth, ("type",) + keys["required"] + keys["optional"], path, ERROR,
-                              "`auth: %s` does not support it" % auth["type"])
-            self.check_strings(auth, keys["required"], path, "text or a reference")
-            if "in" in auth:
-                self.check_choice(auth["in"], spec.API_KEY_LOCATIONS, path + ("in",), auth, "in", "location")
-            if "scopes" in auth:
-                self._expect(isinstance(auth["scopes"], list), "a list", auth["scopes"], path + ("scopes",),
-                             auth, "scopes")
+
+        if "type" in auth:
+            if self.check_choice(auth["type"], spec.AUTH_TYPES, path + ("type",), auth, "type", "auth type"):
+                keys = spec.AUTH_TYPES[auth["type"]]
+                self.require_keys(auth, keys["required"], path, "`auth: %s`" % auth["type"])
+                allowed = ("type",) + keys["required"] + keys["optional"]
+                if "provider" in auth:
+                    allowed = ("provider",) + allowed
+                self.unknown_keys(auth, allowed, path, ERROR,
+                                  "`auth: %s` does not support it" % auth["type"])
+                self.check_strings(auth, keys["required"], path, "text or a reference")
+                if "in" in auth:
+                    self.check_choice(auth["in"], spec.API_KEY_LOCATIONS, path + ("in",), auth, "in", "location")
+                if "scopes" in auth:
+                    self._expect(isinstance(auth["scopes"], list), "a list", auth["scopes"], path + ("scopes",),
+                                 auth, "scopes")
         self.check_templates(auth, path, data, "auth", dict(self.scopes(), secrets=set(self.inputs["secrets"])))
         for key, value in auth.items():
             lowered = str(key).lower()
@@ -442,8 +465,27 @@ class SourceChecker(_Checker):
                 self.base_url = url
         if "headers" in http:
             self.check_headers(http["headers"], path + ("headers",), http)
+            headers_scopes = dict(self.scopes(), secrets=set(self.inputs["secrets"]))
+            self.check_templates(http["headers"], path + ("headers",), http, "headers", headers_scopes)
+        if "paginator" in http:
+            self.http_paginator = http["paginator"]
+            self.check_paginator(http["paginator"], path + ("paginator",), http, None)
+        if "records" in http:
+            records = self.check_mapping(http["records"], spec.RECORDS_KEYS, path + ("records",), http,
+                                         "records", "`records`")
+            if records is not None:
+                for key in spec.RECORDS_KEYS:
+                    if key in records:
+                        self._expect(isinstance(records[key], str), "a dotted path", records[key],
+                                     path + ("records", key), records, key)
+                self.check_templates(records, path + ("records",), http, "records", {})
+        if "params_encoding" in http:
+            self.check_choice(http["params_encoding"], spec.PARAMS_ENCODING_TYPES,
+                              path + ("params_encoding",), http, "params_encoding", "encoding")
+            self.params_encoding = http["params_encoding"]
         self.check_limits(http, path)
-        self.check_templates(http, path, data, "http", self.scopes())
+        non_header_http = dict((k, v) for k, v in http.items() if k not in ("headers", "paginator", "records"))
+        self.check_templates(non_header_http, path, data, "http", self.scopes())
 
     def check_headers(self, headers, path, container):
         if self._expect(isinstance(headers, dict), "a mapping of header names to values", headers, path,
@@ -1065,15 +1107,37 @@ class SourceChecker(_Checker):
             self.check_choice(http["method"], spec.HTTP_METHODS, path + ("method",), http, "method", "HTTP method")
         if "headers" in http:
             self.check_headers(http["headers"], path + ("headers",), http)
+            headers_scopes = dict(scopes, secrets=set(self.inputs["secrets"]))
+            self.check_templates(http["headers"], path + ("headers",), http, "headers", headers_scopes, info)
         for name in ("params",):
             if name in http:
                 self._expect(isinstance(http[name], dict), "a mapping", http[name], path + (name,), http, name)
-        self.check_templates(http, path, container, "http", scopes, info)
+        if "params_encoding" in http:
+            self.check_choice(http["params_encoding"], spec.PARAMS_ENCODING_TYPES,
+                              path + ("params_encoding",), http, "params_encoding", "encoding")
+        encoding = http.get("params_encoding") or getattr(self, "params_encoding", "plain")
+        if encoding == "plain" and "params" in http and isinstance(http["params"], dict):
+            for pkey, pval in http["params"].items():
+                if isinstance(pval, (dict, list)):
+                    self.error("bad-value", path + ("params", pkey),
+                               "nested params need `params_encoding: dotted`", http, "params")
+                    break
+        effective_paginator = container.get("paginator") if isinstance(container, dict) else None
+        if effective_paginator is None:
+            effective_paginator = getattr(self, "http_paginator", None)
+        if effective_paginator and effective_paginator.get("in") == "body":
+            if not isinstance(http.get("json"), dict):
+                self.error("bad-value", path, "`in: body` paginator requires `json` to be a mapping", container, "http")
+        non_header_http = dict((k, v) for k, v in http.items() if k != "headers")
+        self.check_templates(non_header_http, path, container, "http", scopes, info)
 
     def check_sdk_request(self, request, path, scopes, info, extra_allowed=()):
         self.unknown_keys(request, spec.SDK_REQUEST_KEYS + tuple(extra_allowed), path, ERROR,
                           "sdk requests do not support it")
         self.require_keys(request, ("method",), path, "an sdk request")
+        if getattr(self, "auth_transport", "sdk") == "http":
+            self.error("bad-value", path, "%s is a REST API connector: use an http request (http: {path, method, ...}), not sdk" % self.auth_provider,
+                       request, "sdk" if "sdk" in request else "method")
         sdk = request.get("sdk")
         if self._expect(isinstance(sdk, str), "a connector name", sdk, path + ("sdk",), request, "sdk"):
             self.check_connector(sdk, path + ("sdk",), request, "sdk")
@@ -1114,7 +1178,7 @@ class SourceChecker(_Checker):
         for part in ("submit", "results"):
             if isinstance(job.get(part), dict) and "http" in job[part]:
                 self.error("bad-value", path + (part,), "`%s` must be an sdk request: async jobs run through a "
-                           "connector (its `poll` calls the same service)" % part, job, part)
+                            "connector (its `poll` calls the same service)" % part, job, part)
         if "submit" in job and not (isinstance(job["submit"], dict) and "http" in job["submit"]):
             self.check_job_request(job["submit"], path + ("submit",), job, "submit", info, base)
         if "poll" in job:
@@ -1168,7 +1232,21 @@ class SourceChecker(_Checker):
         self.unknown_keys(paginator, ("type",) + keys["required"] + keys["optional"], path, ERROR,
                           "`paginator: %s` does not support it" % kind)
         self.check_strings(paginator, ("offset_param", "limit_param", "page_param", "size_param", "token_path",
-                                       "param", "next_url_path"), path, "a name")
+                                       "param", "next_url_path", "total_path", "total_pages_path", "has_more_path"),
+                           path, "a name or dotted path")
+        for key in ("offset_param", "limit_param", "page_param", "size_param", "param"):
+            if key in paginator:
+                val = paginator[key]
+                if not (isinstance(val, str) and val.strip() != ""):
+                    self.error("bad-value", path + (key,), "%r must be a non-empty string" % key, stream, "paginator")
+        if "in" in paginator:
+            self.check_choice(paginator["in"], spec.PAGINATOR_IN_LOCATIONS, path + ("in",), paginator, "in", "location")
+        if paginator.get("in") == "body":
+            if isinstance(stream, dict) and "http" in stream:
+                http_req = stream["http"]
+                if isinstance(http_req, dict) and not isinstance(http_req.get("json"), dict):
+                    self.error("bad-value", path + ("in",), "`in: body` requires `http.json` to be a mapping",
+                               stream, "paginator")
         if kind == "cursor":
             token = "token_path" in paginator or "param" in paginator
             if token == ("next_url_path" in paginator) or (token and not ("token_path" in paginator and
@@ -1181,7 +1259,7 @@ class SourceChecker(_Checker):
                 minimum = 1 if name == "page_size" else 0
                 self._expect(isinstance(number, int) and not isinstance(number, bool) and number >= minimum,
                              "a whole number >= %d" % minimum, number, path + (name,), paginator, name)
-        if kind != "none" and info.request_kind in ("sdk", "async_job"):
+        if kind != "none" and info is not None and getattr(info, "request_kind", None) in ("sdk", "async_job"):
             self.error("bad-value", path + ("type",), "%s requests are paginated by the connector; remove `paginator` "
                        "or use `type: none`" % info.request_kind, paginator, "type")
         self.check_templates(paginator, path, stream, "paginator", self.scopes(info, "response"), info)

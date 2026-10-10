@@ -25,7 +25,7 @@ import json
 import logging
 import threading
 import time
-from urllib.parse import quote, quote_plus, urljoin
+from urllib.parse import quote, quote_plus, urljoin, urlsplit
 
 import requests
 
@@ -35,14 +35,67 @@ from streamwright.core.runtime.templates import get_path, to_text
 
 
 __all__ = ["HttpError", "Redactor", "Authenticator", "RateLimiter", "RetryPolicy", "HttpClient", "paginate",
-           "DEFAULT_RETRY"]
+           "DEFAULT_RETRY", "merge_headers"]
 
 LOG = logging.getLogger("streamwright.source")
 # the characters of a response body an error message shows
 ERROR_BODY_CHARS = 300
 
+# the redirects one request follows (on its own origin only)
+MAX_REDIRECTS = 10
+REDIRECT_CODES = (301, 302, 303, 307, 308)
+_DEFAULT_PORTS = {"http": 80, "https": 443}
+
+
+def _origin(url):
+    parts = urlsplit(url)
+    scheme = (parts.scheme or "").lower()
+    try:
+        port = parts.port
+    except ValueError:
+        port = None
+    return scheme, (parts.hostname or "").lower(), port or _DEFAULT_PORTS.get(scheme)
+
+
+def same_origin(trusted, url):
+    """
+    True when `url` is on the origin (scheme, host, port) of `trusted`: next-page links and redirects that leave it
+    are not sent the source's credentials. An http -> https upgrade on the same host (default ports) is allowed; a
+    downgrade to http is not.
+    """
+    scheme, host, port = _origin(trusted)
+    other_scheme, other_host, other_port = _origin(url)
+    if not host or host != other_host:
+        return False
+    if (scheme, port) == (other_scheme, other_port):
+        return True
+    return (scheme, port, other_scheme, other_port) == ("http", 80, "https", 443)
+
+
 DEFAULT_RETRY = {"codes": [429, 500, 502, 503, 504], "max_attempts": 3, "backoff": "exponential", "max_delay": "60s"}
 TIMEOUT_SECONDS = 60
+
+
+def merge_headers(source_headers, request_headers):
+    """
+    Merges source and request headers. Request headers override source headers of the same name,
+    case-insensitively. Headers with empty string or None values are omitted.
+    """
+    merged = {}
+    key_map = {}  # lowercase -> actual key in merged
+    for k, v in (source_headers or {}).items():
+        if v not in ("", None):
+            merged[k] = v
+            key_map[k.lower()] = k
+    for k, v in (request_headers or {}).items():
+        lower = k.lower()
+        if lower in key_map:
+            old_k = key_map[lower]
+            del merged[old_k]
+        if v not in ("", None):
+            merged[k] = v
+            key_map[lower] = k
+    return merged
 
 
 class HttpError(Exception):
@@ -103,7 +156,10 @@ class Authenticator(object):
     def apply(self, headers, params):
         auth = self.auth
         if self.kind == "bearer":
-            headers["Authorization"] = "Bearer %s" % auth["token"]
+            token = auth.get("token")
+            if not token:
+                raise HttpError("bearer auth token is empty or missing")
+            headers["Authorization"] = "Bearer %s" % token
         elif self.kind == "api_key":
             if auth.get("in", "header") == "query":
                 params[auth["name"]] = auth["value"]
@@ -128,7 +184,10 @@ class Authenticator(object):
         if self._token and self.clock() < self._expires_at:
             return self._token
         auth = self.auth
-        data = {"grant_type": "refresh_token", "refresh_token": auth["refresh_token"],
+        refresh_token = auth.get("refresh_token")
+        if not refresh_token:
+            raise HttpError("oauth2 refresh_token is empty or missing")
+        data = {"grant_type": "refresh_token", "refresh_token": refresh_token,
                 "client_id": auth["client_id"], "client_secret": auth["client_secret"]}
         if auth.get("scopes"):
             data["scope"] = " ".join(auth["scopes"])
@@ -248,6 +307,7 @@ class HttpClient(object):
         self.metrics = metrics
         self.clock = clock
         self.last_url = None
+        self.last_headers = None
 
     def url(self, path):
         if path.startswith(("http://", "https://")):
@@ -257,8 +317,16 @@ class HttpClient(object):
         return self.base_url.rstrip("/") + "/" + path.lstrip("/")
 
     def follow(self, link):
-        """Resolves a next-page link against the previous request's URL."""
-        return urljoin(self.last_url or self.url(""), link)
+        """
+        Resolves a next-page link against the previous request's URL. The link comes from a response, so it must stay
+        on that request's origin: the next request carries the source's credentials and headers.
+        """
+        current = self.last_url or self.url("")
+        url = urljoin(current, str(link))
+        if not same_origin(current, url):
+            raise HttpError(self.redact("the next-page link %s leaves %s; not sending the source's credentials to "
+                                        "another origin" % (logs.mask_url(url), logs.mask_url(current))))
+        return url
 
     def _sent(self, fields, attempt):
         if self.metrics is not None:
@@ -283,21 +351,22 @@ class HttpClient(object):
         url = self.url(path)
         refreshed = False
         attempt = 0
+        redirects = 0
         while True:
             attempt += 1
             if self.rate_limiter is not None:
                 self.rate_limiter.wait()
-            request_headers = dict(self.headers, **(headers or {}))
+            request_headers = merge_headers(self.headers, headers)
             request_params = dict(params or {})
             self.authenticator.apply(request_headers, request_params)
-            request_headers = dict((name, to_text(value)) for name, value in request_headers.items())
+            request_headers = dict((name, to_text(value)) for name, value in request_headers.items() if value not in ("", None))
             self._sent(fields, attempt)
             started = self.clock()
             response = None
             try:
                 response = self.session.request(method, url, params=request_params or None, headers=request_headers,
                                                 json=_jsonable(json_body) if json_body is not None else None,
-                                                timeout=TIMEOUT_SECONDS)
+                                                timeout=TIMEOUT_SECONDS, allow_redirects=False)
             except (requests.ConnectionError, requests.Timeout, requests.exceptions.ChunkedEncodingError,
                     requests.exceptions.ContentDecodingError) as exc:
                 self._logged(method, url, request_params, request_headers, None, exc, started, attempt, fields)
@@ -312,6 +381,26 @@ class HttpClient(object):
                     refreshed = True
                     attempt -= 1
                     continue
+                location = response.headers.get("Location") if status in REDIRECT_CODES else None
+                if location:
+                    # followed here, not by requests: requests drops only `Authorization` on another host, not the
+                    # source's other (secret) headers or an api key
+                    target = urljoin(url, location)
+                    if not same_origin(url, target):
+                        raise HttpError(self.redact("%s %s redirects to %s; not sending the source's credentials to "
+                                                    "another origin" % (method, logs.mask_url(url),
+                                                                        logs.mask_url(target))), status)
+                    redirects += 1
+                    if redirects > MAX_REDIRECTS:
+                        raise HttpError(self.redact("%s %s: more than %d redirects" % (method, logs.mask_url(url),
+                                                                                      MAX_REDIRECTS)), status)
+                    if status == 303 or (status in (301, 302) and method == "POST"):
+                        method, json_body = "GET", None
+                    url, params = target, None  # the server's Location carries the query
+                    attempt -= 1
+                    continue
+                if response is not None:
+                    self.last_headers = response.headers
                 if 200 <= status < 300:
                     self.last_url = response.url
                     if not response.content:
@@ -358,6 +447,7 @@ class HttpClient(object):
                 response = self.session.get(url, params=params or None, headers=headers, stream=True,
                                             timeout=TIMEOUT_SECONDS)
                 with response:
+                    self.last_headers = response.headers
                     status = response.status_code
                     if 200 <= status < 300:
                         size = 0
@@ -381,73 +471,5 @@ class HttpClient(object):
             self._wait_or_raise(error, retryable, attempt, response, fields)
 
 
-def _lookup(data, path):
-    try:
-        return get_path(data, path)
-    except KeyError:
-        return None
-
-
-def paginate(send, paginator_for, select):
-    """
-    Yields (response, records) pages.
-
-    send(params, url) performs one request (url overrides the stream's path, for next-URL cursors);
-    paginator_for(response) returns the paginator config rendered with that response (None before the
-    first page); select(response) returns the page's records.
-    """
-    paginator = paginator_for(None) or {"type": "none"}
-    kind = paginator.get("type", "none")
-    seen = set()
-    previous = [None]
-
-    def check_progress(marker):
-        if marker in seen:
-            raise HttpError("the paginator is not advancing: %r repeats" % (marker,))
-        seen.add(marker)
-
-    def check_page(records):
-        digest = hashlib.sha1(json.dumps(records, sort_keys=True, default=str).encode("utf-8")).hexdigest()
-        if records and digest == previous[0]:
-            raise HttpError("the paginator is not advancing: a page repeats the previous page")
-        previous[0] = digest
-
-    if kind == "none":
-        response = send({}, None)
-        yield response, select(response)
-        return
-    if kind in ("offset", "page_number"):
-        size = paginator.get("page_size")
-        position = 0 if kind == "offset" else paginator.get("start", 1)
-        while True:
-            if kind == "offset":
-                params = {paginator["offset_param"]: position, paginator["limit_param"]: size}
-            else:
-                params = {paginator["page_param"]: position}
-                if paginator.get("size_param") and size:
-                    params[paginator["size_param"]] = size
-            response = send(params, None)
-            records = select(response)
-            check_page(records)
-            yield response, records
-            if not records or (size and len(records) < size):
-                return
-            position += size if kind == "offset" else 1
-            paginator = paginator_for(response)
-    response = send({}, None)
-    while True:
-        records = select(response)
-        yield response, records
-        paginator = paginator_for(response)
-        if paginator.get("next_url_path"):
-            url = _lookup(response, paginator["next_url_path"])
-            if not url:
-                return
-            check_progress(url)
-            response = send({}, url)
-        else:
-            token = _lookup(response, paginator["token_path"])
-            if token in (None, ""):
-                return
-            check_progress(token)
-            response = send({paginator["param"]: token}, None)
+# Re-export paginate from net/paginators
+from streamwright.core.net.paginators import paginate

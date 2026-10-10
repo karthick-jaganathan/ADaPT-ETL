@@ -1,0 +1,36 @@
+description: Apple Ads campaigns and budget configurations.
+
+# HTTP POST query for campaigns (uses body pagination from source.yaml)
+requests:
+  - name: raw_campaigns
+    http:
+      path: /v1/campaigns/query
+      method: POST
+      json:
+        pagination:
+          pageSize: 100
+          fetchTotalCount: true
+
+# Transform step: extracts campaign metadata and daily budget amounts
+transform:
+  mode: page
+  steps:
+    - name: campaigns
+      select: |
+        SELECT
+          (record->>'adAccountId')::BIGINT                    AS ad_account_id,
+          (record->>'id')::BIGINT                             AS campaign_id,
+          record->>'name'                                     AS campaign_name,
+          record->>'status'                                   AS status,
+          record->>'servingStatus'                            AS serving_status,
+          (record->>'$.dailyBudgetAmount.amount')::DOUBLE     AS daily_budget,
+          record->>'$.dailyBudgetAmount.currency'             AS currency,
+          record->>'startTime'                                AS start_time,
+          record->>'endTime'                                  AS end_time
+        FROM raw_campaigns
+
+# Output table and primary key contract
+export:
+  campaigns:
+    step: campaigns
+    primary_key: [campaign_id]

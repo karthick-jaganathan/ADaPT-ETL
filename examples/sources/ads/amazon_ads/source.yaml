@@ -1,0 +1,52 @@
+# Example source folder: this file, and one file per stream in streams/.
+# Check it with: streamwright validate examples/sources/ads/amazon_ads
+# Run it (pip install streamwright-amazon-ads): streamwright run examples/sources/ads/amazon_ads
+# Secrets come from STREAMWRIGHT_SECRET_<NAME> environment variables or --secrets FILE.
+#
+# Alternatively, static Bearer token authentication can be used:
+# auth:
+#   provider: amazon_ads
+#   type: bearer
+#   token: "{{ secrets.amazon_access_token }}"
+kind: source
+name: amazon_ads_demo
+description: Amazon Ads Sponsored Products and advertiser profile streams.
+
+# Input specification: regional endpoint, advertising profile ID, and secrets
+spec:
+  config:
+    api_url:
+      type: string
+      default: "https://advertising-api.amazon.com"
+      description: "Regional endpoint: https://advertising-api.amazon.com (NA), https://advertising-api-eu.amazon.com (EU), https://advertising-api-fe.amazon.com (FE)"
+    profile_id:
+      type: string
+      required: false
+      description: "Amazon Advertising Profile ID (sent as Amazon-Advertising-API-Scope)"
+  secrets:
+    amazon_client_id: {type: string}
+    amazon_client_secret: {type: string}
+    amazon_refresh_token: {type: string}
+
+# Authentication: OAuth2 refresh token grant automatically issues access tokens
+auth:
+  provider: amazon_ads
+  type: oauth2_refresh_token
+  token_url: https://api.amazon.com/auth/o2/token
+  client_id: "{{ secrets.amazon_client_id }}"
+  client_secret: "{{ secrets.amazon_client_secret }}"
+  refresh_token: "{{ secrets.amazon_refresh_token }}"
+
+# HTTP defaults shared across all streams in this source
+http:
+  base_url: "{{ config.api_url }}"
+  headers:
+    # Amazon Advertising required headers: Client-ID and Profile scope
+    Amazon-Advertising-API-ClientId: "{{ secrets.amazon_client_id }}"
+    Amazon-Advertising-API-Scope: "{{ config.profile_id }}"
+  # Default offset paginator: uses startIndex and count query parameters
+  paginator:
+    type: offset
+    offset_param: startIndex
+    limit_param: count
+    page_size: 100

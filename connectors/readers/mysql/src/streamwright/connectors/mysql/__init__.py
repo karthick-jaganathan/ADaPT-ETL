@@ -14,4 +14,6 @@
 # * limitations under the License.
 # **************************************************************************/
 
-# tests init
+from streamwright.connectors.mysql.connector import MySQLConnector
+
+__all__ = ["MySQLConnector"]

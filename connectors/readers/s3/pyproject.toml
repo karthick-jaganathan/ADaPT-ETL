@@ -9,7 +9,7 @@ description = "StreamWright - s3 connector (csv, tsv, json, jsonl and parquet ob
 readme = "README.md"
 license = "Apache-2.0"
 authors = [
-    {name = "Karthick Jaganathan"},
+    {name = "Karthick Jaganathan", email = "kjaganathan.sde@gmail.com"},
 ]
 keywords = ["data", "pipeline", "etl", "s3", "object storage", "csv", "parquet", "duckdb"]
 classifiers = [
@@ -25,7 +25,6 @@ requires-python = ">=3.10"
 # DuckDB installs its httpfs extension on the first connect (or ahead of time: INSTALL httpfs)
 dependencies = [
     "streamwright~=0.1.0",
-    "duckdb>=1.5",
 ]
 
 [project.urls]

@@ -2,16 +2,18 @@
 partitions:
   - {name: account_id, values: "{{ config.account_ids }}"}
 retry: {max_attempts: 3, max_delay: 2m}
+
+# HTTP request to list creatives (ads) for each ad account
 requests:
-  - name: creatives_list
-    sdk: linkedin_ads
-    service: creatives
-    method: list
-    arguments:
+  - name: raw_creatives
+    http:
+      path: /rest/adCreatives
+      method: GET
       params:
         q: search
         search.account.values[0]: "urn:li:sponsoredAccount:{{ partition.account_id }}"
-        count: 100
+
+# Transform step: extracts creative attributes, type, and parent campaign_id
 transform:
   mode: page
   steps:
@@ -25,7 +27,9 @@ transform:
                record->>'reference'                                     AS content_reference,
                to_timestamp(nullif(record->>'$.changeAuditStamps.created.time', '')::BIGINT / 1000) AS created_at,
                to_timestamp(nullif(record->>'$.changeAuditStamps.lastModified.time', '')::BIGINT / 1000) AS updated_at
-        FROM creatives_list
+        FROM raw_creatives
+
+# Output table and primary key contract
 export:
   creatives:
     step: creatives

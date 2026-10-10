@@ -6,12 +6,13 @@ incremental:
   start: "{{ config.start_date }}"
   window: 1d
 retry: {max_attempts: 3, max_delay: 2m}
+
+# HTTP request for ad analytics pivoted by campaign and daily granularity
 requests:
-  - name: raw_campaign_analytics
-    sdk: linkedin_ads
-    service: ad_analytics
-    method: analytics
-    arguments:
+  - name: raw_campaign_performance
+    http:
+      path: /rest/adAnalytics
+      method: GET
       params:
         q: analytics
         pivot: CAMPAIGN
@@ -27,6 +28,8 @@ requests:
             year: "{{ window.end | date('%Y') | int }}"
             month: "{{ window.end | date('%m') | int }}"
             day: "{{ window.end | date('%d') | int }}"
+
+# Transform step: unpacks impressions, clicks, spend, cpc, conversions, and leads
 transform:
   mode: page
   steps:
@@ -49,7 +52,9 @@ transform:
                )                                                        AS cpc,
                coalesce((record->>'externalWebsiteConversions')::BIGINT, 0) AS conversions,
                coalesce((record->>'oneClickLeads')::BIGINT, 0)          AS leads
-        FROM raw_campaign_analytics
+        FROM raw_campaign_performance
+
+# Output table and primary key contract
 export:
   campaign_performance:
     step: campaign_performance

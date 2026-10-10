@@ -1,14 +1,18 @@
 # Ad accounts available to the authenticated advertiser.
 retry: {max_attempts: 3, max_delay: 2m}
+
+# HTTP request to list ad accounts (inherits base_url, paginator, records from source.yaml)
 requests:
-  - name: ad_accounts_list
-    sdk: linkedin_ads
-    service: ad_accounts
-    method: list
-    arguments:
+  - name: raw_ad_accounts
+    records:
+      path: elements
+    http:
+      path: /rest/adAccounts
+      method: GET
       params:
         q: search
-        count: 100
+
+# Transform step: extracts account fields and converts millisecond timestamps
 transform:
   mode: page
   steps:
@@ -22,7 +26,9 @@ transform:
                record->>'reference'                                     AS organization_urn,
                to_timestamp(nullif(record->>'$.changeAuditStamps.created.time', '')::BIGINT / 1000) AS created_at,
                to_timestamp(nullif(record->>'$.changeAuditStamps.lastModified.time', '')::BIGINT / 1000) AS updated_at
-        FROM ad_accounts_list
+        FROM raw_ad_accounts
+
+# Output table and primary key contract
 export:
   ad_accounts:
     step: ad_accounts

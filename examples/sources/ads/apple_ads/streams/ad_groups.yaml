@@ -1,0 +1,37 @@
+description: Apple Ads ad groups and default bidding.
+
+# HTTP POST query for ad groups across campaigns
+requests:
+  - name: raw_ad_groups
+    http:
+      path: /v1/adgroups/query
+      method: POST
+      json:
+        pagination:
+          pageSize: 100
+          fetchTotalCount: true
+
+# Transform step: extracts ad group metadata, status, and default bid
+transform:
+  mode: page
+  steps:
+    - name: ad_groups
+      select: |
+        SELECT
+          (record->>'adAccountId')::BIGINT                    AS ad_account_id,
+          (record->>'campaignId')::BIGINT                     AS campaign_id,
+          (record->>'id')::BIGINT                             AS ad_group_id,
+          record->>'name'                                     AS ad_group_name,
+          record->>'status'                                   AS status,
+          record->>'servingStatus'                            AS serving_status,
+          (record->>'$.defaultBidAmount.amount')::DOUBLE      AS default_bid,
+          record->>'$.defaultBidAmount.currency'              AS currency,
+          record->>'startTime'                                AS start_time,
+          record->>'endTime'                                  AS end_time
+        FROM raw_ad_groups
+
+# Output table and primary key contract
+export:
+  ad_groups:
+    step: ad_groups
+    primary_key: [ad_group_id]

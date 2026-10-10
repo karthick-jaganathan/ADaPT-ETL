@@ -9,7 +9,7 @@ permalink: /design/source-format/
 
 # Source configuration format
 
-**Status:** design accepted (see [Decisions](#decisions)). `streamwright validate` checks sources (`kind: source`), the JSON Schema is `docs/schemas/source.schema.json`, `streamwright run` (the `streamwright` package) runs them, and the connectors `streamwright-google-ads`, `streamwright-microsoft-ads` and `streamwright-meta-ads` add the SDK-backed APIs, and the reader connectors `streamwright-files` (local files), `streamwright-s3` and `streamwright-gcs` (object storage) and `streamwright-postgres` (PostgreSQL databases) read files and databases. The examples below are the source folders in `examples/sources/`. The legacy kinds (`authorization`, `connector`, `serializer`, `pipeline`) have been removed (see [Rollout](#rollout)): this is the only format.
+**Status:** design accepted (see [Decisions](#decisions)). `streamwright validate` checks sources (`kind: source`), the JSON Schema is `docs/schemas/source.schema.json`, `streamwright run` (the `streamwright` package) runs them, and the connectors `streamwright-google-ads`, `streamwright-microsoft-ads` and `streamwright-meta-ads` add the SDK-backed APIs, the HTTP-transport connectors `streamwright-openai-ads`, `streamwright-linkedin-ads`, `streamwright-apple-ads` and `streamwright-amazon-ads` extract REST APIs declaratively via the unified HTTP engine, and the reader connectors `streamwright-files` (local files), `streamwright-s3` and `streamwright-gcs` (object storage) and `streamwright-postgres` (PostgreSQL databases) read files and databases. The examples below are the source folders in `examples/sources/`. The legacy kinds (`authorization`, `connector`, `serializer`, `pipeline`) have been removed (see [Rollout](#rollout)): this is the only format.
 
 ## Summary
 
@@ -66,7 +66,7 @@ kind: source
 name: <source name>
 spec:      # inputs: config (visible) and secrets (redacted), with types and defaults
 auth:      # how to authenticate: oauth2_refresh_token | api_key | bearer | basic | <connector provider>
-http:      # optional defaults for HTTP streams: base_url, headers, rate_limit, retry
+http:      # optional defaults for HTTP streams: base_url, headers, params_encoding, paginator, records, rate_limit, retry
 ```
 
 ```yaml
@@ -1129,9 +1129,10 @@ and platform UI forms; secrets are redacted everywhere. SQL steps read config va
 
 ### `auth`
 
-Built-in: `oauth2_refresh_token`, `api_key` (header or query), `bearer`, `basic`. Connectors add providers such as
-`google_ads` and `microsoft_ads`, which also build the SDK client used by sdk requests; a source with a connector
-provider has only sdk requests. The reader connectors' providers name what can be read instead of an account:
+Built-in: `oauth2_refresh_token`, `api_key` (header or query), `bearer`, `basic`. Connectors add providers:
+- **SDK connectors** (`transport: "sdk"`): such as `google_ads`, `microsoft_ads`, `meta_ads`. These build the SDK client used by sdk requests; a source with an SDK connector provider has only sdk requests.
+- **HTTP connectors** (`transport: "http"`): such as `openai_ads`, `linkedin_ads`, `apple_ads`, `amazon_ads`. These use StreamWright's unified HTTP engine. The `auth` block specifies `provider: <name>` together with the built-in `type` (`bearer`, `oauth2_refresh_token`, etc.) and its credentials.
+- **Reader connectors**: `files`, `s3`, `gcs`, `postgres` name what can be read instead of an account:
 
 | Provider | Keys |
 |---|---|
@@ -1139,6 +1140,20 @@ provider has only sdk requests. The reader connectors' providers name what can b
 | `s3` | `roots` (`s3://bucket/prefix/`), `key_id`, `secret`, optional `session_token` (each one `{{ secrets.* }}` reference), and the optional settings `region`, `endpoint`, `url_style`, `use_ssl` (literal values or references) |
 | `gcs` | `roots` (`gs://bucket/prefix/`), `key_id`, `secret` (an HMAC key, each one `{{ secrets.* }}` reference) |
 | `postgres` | `dsn` (a libpq DSN, one `{{ secrets.* }}` reference) and an optional `statement_timeout` |
+
+### `http` (source defaults)
+
+When sources use HTTP requests, the source-level `http` block sets shared network configuration:
+
+| Key | Meaning |
+|---|---|
+| `base_url` | Base URL joined to request paths (e.g. `https://api.linkedin.com`) |
+| `headers` | Shared headers map, supporting `{{ config.* }}` and `{{ secrets.* }}` |
+| `params_encoding` | `plain` (default) or `dotted` (Rest.li / nested query params) |
+| `paginator` | Default paginator spec inherited by requests unless overridden |
+| `records` | Default records extraction path (`path`, `explode`) inherited by requests |
+| `rate_limit` | Default rate limit (`requests_per_second` or `requests_per_minute`) |
+| `retry` | Default retry policy (`max_attempts`, `max_delay`, `backoff`, `codes`) |
 
 ### `requests`
 
@@ -1229,8 +1244,9 @@ A stream reads its requests for each of its partitions. A request that uses `{{ 
   partition's values: use `{from: <step>, fields: [<stream partitions>, F], batch_size}`), on stream partitions
   (each one is a value with its own state), and on a `from:` item whose `name` is a stream partition's (it has no
   values of its own). Windows and bookmarks are per stream partition, as before.
-- `paginator` (per request): `none` (SDK streams and cursors), `offset`, `cursor` (`token_path`, `param`, or a
-  next-URL path), `page_number`.
+- `paginator` (source default or per request): `none`, `offset` (`offset_param`, `limit_param`, `page_size`, `total_path`),
+  `cursor` (`token_path`, `param`, `has_more_path`), `page_number` (`page_param`, `size_param`, `total_pages_path`),
+  or `link_header`. Supported locations: `in: query` (default) or `in: body`.
 - `records` (per request): `path` to the record list in the response; `explode: <field>` emits one record per nested
   item, with parent fields copied (the legacy `extended_array`).
 

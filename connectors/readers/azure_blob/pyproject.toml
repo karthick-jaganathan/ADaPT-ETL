@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "streamwright-azure-blob"
+version = "0.1.0"
+description = "StreamWright - azure_blob connector (csv, tsv, json, jsonl and parquet objects in Azure Blob Storage, read with DuckDB)"
+readme = "README.md"
+license = "Apache-2.0"
+authors = [
+    {name = "Karthick Jaganathan", email = "kjaganathan.sde@gmail.com"},
+]
+keywords = ["data", "pipeline", "etl", "azure", "blob storage", "object storage", "csv", "parquet", "duckdb"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+requires-python = ">=3.10"
+# DuckDB installs its azure extension on the first connect (or ahead of time: INSTALL azure)
+dependencies = [
+    "streamwright~=0.1.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/karthick-jaganathan/streamwright"
+Repository = "https://github.com/karthick-jaganathan/streamwright"
+
+[project.entry-points."streamwright.connectors"]
+azure_blob = "streamwright.connectors.azure_blob.connector:AzureBlobConnector"
+
+[tool.setuptools]
+# src layout: streamwright and streamwright.connectors are namespace packages shared with the other StreamWright distributions
+package-dir = {"" = "src"}
+packages = ["streamwright.connectors.azure_blob"]

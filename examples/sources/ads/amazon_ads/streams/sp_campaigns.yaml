@@ -1,0 +1,32 @@
+description: Amazon Sponsored Products campaigns metadata and budgets.
+
+# HTTP GET request to list Sponsored Products campaigns
+requests:
+  - name: raw_sp_campaigns
+    http:
+      path: /v2/sp/campaigns
+      method: GET
+
+# Transform step: extracts campaign metadata, daily budgets, and targeting settings
+transform:
+  mode: page
+  steps:
+    - name: sp_campaigns
+      select: |
+        SELECT
+          record->>'campaignId'                               AS campaign_id,
+          record->>'name'                                     AS campaign_name,
+          record->>'campaignType'                             AS campaign_type,
+          record->>'targetingType'                            AS targeting_type,
+          record->>'state'                                    AS state,
+          (record->>'dailyBudget')::DOUBLE                    AS daily_budget,
+          record->>'startDate'                                AS start_date,
+          record->>'endDate'                                  AS end_date,
+          (record->>'premiumBidAdjustment')::BOOLEAN          AS premium_bid_adjustment
+        FROM raw_sp_campaigns
+
+# Output table and primary key contract
+export:
+  sp_campaigns:
+    step: sp_campaigns
+    primary_key: [campaign_id]
