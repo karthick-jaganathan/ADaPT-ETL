@@ -14,7 +14,10 @@ def test_cli_help():
 
 
 def test_cli_mcp_delegation():
-    with patch("streamwright_mcp.cli.main", return_value=0) as mock_mcp:
+    from unittest.mock import MagicMock
+    mock_mcp = MagicMock(return_value=0)
+    mock_mod = MagicMock(main=mock_mcp)
+    with patch.dict(sys.modules, {"streamwright_mcp": MagicMock(), "streamwright_mcp.cli": mock_mod}):
         code = cli.main(["mcp", "--help"])
         assert code == 0
         mock_mcp.assert_called_once_with(["--help"])

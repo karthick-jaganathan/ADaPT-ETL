@@ -376,7 +376,15 @@ def test_templates_are_not_allowed_in_names_and_records():
 # * ----
 
 def test_auth_checks():
-    assert codes(check(lambda d: d["auth"].update(provider="google_ads"))) == [(ERROR, "bad-value")]
+    from streamwright.core.runtime.components import Connector, register, unregister
+    class MockSdkValConnector(Connector):
+        name = "mock_sdk_val"
+        transport = "sdk"
+    register(MockSdkValConnector())
+    try:
+        assert codes(check(lambda d: d["auth"].update(provider="mock_sdk_val"))) == [(ERROR, "bad-value")]
+    finally:
+        unregister("mock_sdk_val")
     assert codes(check(lambda d: d["auth"].update(type="bearr"))) == [(ERROR, "bad-value")]
     issues = check(lambda d: d.update(auth={"type": "oauth2_refresh_token", "token_url": "https://x/token",
                                             "client_id": "id", "client_secret": "s3cret",
