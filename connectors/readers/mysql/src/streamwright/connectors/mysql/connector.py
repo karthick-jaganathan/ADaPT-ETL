@@ -15,7 +15,95 @@
 # **************************************************************************/
 
 """
-The `mysql` connector: read-only SELECT queries on a MySQL database through DuckDB's MySQL extension.
+The `mysql` connector: read-only SELECT queries and table reads on MySQL databases.
+
+Connects to MySQL using DuckDB's native mysql extension in READ_ONLY mode.
+Supports parameterized SQL queries, table scanning with pushdown filters, and automatic secret redaction.
+
+### 1. `source.yaml` Contract
+```yaml
+kind: source
+name: mysql_source
+spec:
+  secrets:
+    mysql_dsn: {type: string, required: true}
+
+auth:
+  provider: mysql
+  dsn: "{{ secrets.mysql_dsn }}"         # Connection DSN/URI from secrets
+  statement_timeout: 5min              # Optional timeout
+
+# Alternative structured auth:
+# auth:
+#   provider: mysql
+#   host: "db.mysql.internal"
+#   port: 3306
+#   database: "ecommerce"
+#   user: "readonly_user"
+#   password: "{{ secrets.mysql_password }}"
+#   sslmode: "preferred"
+```
+
+### 2. `streams/<stream>.yaml` Contract
+```yaml
+requests:
+  # Method 1: Arbitrary parameterized SELECT query
+  - name: read_products
+    sdk: mysql
+    service: database
+    method: query
+    arguments:
+      query: |
+        SELECT id, sku, price, updated_at
+        FROM products
+        WHERE category = $cat AND updated_at >= $since
+      params:
+        cat: "electronics"
+        since: "{{ window.start }}"
+
+  # Method 2: Structured table read with filtering
+  # - name: read_categories
+  #   sdk: mysql
+  #   service: database
+  #   method: table
+  #   arguments:
+  #     table: "categories"
+  #     columns: ["id", "name", "slug"]
+  #     where:
+  #       - {column: "is_active", op: "=", value: 1}
+
+transform:
+  - name: final_products
+    select: |
+      SELECT 
+        id AS product_id,
+        sku,
+        price::DOUBLE AS price,
+        updated_at
+      FROM read_products
+
+export:
+  products:
+    step: final_products
+    primary_key: [product_id]
+```
+
+### 3. Authentication & Security
+- `provider`: `mysql`
+- Credentials: `dsn` or structured `password` must be `{{ secrets.* }}` references. Credentials are never written in source configs and are redacted from all logs.
+- Security: DuckDB attaches MySQL strictly in `READ_ONLY` mode. Queries are validated before execution to prevent mutation keywords (INSERT/UPDATE/DELETE/DROP).
+
+### 4. Transform & Data Shaping
+- Emits records as JSON dictionaries representing database rows.
+- Query parameters are bound safely (`$param_name`), preventing SQL injection.
+- In `transform` steps, request results are available as relational tables in DuckDB SQL.
+
+### 5. Execution & Behavior
+- **Transport**: `duckdb` (DuckDB mysql extension).
+- **Services & Methods**:
+  - `database.query`: Arguments: `query` (string), `params` (optional dict).
+  - `database.table`: Arguments: `table` (string), `schema` (optional string), `columns` (optional list), `where` (optional list of condition dicts).
+- **Streaming**: Yields rows in pages of up to 1,000 records.
 """
 
 from streamwright.core.runtime import logs

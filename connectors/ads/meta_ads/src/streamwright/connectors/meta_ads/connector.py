@@ -17,21 +17,96 @@
 
 
 """
-The `meta_ads` connector: the Meta Marketing API through the facebook_business SDK.
+The `meta_ads` connector: Meta Marketing API campaigns, ad sets, ads, and insights extraction.
 
-- `auth: {provider: meta_ads, access_token, app_id, app_secret, api_version}`: a system-user (or long-lived)
-  access token; with `app_secret` every call carries an appsecret_proof.
-- A `requests` item `{name, sdk: meta_ads, service, method, arguments: {id, fields, params}}` reads an object or
-  its edges. `service` is the object type (AdAccount, Campaign, AdSet, Ad, AdCreative, Business, User, CustomAudience,
-  AdsPixel), `id` its ID (`act_<account id>` for ad accounts), and `method` is `api_get` (the object itself) or a
-  `get_*` edge (get_campaigns, get_insights, ...). `params` are the API's parameters; dates are sent as YYYY-MM-DD.
-- Edges are paged by the SDK, and every page is fetched with the stream's rate limit and retries. Records are the
-  objects' fields as plain dicts; insights numbers are text, as the API returns them, so cast them in the stream's
-  `transform` steps.
-- Throttling errors (codes 4, 17, 32, 613, 80000-80014), temporary errors and HTTP 5xx are retried, waiting as long
-  as the x-business-use-case-usage header asks.
-- `streamwright run --log urllib3.connectionpool=DEBUG` shows each request's method, URL and status, and
-  `--log streamwright.network=DEBUG` its headers and bodies, redacted: the access token and appsecret_proof are masked.
+Connects to Meta Marketing API using official `facebook_business` SDK.
+Supports object reads and graph edge traversals (`get_campaigns`, `get_insights`) with automatic pagination and throttling handling.
+
+### 1. `source.yaml` Contract
+```yaml
+kind: source
+name: meta_ads_pipeline
+spec:
+  secrets:
+    meta_access_token: {type: string, required: true}
+    meta_app_secret: {type: string, required: false}
+
+auth:
+  provider: meta_ads
+  access_token: "{{ secrets.meta_access_token }}" # System-user or long-lived user token
+  # Optional:
+  # app_id: "123456789"
+  # app_secret: "{{ secrets.meta_app_secret }}"  # Enables appsecret_proof verification
+  # api_version: "v21.0"
+```
+
+### 2. `streams/<stream>.yaml` Contract
+```yaml
+requests:
+  # Method 1: Edge traversal on AdAccount (e.g. insights)
+  - name: campaign_insights
+    sdk: meta_ads
+    service: AdAccount
+    method: get_insights
+    arguments:
+      id: "act_1234567890"             # Account ID prefixed with act_
+      fields:
+        - "campaign_id"
+        - "campaign_name"
+        - "impressions"
+        - "clicks"
+        - "spend"
+        - "date_start"
+        - "date_stop"
+      params:
+        level: "campaign"
+        time_range:
+          since: "{{ window.start }}"
+          until: "{{ window.end }}"
+
+  # Method 2: Entity inspection (e.g. read campaign details)
+  # - name: campaign_details
+  #   sdk: meta_ads
+  #   service: Campaign
+  #   method: api_get
+  #   arguments:
+  #     id: "120210000000"
+  #     fields: ["id", "name", "objective", "status", "daily_budget"]
+
+transform:
+  - name: final_insights
+    select: |
+      SELECT 
+        campaign_id::BIGINT AS campaign_id,
+        campaign_name,
+        impressions::BIGINT AS impressions,
+        clicks::BIGINT AS clicks,
+        spend::DOUBLE AS spend,
+        date_start AS report_date
+      FROM campaign_insights
+
+export:
+  insights:
+    step: final_insights
+    primary_key: [campaign_id, report_date]
+```
+
+### 3. Authentication & Security
+- `provider`: `meta_ads`
+- Credentials: `access_token` and optional `app_secret` must be `{{ secrets.* }}` references. Credentials and appsecret proofs are never written in source configs and are redacted from all logs.
+- Security: Sandboxed SDK client. Only read-only operations (`api_get` and `get_*` edge methods) on allowed ad objects are permitted.
+
+### 4. Transform & Data Shaping
+- Emits records as JSON dictionaries representing API entity fields. Numeric metric fields (e.g. `spend`, `clicks`) are returned as strings by Meta API and should be cast in SQL transforms.
+- In `transform` steps, request results are available as relational tables in DuckDB SQL.
+
+### 5. Execution & Behavior
+- **Transport**: `sdk` (`facebook_business`).
+- **Services & Methods**:
+  - Services: `AdAccount`, `Campaign`, `AdSet`, `Ad`, `AdCreative`, `Business`, `User`, `CustomAudience`, `AdsPixel`.
+  - Methods: `api_get` (fetch object), `get_<edge>` (fetch collection, e.g. `get_insights`, `get_campaigns`, `get_ads`).
+- **Streaming**: Yields rows in cursor pages of up to 500 records.
+- **Throttling**: Automatically backs off according to `x-business-use-case-usage` headers and retries rate limit errors.
 """
 
 import datetime

@@ -16,12 +16,101 @@
 # **************************************************************************/
 
 """
-Specification of the StreamWright source configuration format (`kind: source`).
+Specification and single source of truth for the StreamWright source and stream declarative format (`kind: source`).
 
-Single source of truth for streamwright-validate's source checks (source_validator) and the published
-JSON Schemas (`streamwright-validate --export-schema DIR` writes DIR/source.schema.json and DIR/stream.schema.json for the
-stream files of source folders).
-Design: docs/design/source-format.md.
+Defines structural schemas, valid keys, data types, authentication schemes, transformation contracts,
+and export definitions for streamwright-validate, streamwright-mcp, and AI runtime assistants.
+
+### 1. `source.yaml` Schema Structure
+```yaml
+kind: source                     # Required: must be 'source'
+name: my_pipeline                # Required: snake_case identifier
+description: "Pipeline purpose"  # Optional: text description
+
+spec:                            # Declares runtime parameters and credentials
+  config:                        # Visible parameters passed via CLI (--set) or environment
+    tenant_id: {type: string, required: true}
+    batch_limit: {type: integer, default: 500}
+    start_date: {type: date, required: false}
+  secrets:                       # Redacted credentials from STREAMWRIGHT_SECRET_<NAME> or --secrets
+    api_key: {type: string, required: true}
+
+auth:                            # Authentication provider or protocol
+  provider: <connector_name>     # e.g. restapi, postgres, s3, google_ads
+  # Standard HTTP Auth Types:
+  # - bearer: {token: "{{ secrets.token }}"}
+  # - api_key: {name: "X-Api-Key", value: "{{ secrets.key }}", in: "header" | "query"}
+  # - basic: {username: "user", password: "{{ secrets.password }}"}
+  # - oauth2_refresh_token: {token_url, client_id, client_secret, refresh_token}
+
+http:                            # Optional HTTP defaults shared by all streams
+  base_url: "https://api.example.com"
+  headers: {Accept: "application/json"}
+  params_encoding: plain         # "plain" | "dotted"
+  paginator:                     # "offset" | "cursor" | "page"
+    type: cursor
+    token_path: next_cursor
+    param: cursor
+  records: {path: data}          # JMESPath/key to extract record array from envelope
+  rate_limit: {requests: 10, per: 1s}
+  retry: {codes: [429, 500, 502, 503, 504], max_attempts: 5, backoff: exponential}
+
+# Streams can be declared inline under `streams:` or as individual YAML files in `streams/<name>.yaml`.
+```
+
+### 2. `streams/<name>.yaml` Schema Structure
+```yaml
+description: "Stream documentation"
+
+# Optional partitioning (parallel or sequential chunk execution)
+# partitions:
+#   - {name: account_id, values: "{{ config.account_ids }}"}
+#   - {name: child_id, from_stream: parent_stream, field: id}
+
+# Optional incremental state sync
+# incremental:
+#   cursor_field: updated_at
+#   start: "2026-01-01T00:00:00Z"
+#   window: 1d
+#   lookback: 1h
+
+requests:                        # 1 or more extraction requests
+  # HTTP extraction:
+  - name: raw_items
+    http:
+      path: /v1/items
+      method: GET
+      params: {status: active}
+
+  # Or Connector SDK extraction:
+  # - name: raw_records
+  #   sdk: postgres
+  #   service: database
+  #   method: query
+  #   arguments:
+  #     query: "SELECT * FROM orders WHERE created_at >= $since"
+  #     params: {since: "{{ window.start }}"}
+
+transform:                       # Relational DuckDB SQL transformations
+  mode: page                     # "page" (streamed per page) or "run" (accumulated whole run)
+  steps:
+    - name: cleaned_items
+      select: |
+        SELECT 
+          record->>'id' AS item_id,
+          record->>'name' AS item_name,
+          (record->>'price')::DOUBLE AS price
+        FROM raw_items
+
+export:                          # Final output datasets and identity contracts
+  items:
+    step: cleaned_items
+    primary_key: [item_id]
+```
+
+### 3. Programmatic Schemas
+Use `json_schema()` and `stream_json_schema()` to get JSON Schema Draft 7 specifications
+for validating source and stream configurations programmatically.
 """
 
 __all__ = ["VERSION", "SUPPORTED_VERSIONS", "KIND", "json_schema", "stream_json_schema", "split_outside_quotes"]

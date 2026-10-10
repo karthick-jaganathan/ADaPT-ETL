@@ -17,18 +17,71 @@
 
 
 """
-The `azure_blob` connector: csv, tsv, json, jsonl and parquet objects in Azure Blob Storage as records.
+The `azure_blob` connector: Azure Blob Storage CSV, TSV, JSON, JSONL, and Parquet extraction.
 
-- `auth: {provider: azure_blob, roots: ["azure://container/prefix/"], connection_string, ...}`: `roots` (required) are
-  the URL prefixes objects can be read from (references allowed, no secrets);
-  credentials (`connection_string`, `account_key`, or `client_secret`) must be `{{ secrets.* }}` references,
-  masked in every message.
-  connect() opens a Reader (streamwright.connectors.azure_blob.reader): a DuckDB connection of its own with azure,
-  the credentials and settings as a DuckDB secret scoped to the roots, that can only read inside the roots.
-- A `requests` item `{name, sdk: azure_blob, service: object, method: read, arguments: {path, format, options,
-  on_missing, match, recursive}}` reads the objects `path` names - an azure:// URL or a key relative to the first root;
-  a glob (`*`, `[ab]`, `**`; never `?`); a list of them; or, with `match` (a literal Python regex), the folder whose
-  objects' keys relative to it fully match it (sub-folders too with `recursive: true`).
+Reads objects safely inside declared Azure Blob root prefixes (`azure://container/prefix/`) using DuckDB's azure extension.
+Supports globs, regex filename matching, partition batches, and automatic format detection.
+
+### 1. `source.yaml` Contract
+```yaml
+kind: source
+name: azure_lake_pipeline
+spec:
+  secrets:
+    azure_conn_str: {type: string, required: true}
+
+auth:
+  provider: azure_blob
+  roots: ["azure://analytics/lake/"]   # Required list of allowed azure:// URL prefixes
+  connection_string: "{{ secrets.azure_conn_str }}" # Or account_name + account_key / client_secret
+```
+
+### 2. `streams/<stream>.yaml` Contract
+```yaml
+requests:
+  - name: read_logs
+    sdk: azure_blob
+    service: object
+    method: read
+    arguments:
+      path: "azure://analytics/lake/logs/*.parquet" # azure:// URL or relative key / glob
+      format: auto                     # "auto" | "csv" | "tsv" | "json" | "jsonl" | "parquet"
+      on_missing: skip                 # "skip" (default, logs warning) | "error"
+      # Optional:
+      # match: "^log_[0-9]+\\.parquet$" # Python regex filter within path folder
+      # recursive: true                # Scan sub-folders (default false)
+      # options:                       # Format-specific reader options (delimiter, etc.)
+
+transform:
+  - name: final_logs
+    select: |
+      SELECT 
+        log_id,
+        severity,
+        message,
+        timestamp
+      FROM read_logs
+
+export:
+  logs:
+    step: final_logs
+    primary_key: [log_id]
+```
+
+### 3. Authentication & Security
+- `provider`: `azure_blob`
+- `roots`: Mandatory list of allowed Azure URI prefixes (e.g. `azure://container/prefix/`). Reads outside roots are strictly blocked.
+- Credentials: `connection_string`, `account_key`, or `client_secret` must be `{{ secrets.* }}` references. Credentials are never written in source configs and are redacted from all logs.
+- Security: Sandboxed DuckDB connection with `azure` credentials scoped strictly to the specified roots.
+
+### 4. Transform & Data Shaping
+- Emits records as JSON dictionaries representing extracted rows.
+- In `transform` steps, each request's name (`read_logs`) is available as a relational table in DuckDB SQL.
+
+### 5. Execution & Behavior
+- **Transport**: `reader` (Embedded DuckDB azure extension).
+- **Streaming**: Yields rows in streaming batches of up to 1,000 records.
+- **Safety**: Purely read-only; Azure Blob objects are never written or modified.
 """
 
 import re

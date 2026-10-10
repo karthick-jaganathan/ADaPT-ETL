@@ -45,7 +45,7 @@ help:
 	@echo "  MODE=dist  - Distribution mode (build + install from $(DIST_BASE))"
 	@echo ""
 	@echo "Individual package: make install-core (or: cd core && make install)"
-	@echo "Individual connectors: make install-google-ads | install-microsoft-ads | install-meta-ads | install-files | install-s3 | install-gcs | install-postgres"
+	@echo "Individual connectors: make install-google-ads | install-microsoft-ads | install-meta-ads | install-openai-ads | install-linkedin-ads | install-amazon-ads | install-apple-ads | install-files | install-s3 | install-gcs | install-azure-blob | install-postgres | install-mysql | install-mongodb | install-deltalake | install-restapi"
 
 # Generic install command for all packages
 install: install-all
@@ -137,7 +137,7 @@ build-all:
 uninstall:
 	@echo "Uninstalling all StreamWright packages..."
 	pip uninstall -y streamwright-google-ads streamwright-microsoft-ads streamwright-meta-ads streamwright-openai-ads streamwright-linkedin-ads streamwright-amazon-ads streamwright-apple-ads \
-		streamwright-files streamwright-s3 streamwright-gcs streamwright-azure-blob streamwright-postgres streamwright-mysql streamwright-mongodb streamwright-deltalake \
+		streamwright-files streamwright-s3 streamwright-gcs streamwright-azure-blob streamwright-postgres streamwright-mysql streamwright-mongodb streamwright-deltalake streamwright-restapi \
 		streamwright 2>/dev/null || true
 	@echo "✅ All packages uninstalled!"
 
@@ -179,4 +179,4 @@ validate:
 # Internal helper commands
 _show-packages:
 	@echo "Installed packages:"
-	@pip list | grep streamwright 
+	@pip list | grep streamwright

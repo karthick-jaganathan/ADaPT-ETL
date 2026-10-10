@@ -17,25 +17,71 @@
 
 
 """
-The `files` connector: local csv, tsv, json, jsonl and parquet files as records (object storage: the s3 and gcs
-connectors).
+The `files` connector: Local CSV, TSV, JSON, JSONL, and Parquet file extraction via DuckDB.
 
-- `auth: {provider: files, roots: ["{{ config.data_root }}"]}`: the local folders files can be read from (a list;
-  references are rendered before connect; a URL is refused). connect() opens a Reader
-  (streamwright.connectors.files.reader): a DuckDB connection of its own that can only read inside the roots, with external
-  access off and no extension loaded.
-- A `requests` item `{name, sdk: files, service: file, method: read, arguments: {path, format, options, on_missing,
-  match, recursive}}` reads the files `path` names - a file or a glob (`*`, `?`, `[ab]`, `**`), relative to the first
-  root, or a list of them (e.g. a `batch_size` partition) - each row one record, a JSON object, in pages of at most
-  1,000 records. With `match` (a literal Python regex), `path` is one folder (not a glob): the files in it whose path
-  relative to it fully matches `match` are read, in the order of those paths; `recursive: true` (default false) looks
-  in its sub-folders too. Every file is checked to be inside a root, once symbolic links are followed, before any
-  file is read. `format`: csv, tsv, json, jsonl, parquet or auto (by the file's extension; the default). `options`:
-  per format (see reader.OPTIONS). `on_missing`: skip (a warning; the default) or error, when nothing matches.
-- Each file read is a call (rate limit, retries and the run's request counts) and logs a line on `streamwright.network`:
-  the file, its rows, bytes and time.
+Reads local files safely inside sandboxed folder roots. Supports globs, regex filename matching,
+and automatic format detection.
 
-Only this read-only method can be called; files are never written.
+### 1. `source.yaml` Contract
+```yaml
+kind: source
+name: local_files_pipeline
+spec:
+  config:
+    data_dir: {type: string, default: "./data"}
+
+auth:
+  provider: files
+  roots: ["{{ config.data_dir }}"]   # Required: allowed local directory prefixes
+```
+
+### 2. `streams/<stream>.yaml` Contract
+```yaml
+requests:
+  - name: read_orders
+    sdk: files
+    service: file
+    method: read
+    arguments:
+      path: "orders/*.parquet"        # File path or glob relative to roots
+      format: auto                    # "auto" | "csv" | "tsv" | "json" | "jsonl" | "parquet"
+      on_missing: skip                # "skip" (default, logs warning) | "error"
+      # Optional:
+      # match: "^order_[0-9]+\\.json$" # Python regex filter within path directory
+      # recursive: true               # Scan sub-directories (default false)
+      # options:                      # Format-specific reader options
+      #   delimiter: ","
+      #   header: true
+
+transform:
+  - name: clean_orders
+    select: |
+      SELECT 
+        id AS order_id,
+        customer,
+        amount::DOUBLE AS amount,
+        created_at
+      FROM read_orders
+
+export:
+  orders:
+    step: clean_orders
+    primary_key: [order_id]
+```
+
+### 3. Authentication & Security
+- `provider`: `files`
+- `roots`: List of allowed base folder paths. Reads outside these roots (including traversing symlinks) are strictly blocked.
+- Sandboxing: DuckDB connection runs with external access disabled and no external extensions loaded.
+
+### 4. Transform & Data Shaping
+- Emits rows where each record is a dictionary mapping column names to parsed values.
+- In `transform` steps, each request's name (`read_orders`) is available as a relational table in DuckDB SQL.
+
+### 5. Execution & Behavior
+- **Transport**: `reader` (Embedded DuckDB engine).
+- **Streaming**: Yields rows in streaming batches of up to 1,000 records.
+- **Safety**: Purely read-only; files are never modified or written.
 """
 
 import os

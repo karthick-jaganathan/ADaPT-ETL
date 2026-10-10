@@ -17,32 +17,99 @@
 
 
 """
-The `postgres` connector: read-only SELECT queries on a PostgreSQL database as records.
+The `postgres` connector: read-only SELECT queries and table reads on PostgreSQL databases.
 
-- `auth: {provider: postgres, dsn: "{{ secrets.pg_dsn }}", statement_timeout: 5min}`: the DSN (a libpq URL or
-  keyword DSN) comes from secrets only, and is redacted - with any password inside it - in every log line and error.
-  connect() opens a Database (streamwright.connectors.postgres.reader): a DuckDB connection of its own that attaches the
-  database READ_ONLY through DuckDB's postgres extension (installed and loaded on demand); `statement_timeout`
-  (seconds, or 500ms, 30s, 5min, 1h) becomes Postgres' statement_timeout for the session.
-- Or, instead of `dsn`, the structured form: `auth: {provider: postgres, host, port: 5432, database (or dbname),
-  user, password: "{{ secrets.pg_password }}", sslmode, options: {connect_timeout: "10", ...}, statement_timeout}`:
-  host, port, database, user, sslmode and options (extra libpq parameters) are config, literal or references; the
-  password is the only credential, a secret only (redacted like a DSN). connect() writes them as a libpq connection
-  string, every value quoted and escaped (no value can add a keyword), and attaches it the way it attaches a DSN.
-- A `requests` item `{name, sdk: postgres, service: database, method: query, arguments: {query, params}}` runs one
-  SELECT (DuckDB SQL over the attached database: `schema.table`, or `table` in the default schema) whose values are
-  named parameters - `$since` in the query, `params: {since: "{{ window.start }}"}` - BOUND, never pasted into the
-  query: a list binds as a list (`id = ANY($ids::BIGINT[])`, e.g. a `batch_size` partition of ids).
-- `{method: table, arguments: {schema, table, columns, where}}` reads a table: the columns (default: all) of the rows
-  where every condition `{column, op, value, type}` holds, its names quoted and its values bound.
-- Each row is one record, a JSON object, in pages of at most 1,000 records. Each query is a call (rate limit, retries
-  and the run's request counts) and logs a line on `streamwright.network`: its rows and time.
+Connects to PostgreSQL using DuckDB's native postgres extension in READ_ONLY mode.
+Supports parameterized SQL queries, table scanning with pushdown filters, and automatic secret redaction.
 
-Only these read-only methods can be called. The query is checked to be one SELECT without a write keyword before it
-runs, reading the database's own tables only (no DuckDB system view such as duckdb_databases, which would show the
-attached database's path); the database is attached READ_ONLY (Postgres reads in READ ONLY transactions) through a
-temporary DuckDB secret holding the DSN (or the structured form's connection string), and the connection can reach
-nothing else: writes fail even when the database role could write.
+### 1. `source.yaml` Contract
+```yaml
+kind: source
+name: pg_source
+spec:
+  secrets:
+    pg_dsn: {type: string, required: true}
+
+auth:
+  provider: postgres
+  dsn: "{{ secrets.pg_dsn }}"          # Libpq connection string or URI from secrets
+  statement_timeout: 5min             # Optional: e.g. "30s", "5min", "1h"
+
+# Alternative structured auth:
+# auth:
+#   provider: postgres
+#   host: "db.internal.net"
+#   port: 5432
+#   database: "analytics"
+#   user: "readonly_user"
+#   password: "{{ secrets.pg_password }}"
+#   sslmode: "require"
+#   options: {connect_timeout: "10"}
+#   statement_timeout: 5min
+```
+
+### 2. `streams/<stream>.yaml` Contract
+```yaml
+requests:
+  # Method 1: Arbitrary parameterized SELECT query
+  - name: read_active_users
+    sdk: postgres
+    service: database
+    method: query
+    arguments:
+      query: |
+        SELECT id, email, created_at, plan_tier
+        FROM public.users
+        WHERE status = $status AND created_at >= $since
+      params:
+        status: "active"
+        since: "{{ window.start }}"
+
+  # Method 2: Structured table read with filtering
+  # - name: read_orders
+  #   sdk: postgres
+  #   service: database
+  #   method: table
+  #   arguments:
+  #     schema: "public"
+  #     table: "orders"
+  #     columns: ["id", "customer_id", "total_amount", "created_at"]
+  #     where:
+  #       - {column: "status", op: "=", value: "completed"}
+
+transform:
+  - name: final_users
+    select: |
+      SELECT 
+        id AS user_id,
+        email,
+        plan_tier,
+        created_at
+      FROM read_active_users
+
+export:
+  users:
+    step: final_users
+    primary_key: [user_id]
+```
+
+### 3. Authentication & Security
+- `provider`: `postgres`
+- Credentials: `dsn` or structured `password` must be `{{ secrets.* }}` references. Credentials are never written in source configs and are redacted from all logs and error messages.
+- Security: Connect attaches PostgreSQL strictly in `READ_ONLY` mode. Queries are validated before execution to prevent mutation keywords (INSERT/UPDATE/DELETE/DROP).
+
+### 4. Transform & Data Shaping
+- Emits records as JSON dictionaries representing database rows.
+- Query parameters are bound safely (`$param_name`), preventing SQL injection.
+- In `transform` steps, request results are available as relational tables in DuckDB SQL.
+
+### 5. Execution & Behavior
+- **Transport**: `duckdb` (DuckDB postgres extension).
+- **Services & Methods**:
+  - `database.query`: Arguments: `query` (string), `params` (optional dict).
+  - `database.table`: Arguments: `table` (string), `schema` (optional string, default 'public'), `columns` (optional list), `where` (optional list of condition dicts).
+- **Streaming**: Yields rows in pages of up to 1,000 records.
+- **Timeouts**: Configured via `statement_timeout` (e.g., `500ms`, `30s`, `5min`, `1h`).
 """
 
 import re

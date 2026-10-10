@@ -17,30 +17,97 @@
 
 
 """
-The `microsoft_ads` connector (docs/design/source-format.md, example 3), on the bingads SDK (API v13).
+The `microsoft_ads` connector: Microsoft Advertising (Bing Ads) campaign, reporting, and customer extraction.
 
-- `auth: {provider: microsoft_ads, developer_token, client_id, refresh_token, client_secret, tenant, customer_id,
-  account_id, environment}` gets an OAuth token from the Microsoft identity platform (with `client_secret` for web
-  apps, without it for desktop and mobile apps); the SDK refreshes it while the run lasts.
-- A `requests` item `{name, sdk: microsoft_ads, service, method, arguments}` calls a read-only operation of
-  CampaignManagementService, ReportingService, CustomerManagementService or AdInsightService: methods named Get*,
-  Search*, Find* and Poll*, and SubmitGenerateReport. `arguments` are the operation's fields: nested objects are
-  mappings, abstract types name their concrete type with "@type" (e.g. CampaignPerformanceReportRequest), lists fill
-  ArrayOf* types (and are joined with spaces for list values such as CampaignType), and dates fill Date objects.
-  Unknown fields are errors.
-- Responses become plain dicts. A response with one part is that part, e.g. GetCampaignsByAccountId returns
-  {"Campaign": [...]} (`records: {path: Campaign}`); one with several parts maps their names to them, e.g.
-  GetCampaignCriterionsByIds returns {"CampaignCriterions": {"CampaignCriterion": [...]}, "PartialErrors": ...}.
-- The CustomerAccountId header is the request's `headers: {CustomerAccountId: ...}`, else its `AccountId`, else the
-  only account of a report's `Scope.AccountIds`, else `auth.account_id`. Set it in `headers` for operations about
-  an account's entities that do not name the account, e.g. GetAdGroupsByCampaignId. `headers: {CustomerId: ...}`
-  replaces `auth.customer_id` for one request.
+Connects to Microsoft Advertising API (v13) using SOAP SDK / OAuth2 tokens.
+Supports CampaignManagementService, ReportingService (async report generation), CustomerManagementService, and AdInsightService.
 
-Reports are async jobs: SubmitGenerateReport, PollGenerateReport until Status is Success, then the zipped CSV at
-ReportDownloadUrl (with ExcludeReportHeader and ExcludeReportFooter, so the file is a plain CSV table).
+### 1. `source.yaml` Contract
+```yaml
+kind: source
+name: microsoft_ads_pipeline
+spec:
+  secrets:
+    msads_developer_token: {type: string, required: true}
+    msads_client_id: {type: string, required: true}
+    msads_refresh_token: {type: string, required: true}
+    msads_client_secret: {type: string, required: false}
 
-`streamwright run --log suds.client=DEBUG --log suds.transport=DEBUG` shows the SOAP messages the SDK sends and receives,
-redacted: the developer token, the OAuth tokens (refreshed ones too) and the signatures of report URLs are masked.
+auth:
+  provider: microsoft_ads
+  developer_token: "{{ secrets.msads_developer_token }}"
+  client_id: "{{ secrets.msads_client_id }}"
+  refresh_token: "{{ secrets.msads_refresh_token }}"
+  # Optional:
+  # client_secret: "{{ secrets.msads_client_secret }}"
+  # customer_id: "1234567"
+  # account_id: "9876543"
+  # environment: "production"          # "production" | "sandbox"
+```
+
+### 2. `streams/<stream>.yaml` Contract
+```yaml
+requests:
+  # Method 1: Campaign entity query
+  - name: active_campaigns
+    sdk: microsoft_ads
+    service: CampaignManagementService
+    method: GetCampaignsByAccountId
+    arguments:
+      AccountId: 9876543
+      CampaignType: ["Search", "Shopping"]
+
+  # Method 2: Reporting query (async job handled by engine)
+  # - name: campaign_performance_report
+  #   sdk: microsoft_ads
+  #   service: ReportingService
+  #   method: SubmitGenerateReport
+  #   arguments:
+  #     ReportRequest:
+  #       "@type": CampaignPerformanceReportRequest
+  #       Format: Csv
+  #       ReportName: DailyCampaignPerformance
+  #       Aggregation: Daily
+  #       Scope:
+  #         AccountIds: [9876543]
+  #       Time:
+  #         PredefinedTime: Yesterday
+
+transform:
+  - name: final_campaigns
+    select: |
+      SELECT 
+        Campaign.Id::BIGINT AS campaign_id,
+        Campaign.Name AS campaign_name,
+        Campaign.Status AS status,
+        Campaign.BudgetType AS budget_type,
+        Campaign.DailyBudget::DOUBLE AS daily_budget
+      FROM active_campaigns
+
+export:
+  campaigns:
+    step: final_campaigns
+    primary_key: [campaign_id]
+```
+
+### 3. Authentication & Security
+- `provider`: `microsoft_ads`
+- Credentials: `developer_token`, `client_id`, `refresh_token`, and optional `client_secret` must be `{{ secrets.* }}` references. Credentials are never written in source configs and are redacted from all logs.
+- Security: Sandboxed SOAP client. Only read-only operations (`Get*`, `Search*`, `Find*`, `Poll*`, `SubmitGenerateReport`) are permitted.
+
+### 4. Transform & Data Shaping
+- Emits records as nested JSON dictionaries representing deserialized SOAP responses.
+- In `transform` steps, nested fields can be addressed directly in DuckDB SQL using dot notation or struct unpacking.
+
+### 5. Execution & Behavior
+- **Transport**: `sdk` (`bingads`).
+- **Services & Methods**:
+  - `CampaignManagementService`: e.g. `GetCampaignsByAccountId`, `GetAdGroupsByCampaignId`.
+  - `ReportingService`: `SubmitGenerateReport`, `PollGenerateReport`.
+  - `CustomerManagementService`: `GetUser`, `GetAccount`.
+  - `AdInsightService`: Keyword and performance estimates.
+- **Streaming**: Yields responses converted to record dicts.
+- **Retries**: Automatic backoff and retries for transient error codes (`CallRateExceeded`, `InternalError`).
 """
 
 import datetime

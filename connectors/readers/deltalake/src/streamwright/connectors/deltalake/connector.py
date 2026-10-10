@@ -16,6 +16,87 @@
 
 """
 The `deltalake` connector: read-only queries and table scans on Delta Lake tables.
+
+Connects to Delta Lake tables located on S3, GCS, Azure Blob, or local filesystems using DuckDB's delta extension.
+Supports schema evolution, partition pushdown, time-travel, and parameterized SQL queries.
+
+### 1. `source.yaml` Contract
+```yaml
+kind: source
+name: delta_source
+spec:
+  secrets:
+    aws_key: {type: string, required: true}
+    aws_secret: {type: string, required: true}
+
+auth:
+  provider: deltalake
+  roots: ["s3://my-lakehouse/delta/"]
+  aws_access_key_id: "{{ secrets.aws_key }}"
+  aws_secret_access_key: "{{ secrets.aws_secret }}"
+  aws_region: "us-east-1"
+```
+
+### 2. `streams/<stream>.yaml` Contract
+```yaml
+requests:
+  # Method 1: Scan a Delta table with column projection and filtering
+  - name: read_silver_events
+    sdk: deltalake
+    service: tables
+    method: scan
+    arguments:
+      table_path: "s3://my-lakehouse/delta/silver_events"
+      columns: ["event_id", "user_id", "timestamp", "event_type"]
+      where:
+        - {column: "timestamp", op: ">=", value: "{{ window.start }}"}
+      limit: 10000
+
+  # Method 2: Direct parameterized Delta query
+  # - name: read_custom_delta
+  #   sdk: deltalake
+  #   service: tables
+  #   method: query
+  #   arguments:
+  #     query: |
+  #       SELECT event_id, user_id, count(*) as cnt
+  #       FROM delta_scan('s3://my-lakehouse/delta/silver_events')
+  #       WHERE event_type = $type
+  #       GROUP BY event_id, user_id
+  #     params:
+  #       type: "click"
+
+transform:
+  - name: final_events
+    select: |
+      SELECT 
+        event_id,
+        user_id,
+        event_type,
+        timestamp
+      FROM read_silver_events
+
+export:
+  silver_events:
+    step: final_events
+    primary_key: [event_id]
+```
+
+### 3. Authentication & Security
+- `provider`: `deltalake`
+- Credentials: AWS, GCS, or Azure storage credentials must be `{{ secrets.* }}` references. Credentials are never written in source configs and are redacted from all logs.
+- Security: Connects strictly in read-only mode using DuckDB's delta scan engine.
+
+### 4. Transform & Data Shaping
+- Emits records as JSON dictionaries representing rows from the Delta table.
+- In `transform` steps, request results are available as relational tables in DuckDB SQL.
+
+### 5. Execution & Behavior
+- **Transport**: `duckdb` (DuckDB delta extension).
+- **Services & Methods**:
+  - `tables.scan`: Arguments: `table_path` (string, required), `columns` (optional list), `where` (optional list of condition dicts), `limit` (optional int).
+  - `tables.query`: Arguments: `query` (string, required), `params` (optional dict).
+- **Streaming**: Yields rows in pages of up to 1,000 records.
 """
 
 from streamwright.core.runtime.components import Connector, ConnectorError, ConnectorSpec

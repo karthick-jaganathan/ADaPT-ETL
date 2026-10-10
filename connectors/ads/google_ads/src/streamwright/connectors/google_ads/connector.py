@@ -17,21 +17,98 @@
 
 
 """
-The `google_ads` connector (docs/design/source-format.md, example 1).
+The `google_ads` connector: Google Ads API campaign, ad group, keyword, and metrics extraction.
 
-- `auth: {provider: google_ads, developer_token, client_id, client_secret, refresh_token, login_customer_id,
-  api_version}` builds a GoogleAdsClient.
-- A `requests` item `{name, sdk: google_ads, service: GoogleAdsService, method: search_stream | search, arguments:
-  {customer_id, query}}` runs a GAQL query, written as `query: {gaql: {...}}` so values are escaped. Each row becomes
-  a plain dict keyed like the GAQL fields (`customer.id`, `metrics.clicks`, `ad_group.type`) as in the API's JSON:
-  int64 values are text, enums are names, and fields the API does not return are left out, so cast them and give
-  defaults in the stream's `transform` steps.
-- `CustomerService.list_accessible_customers` lists the customers the credentials can access, as
-  {customer_id, resource_name} records (e.g. to partition other streams with `from_stream`).
-- `streamwright run --log google.ads.googleads.client=DEBUG` shows the client's own request and response logs (INFO: a line
-  per call; DEBUG: the payloads), redacted: the access tokens the credentials get are masked like the secrets.
+Connects to Google Ads API using official GoogleAdsClient.
+Supports GAQL (Google Ads Query Language) stream queries with parameterization, customer listing, and automatic token management.
 
-Only these read-only methods can be called.
+### 1. `source.yaml` Contract
+```yaml
+kind: source
+name: google_ads_pipeline
+spec:
+  secrets:
+    gads_developer_token: {type: string, required: true}
+    gads_client_id: {type: string, required: true}
+    gads_client_secret: {type: string, required: true}
+    gads_refresh_token: {type: string, required: true}
+
+auth:
+  provider: google_ads
+  developer_token: "{{ secrets.gads_developer_token }}"
+  client_id: "{{ secrets.gads_client_id }}"
+  client_secret: "{{ secrets.gads_client_secret }}"
+  refresh_token: "{{ secrets.gads_refresh_token }}"
+  # Optional:
+  # login_customer_id: "1234567890"   # Manager account MCC ID
+  # api_version: "v18"
+```
+
+### 2. `streams/<stream>.yaml` Contract
+```yaml
+requests:
+  # Method 1: GAQL search_stream query
+  - name: campaign_performance
+    sdk: google_ads
+    service: GoogleAdsService
+    method: search_stream
+    arguments:
+      customer_id: "1234567890"        # Or referenced from partition: "{{ partition.customer_id }}"
+      query: |
+        SELECT
+          campaign.id,
+          campaign.name,
+          campaign.status,
+          metrics.impressions,
+          metrics.clicks,
+          metrics.cost_micros,
+          segments.date
+        FROM campaign
+        WHERE segments.date >= '{{ window.start }}'
+          AND segments.date <= '{{ window.end }}'
+
+  # Method 2: List accessible client accounts under MCC
+  # - name: accessible_accounts
+  #   sdk: google_ads
+  #   service: CustomerService
+  #   method: list_accessible_customers
+
+transform:
+  - name: final_campaigns
+    select: |
+      SELECT 
+        campaign.id::BIGINT AS campaign_id,
+        campaign.name AS campaign_name,
+        campaign.status AS campaign_status,
+        metrics.impressions::BIGINT AS impressions,
+        metrics.clicks::BIGINT AS clicks,
+        (metrics.cost_micros::DOUBLE / 1000000.0) AS cost,
+        segments.date AS report_date
+      FROM campaign_performance
+
+export:
+  campaigns:
+    step: final_campaigns
+    primary_key: [campaign_id, report_date]
+```
+
+### 3. Authentication & Security
+- `provider`: `google_ads`
+- Credentials: `developer_token`, `client_id`, `client_secret`, and `refresh_token` must be `{{ secrets.* }}` references. Credentials are never written in source configs and are redacted from all logs.
+- Security: Sandboxed Google Ads API client. Only read-only services (`GoogleAdsService`, `CustomerService`) and methods (`search_stream`, `search`, `list_accessible_customers`) are permitted.
+
+### 4. Transform & Data Shaping
+- Emits records as nested JSON dictionaries matching GAQL field paths (e.g. `campaign.id`, `metrics.clicks`).
+- In `transform` steps, nested fields can be addressed directly in DuckDB SQL using dot notation or struct unpacking.
+
+### 5. Execution & Behavior
+- **Transport**: `sdk` (`google-ads`).
+- **Services & Methods**:
+  - `GoogleAdsService.search_stream`: Arguments: `customer_id` (string/int, required), `query` (GAQL string or query dict, required).
+  - `GoogleAdsService.search`: Arguments: `customer_id` (string/int, required), `query` (GAQL string or query dict, required).
+  - `CustomerService.list_accessible_customers`: No arguments.
+- **Streaming**: Yields rows in gRPC response stream chunks.
+- **Retries**: Automatic backoff and retries for transient gRPC errors (`RESOURCE_EXHAUSTED`, `UNAVAILABLE`, `DEADLINE_EXCEEDED`).
 """
 
 import importlib

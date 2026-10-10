@@ -15,7 +15,98 @@
 # **************************************************************************/
 
 """
-The `mongodb` connector: extracts documents from MongoDB collections and aggregation pipelines.
+The `mongodb` connector: document extraction from MongoDB collections and aggregation pipelines.
+
+Connects to MongoDB using `pymongo` in read-only mode, extracting BSON documents serialized safely to JSON.
+Supports find queries with filter/projection/sort and aggregation pipeline stages.
+
+### 1. `source.yaml` Contract
+```yaml
+kind: source
+name: mongodb_source
+spec:
+  secrets:
+    mongo_uri: {type: string, required: true}
+
+auth:
+  provider: mongodb
+  uri: "{{ secrets.mongo_uri }}"        # MongoDB connection string URI from secrets
+
+# Alternative structured auth:
+# auth:
+#   provider: mongodb
+#   host: "cluster0.mongodb.net"
+#   port: 27017
+#   database: "production"
+#   username: "analytics_ro"
+#   password: "{{ secrets.mongo_password }}"
+#   auth_source: "admin"
+```
+
+### 2. `streams/<stream>.yaml` Contract
+```yaml
+requests:
+  # Method 1: Filtered find query
+  - name: read_customers
+    sdk: mongodb
+    service: database
+    method: find
+    arguments:
+      collection: "customers"
+      filter:
+        status: "active"
+        updated_at: {"$gte": "{{ window.start }}"}
+      projection:
+        _id: 1
+        name: 1
+        email: 1
+        tier: 1
+      sort: [["_id", 1]]
+      batch_size: 1000
+
+  # Method 2: Aggregation pipeline
+  # - name: customer_metrics
+  #   sdk: mongodb
+  #   service: database
+  #   method: aggregate
+  #   arguments:
+  #     collection: "orders"
+  #     pipeline:
+  #       - {"$match": {"created_at": {"$gte": "{{ window.start }}"}}}
+  #       - {"$group": {"_id": "$customer_id", "total_spend": {"$sum": "$amount"}}}
+  #     batch_size: 1000
+
+transform:
+  - name: final_customers
+    select: |
+      SELECT 
+        _id AS customer_id,
+        name,
+        email,
+        tier
+      FROM read_customers
+
+export:
+  customers:
+    step: final_customers
+    primary_key: [customer_id]
+```
+
+### 3. Authentication & Security
+- `provider`: `mongodb`
+- Credentials: `uri` or structured `password` must be `{{ secrets.* }}` references. Credentials are never written in source configs and are redacted from all logs.
+- Security: Connects using read-only operations (`find`, `aggregate`). Mutations are not supported.
+
+### 4. Transform & Data Shaping
+- Emits records as JSON dictionaries with BSON types automatically serialized (e.g. `ObjectId` to string, `Decimal128` to float, dates to ISO-8601).
+- In `transform` steps, request results are available as relational tables in DuckDB SQL.
+
+### 5. Execution & Behavior
+- **Transport**: `sdk` (`pymongo`).
+- **Services & Methods**:
+  - `database.find`: Arguments: `collection` (string, required), `filter` (dict), `projection` (dict/list), `sort` (list of [field, dir]), `batch_size` (int).
+  - `database.aggregate`: Arguments: `collection` (string, required), `pipeline` (list of dicts), `batch_size` (int).
+- **Streaming**: Yields documents in cursor batches (default 1,000 documents).
 """
 
 import base64

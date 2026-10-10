@@ -17,29 +17,79 @@
 
 
 """
-The `s3` connector: csv, tsv, json, jsonl and parquet objects in Amazon S3 (or an S3-compatible store) as records.
+The `s3` connector: Amazon S3 (and S3-compatible storage) CSV, TSV, JSON, JSONL, and Parquet extraction.
 
-- `auth: {provider: s3, roots: ["s3://bucket/prefix/"], key_id, secret, session_token, region, endpoint, url_style,
-  use_ssl}`: `roots` (required) are the URL prefixes objects can be read from (references allowed, no secrets);
-  `key_id` and `secret` (required) and `session_token` are credentials: each one `{{ secrets.* }}` reference
-  (connect() refuses a credential that is not a secret of the run), masked in every message; `region`, `endpoint`
-  (host[:port]), `url_style` (vhost or path) and `use_ssl` are settings, literal or references. connect() opens a
-  Reader (streamwright.connectors.s3.reader): a DuckDB connection of its own with httpfs, the credentials and settings as a
-  DuckDB secret scoped to the roots, that can only read inside the roots.
-- A `requests` item `{name, sdk: s3, service: object, method: read, arguments: {path, format, options, on_missing,
-  match, recursive}}` reads the objects `path` names - an s3:// URL or a key relative to the first root; a glob
-  (`*`, `[ab]`, `**`; never `?`); a list of them (e.g. a `batch_size` partition); or, with `match` (a literal Python
-  regex), the folder whose objects' keys relative to it fully match it (sub-folders too with `recursive: true`) -
-  each row one record, a JSON object, in pages of at most 1,000 records. Every URL - the path, and each object a
-  listing returns - is checked before anything is read: inside a root (scheme, bucket and key prefix), and without a
-  `?` (DuckDB would read a query's parameters, e.g. ?s3_endpoint=, as connection settings), `%`, `#`, backslash,
-  `..`, user@ or port (see reader). `format`: csv, tsv, json, jsonl, parquet or auto (by the object's extension; the
-  default). `options`: per format (see reader.OPTIONS). `on_missing`: skip (a warning; the default) or error, when
-  nothing matches a path.
-- Each object read is a call (rate limit, retries and the run's request counts) and logs a line on `streamwright.network`:
-  the URL, its rows and time.
+Reads objects safely inside declared S3 root prefixes using DuckDB's httpfs extension.
+Supports globs, regex filename matching, partition batches, and automatic format detection.
 
-Only this read-only method can be called; objects are never written.
+### 1. `source.yaml` Contract
+```yaml
+kind: source
+name: s3_lake_pipeline
+spec:
+  secrets:
+    aws_key: {type: string, required: true}
+    aws_secret: {type: string, required: true}
+
+auth:
+  provider: s3
+  roots: ["s3://my-bucket/lake/"]     # Required list of allowed S3 URL prefixes
+  key_id: "{{ secrets.aws_key }}"     # Required credential
+  secret: "{{ secrets.aws_secret }}"  # Required credential
+  # Optional settings:
+  # session_token: "{{ secrets.aws_session_token }}"
+  # region: "us-east-1"
+  # endpoint: "s3.amazonaws.com"      # Or MinIO/custom endpoint: "minio.internal:9000"
+  # url_style: "vhost"                # "vhost" | "path"
+  # use_ssl: true
+```
+
+### 2. `streams/<stream>.yaml` Contract
+```yaml
+requests:
+  - name: read_transactions
+    sdk: s3
+    service: object
+    method: read
+    arguments:
+      path: "s3://my-bucket/lake/transactions/*.parquet" # S3 URL or relative key / glob
+      format: auto                    # "auto" | "csv" | "tsv" | "json" | "jsonl" | "parquet"
+      on_missing: skip                # "skip" (default, logs warning) | "error"
+      # Optional:
+      # match: "^tx_[0-9]{4}\\.parquet$" # Python regex filter within path folder
+      # recursive: true               # Scan sub-prefixes (default false)
+      # options:                      # Format-specific reader options (delimiter, etc.)
+
+transform:
+  - name: final_transactions
+    select: |
+      SELECT 
+        tx_id,
+        user_id,
+        amount::DOUBLE AS amount,
+        created_at
+      FROM read_transactions
+
+export:
+  transactions:
+    step: final_transactions
+    primary_key: [tx_id]
+```
+
+### 3. Authentication & Security
+- `provider`: `s3`
+- `roots`: Mandatory list of allowed S3 URI prefixes (e.g. `s3://bucket/prefix/`). Reads outside roots are strictly blocked.
+- Credentials: `key_id`, `secret`, and `session_token` must be `{{ secrets.* }}` references. Credentials are never written in source configs and are redacted from all logs.
+- Security: Connect opens a sandboxed DuckDB connection with `httpfs` credentials scoped strictly to the specified roots.
+
+### 4. Transform & Data Shaping
+- Emits rows where each record is a dictionary mapping column names to parsed values.
+- In `transform` steps, each request's name (`read_transactions`) is available as a relational table in DuckDB SQL.
+
+### 5. Execution & Behavior
+- **Transport**: `reader` (Embedded DuckDB httpfs engine).
+- **Streaming**: Yields rows in streaming batches of up to 1,000 records.
+- **Safety**: Purely read-only; S3 objects are never written or modified.
 """
 
 import re
