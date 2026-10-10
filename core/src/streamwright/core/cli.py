@@ -16,7 +16,7 @@
 # **************************************************************************/
 
 """
-The `streamwright` command.
+The `streamwright` command (shorthand: `sw`).
 
   streamwright run SOURCE [--config FILE] [--set NAME=VALUE] [--secrets FILE] [--state FILE] [--stream NAME] [--output ...]
             [--file-name TEMPLATE] [--allow-connector NAME] [--summary FILE] [logging options]

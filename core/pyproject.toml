@@ -43,6 +43,7 @@ Documentation = "https://streamwright.web.app/docs/"
 [project.scripts]
 # `streamwright run`, `streamwright validate`, `streamwright connectors` - one CLI (see streamwright.core.cli)
 streamwright = "streamwright.core.cli:main"
+sw = "streamwright.core.cli:main"
 
 
 [tool.setuptools]
