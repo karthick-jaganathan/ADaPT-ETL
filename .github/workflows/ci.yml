@@ -27,12 +27,12 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      # No vendor SDKs here: the core must work without them (the connector tests skip; see the connectors job).
+      # No vendor SDKs here: the core must work without them (the connector tests run in the connectors job).
       - name: Install StreamWright
         run: python -m pip install ./core pytest jsonschema
 
-      - name: Run tests
-        run: make test
+      - name: Run core tests
+        run: python -m pytest core/tests -q
 
       - name: Validate example configs
         run: streamwright validate --strict --format github examples
@@ -51,17 +51,17 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      # The connectors install their vendor SDKs (files, s3, gcs, postgres: DuckDB), and dlt loads into DuckDB; the tests
-      # still never call external APIs (s3 and gcs read a local stand-in for object storage, postgres a local DuckDB
-      # stand-in).
-      - name: Install StreamWright, connectors and dlt
-        run: python -m pip install ./core ./connectors/ads/google_ads ./connectors/ads/microsoft_ads ./connectors/ads/meta_ads ./connectors/readers/files ./connectors/readers/s3 ./connectors/readers/gcs ./connectors/readers/postgres pytest jsonschema "dlt[duckdb]>=1.0"
+      # Dynamically install all connectors and test dependencies
+      - name: Install StreamWright, connectors and test dependencies
+        run: |
+          python -m pip install ./core connectors/*/* pytest jsonschema responses pyarrow "dlt[duckdb]>=1.0"
 
       - name: Check the connectors are registered
         run: |
           out="$(streamwright connectors)"; echo "$out"
-          for c in files s3 gcs postgres google_ads microsoft_ads meta_ads; do
-            echo "$out" | grep -qE "^  $c( |\$)" || { echo "missing connector: $c"; exit 1; }
+          for pp in connectors/*/*/pyproject.toml; do
+            c="$(basename "$(dirname "$pp")")"
+            echo "$out" | grep -qE "\[installed\]\s+$c\b" || { echo "missing connector: $c"; exit 1; }
           done
 
       - name: Run tests
